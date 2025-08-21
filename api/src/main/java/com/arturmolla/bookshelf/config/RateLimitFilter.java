@@ -8,7 +8,6 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.NonNull;
-import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
@@ -19,15 +18,14 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 @Component
-@RequiredArgsConstructor
 public class RateLimitFilter extends OncePerRequestFilter {
 
     @Value("${rate.limit.capacity:10}")
-    private final Integer capacity;
+    private Integer capacity;
     @Value("${rate.limit.tokens:10}")
-    private final Integer tokens;
+    private Integer tokens;
     @Value("${rate.limit.minutes:1}")
-    private final Integer minutes;
+    private Integer minutes;
 
     private final Map<String, Bucket> buckets = new ConcurrentHashMap<>();
 

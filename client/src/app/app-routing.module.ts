@@ -4,7 +4,9 @@ import { NavComponent } from './dashboard/nav/nav.component';
 import { DashComponent } from './dashboard/dash/dash.component';
 import { AboutComponent } from './dashboard/about/about.component';
 import { FeedbackComponent } from './dashboard/feedback/feedback.component';
-import { AuthComponent } from './dashboard/auth/auth.component';
+import { LoginComponent } from './dashboard/auth/login/login.component';
+import { RegisterComponent } from './dashboard/auth/register/register.component';
+import { AuthGuard } from './service/auth/auth-guard';
 
 const routes: Routes = [
   {
@@ -13,9 +15,16 @@ const routes: Routes = [
     children: [
       { path: '', redirectTo: 'dashboard', pathMatch: 'full' },
       { path: 'dashboard', component: DashComponent },
-      { path: 'about', component: AboutComponent },
-      { path: 'feedback', component: FeedbackComponent },
-      { path: 'auth', component: AuthComponent },
+      { path: 'about', component: AboutComponent , canActivate: [AuthGuard]},
+      { path: 'feedback', component: FeedbackComponent , canActivate: [AuthGuard]},
+      { 
+        path: 'auth', 
+        children: [
+          { path: '', redirectTo: 'login', pathMatch: 'full' },
+          { path: 'login', component: LoginComponent },
+          { path: 'register', component: RegisterComponent }
+        ] 
+      },
     ]
   },
   { path: '**', redirectTo: '' }

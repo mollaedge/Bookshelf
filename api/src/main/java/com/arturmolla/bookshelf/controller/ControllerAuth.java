@@ -1,5 +1,6 @@
 package com.arturmolla.bookshelf.controller;
 
+import com.arturmolla.bookshelf.aspects.annotation.RateLimit;
 import com.arturmolla.bookshelf.model.dto.AuthenticationRequest;
 import com.arturmolla.bookshelf.model.dto.AuthenticationResponse;
 import com.arturmolla.bookshelf.model.dto.DtoRegistrationRequest;
@@ -26,6 +27,7 @@ public class ControllerAuth {
 
     private final ServiceAuthentication service;
 
+    @RateLimit(capacity = 5, refillTokens = 5, refillDurationMinutes = 1)
     @PostMapping("/register")
     @ResponseStatus(HttpStatus.ACCEPTED)
     public ResponseEntity<?> register(@RequestBody @Valid DtoRegistrationRequest request) throws MessagingException {
@@ -33,11 +35,13 @@ public class ControllerAuth {
         return ResponseEntity.accepted().build();
     }
 
+    @RateLimit(capacity = 5, refillTokens = 5, refillDurationMinutes = 1)
     @PostMapping("/authenticate")
     public ResponseEntity<AuthenticationResponse> authenticate(@RequestBody @Valid AuthenticationRequest authenticationRequest) {
         return ResponseEntity.ok(service.authenticate(authenticationRequest));
     }
 
+    @RateLimit(capacity = 5, refillTokens = 5, refillDurationMinutes = 1)
     @GetMapping("/activate-account")
     public void confirm(@RequestParam String token, @RequestParam String email) throws MessagingException {
         service.activateAccount(token, email);
