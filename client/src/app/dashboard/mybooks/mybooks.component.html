@@ -1,0 +1,166 @@
+<div class="mybooks-container">
+  <div class="page-header">
+    <h1 class="page-title">My Books</h1>
+    <button class="btn-add-book" (click)="openAddBookModal()">
+      <span class="plus-icon">+</span> Add Book
+    </button>
+  </div>
+  
+  <div class="tabs-container">
+    <div class="tabs-header">
+      <button 
+        class="tab-button" 
+        [class.active]="activeTab === 'mybooks'"
+        (click)="switchTab('mybooks')">
+        My Books
+        <span class="badge" *ngIf="myBooks.length">{{ myBooks.length }}</span>
+      </button>
+      <button 
+        class="tab-button" 
+        [class.active]="activeTab === 'returned'"
+        (click)="switchTab('returned')">
+        Returned
+        <span class="badge" *ngIf="returnedBooks.length">{{ returnedBooks.length }}</span>
+      </button>
+      <button 
+        class="tab-button" 
+        [class.active]="activeTab === 'rented'"
+        (click)="switchTab('rented')">
+        Rented
+        <span class="badge" *ngIf="rentedBooks.length">{{ rentedBooks.length }}</span>
+      </button>
+      <button 
+        class="tab-button" 
+        [class.active]="activeTab === 'requested'"
+        (click)="switchTab('requested')">
+        Requested
+        <span class="badge" *ngIf="requestedBooks.length">{{ requestedBooks.length }}</span>
+      </button>
+    </div>
+
+    <div class="tabs-content">
+      <!-- My Books Tab -->
+      <div class="tab-panel" *ngIf="activeTab === 'mybooks'">
+        <div class="loading" *ngIf="loading">
+          <p>Loading...</p>
+        </div>
+        <div class="error" *ngIf="error">
+          <p>{{ error }}</p>
+        </div>
+        <div class="books-grid" *ngIf="!loading && !error && myBooks.length">
+          <div class="book-card" *ngFor="let book of myBooks">
+            <div class="book-image">
+              <img [src]="book.image || 'assets/default-book.png'" [alt]="book.title">
+            </div>
+            <div class="book-details">
+              <h3>{{ book.title }}</h3>
+              <p class="author">{{ book.author }}</p>
+              <p class="description">{{ book.description }}</p>
+              <div class="book-actions">
+                <button class="btn-primary">View Details</button>
+                <button class="btn-secondary">Edit</button>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="empty-state" *ngIf="!loading && !error && !myBooks.length">
+          <p>You don't have any books yet.</p>
+        </div>
+      </div>
+
+      <!-- Returned Tab -->
+      <div class="tab-panel" *ngIf="activeTab === 'returned'">
+        <div class="loading" *ngIf="loading">
+          <p>Loading...</p>
+        </div>
+        <div class="error" *ngIf="error">
+          <p>{{ error }}</p>
+        </div>
+        <div class="books-grid" *ngIf="!loading && !error && returnedBooks.length">
+          <div class="book-card" *ngFor="let book of returnedBooks">
+            <div class="book-image">
+              <img [src]="book.image || 'assets/default-book.png'" [alt]="book.title">
+            </div>
+            <div class="book-details">
+              <h3>{{ book.title }}</h3>
+              <p class="author">{{ book.author }}</p>
+              <p class="date">Returned on: {{ book.returnedDate | date }}</p>
+              <p class="renter">Returned by: {{ book.renterName }}</p>
+            </div>
+          </div>
+        </div>
+        <div class="empty-state" *ngIf="!loading && !error && !returnedBooks.length">
+          <p>No returned books.</p>
+        </div>
+      </div>
+
+      <!-- Rented Tab -->
+      <div class="tab-panel" *ngIf="activeTab === 'rented'">
+        <div class="loading" *ngIf="loading">
+          <p>Loading...</p>
+        </div>
+        <div class="error" *ngIf="error">
+          <p>{{ error }}</p>
+        </div>
+        <div class="books-grid" *ngIf="!loading && !error && rentedBooks.length">
+          <div class="book-card" *ngFor="let book of rentedBooks">
+            <div class="book-image">
+              <img [src]="book.image || 'assets/default-book.png'" [alt]="book.title">
+            </div>
+            <div class="book-details">
+              <h3>{{ book.title }}</h3>
+              <p class="author">{{ book.author }}</p>
+              <p class="date">Rented on: {{ book.rentedDate | date }}</p>
+              <p class="renter">Rented by: {{ book.renterName }}</p>
+              <p class="due-date" [class.overdue]="isOverdue(book.dueDate)">
+                Due: {{ book.dueDate | date }}
+              </p>
+            </div>
+          </div>
+        </div>
+        <div class="empty-state" *ngIf="!loading && !error && !rentedBooks.length">
+          <p>No currently rented books.</p>
+        </div>
+      </div>
+
+      <!-- Requested Tab -->
+      <div class="tab-panel" *ngIf="activeTab === 'requested'">
+        <div class="loading" *ngIf="loading">
+          <p>Loading...</p>
+        </div>
+        <div class="error" *ngIf="error">
+          <p>{{ error }}</p>
+        </div>
+        <div class="books-grid" *ngIf="!loading && !error && requestedBooks.length">
+          <div class="book-card" *ngFor="let book of requestedBooks">
+            <div class="book-image">
+              <img [src]="book.image || 'assets/default-book.png'" [alt]="book.title">
+            </div>
+            <div class="book-details">
+              <h3>{{ book.title }}</h3>
+              <p class="author">{{ book.author }}</p>
+              <p class="date">Requested on: {{ book.requestedDate | date }}</p>
+              <p class="requester">Requested by: {{ book.requesterName }}</p>
+              <p class="status" [class]="'status-' + book.status">{{ book.status }}</p>
+              <div class="book-actions">
+                <button class="btn-success" (click)="approveRequest(book.id)">Approve</button>
+                <button class="btn-danger" (click)="rejectRequest(book.id)">Reject</button>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="empty-state" *ngIf="!loading && !error && !requestedBooks.length">
+          <p>No pending requests.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Book Popup Component -->
+<app-bookpopup 
+  [isOpen]="showAddBookModal"
+  [mode]="'add'"
+  (closePopup)="closeAddBookModal()"
+  (bookSaved)="handleBookSaved($event)">
+</app-bookpopup>

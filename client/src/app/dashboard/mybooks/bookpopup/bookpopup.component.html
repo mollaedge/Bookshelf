@@ -1,0 +1,131 @@
+<div class="modal-overlay" *ngIf="isOpen" (click)="close()">
+  <div class="modal-content" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h2>{{ modalTitle }}</h2>
+      <button class="close-button" (click)="close()" aria-label="Close">&times;</button>
+    </div>
+
+    <div class="modal-body">
+      <!-- Search Bar for External APIs -->
+      <div class="search-section">
+        <h3>Search Books Online</h3>
+        <div class="search-bar">
+          <input 
+            type="text" 
+            class="search-input"
+            [(ngModel)]="searchQuery"
+            (input)="onSearchInput(searchQuery)"
+            placeholder="Search for books by title, author, or ISBN..."
+            [disabled]="mode === 'edit'">
+          <button 
+            class="clear-search-btn" 
+            *ngIf="searchQuery" 
+            (click)="clearSearch()"
+            type="button">
+            ×
+          </button>
+        </div>
+        
+        <div class="search-status" *ngIf="isSearching">
+          <span class="spinner"></span> Searching...
+        </div>
+
+        <!-- Search Results -->
+        <div class="search-results" *ngIf="showSearchResults && searchResults.length">
+          <div class="search-results-header">
+            <span>{{ searchResults.length }} results found</span>
+          </div>
+          <div class="search-results-list">
+            <div 
+              class="search-result-item" 
+              *ngFor="let book of searchResults"
+              (click)="selectExternalBook(book)">
+              <img 
+                [src]="book.volumeInfo.imageLinks?.thumbnail || book.volumeInfo.imageLinks?.smallThumbnail || 'assets/default-book.png'" 
+                [alt]="book.volumeInfo.title"
+                class="result-thumbnail">
+              <div class="result-info">
+                <h4>{{ book.volumeInfo.title }}</h4>
+                <p class="result-author">{{ book.volumeInfo.authors?.join(', ') || 'Unknown Author' }}</p>
+                <p class="result-meta" *ngIf="book.volumeInfo.publishedDate">
+                  {{ book.volumeInfo.publishedDate | date: 'yyyy' }}
+                </p>
+              </div>
+              <button class="use-btn" type="button">Use This</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="no-results" *ngIf="showSearchResults && !searchResults.length && !isSearching">
+          No books found. Try a different search term.
+        </div>
+      </div>
+
+      <div class="divider">
+        <span>OR ENTER MANUALLY</span>
+      </div>
+
+      <!-- Manual Entry Form -->
+      <form (ngSubmit)="onSubmit()" #formRef="ngForm">
+        <div class="form-group">
+          <label for="title">Title *</label>
+          <input 
+            type="text" 
+            id="title" 
+            name="title"
+            [(ngModel)]="bookFormData.title" 
+            required
+            placeholder="Enter book title">
+        </div>
+        
+        <div class="form-group">
+          <label for="author">Author *</label>
+          <input 
+            type="text" 
+            id="author" 
+            name="author"
+            [(ngModel)]="bookFormData.author" 
+            required
+            placeholder="Enter author name">
+        </div>
+        
+        <div class="form-group">
+          <label for="description">Description</label>
+          <textarea 
+            id="description" 
+            name="description"
+            [(ngModel)]="bookFormData.description" 
+            rows="5"
+            placeholder="Enter book description"></textarea>
+        </div>
+        
+        <div class="form-group">
+          <label for="image">Cover Image URL</label>
+          <input 
+            type="text" 
+            id="image" 
+            name="image"
+            [(ngModel)]="bookFormData.image" 
+            placeholder="Enter image URL">
+          <div class="image-preview" *ngIf="bookFormData.image">
+            <img [src]="bookFormData.image" alt="Preview" (error)="bookFormData.image = ''">
+          </div>
+        </div>
+
+        <div class="error-message" *ngIf="error">
+          {{ error }}
+        </div>
+        
+        <div class="modal-footer">
+          <button type="button" class="btn-cancel" (click)="close()">Cancel</button>
+          <button 
+            type="submit" 
+            class="btn-submit" 
+            [disabled]="!formRef.valid || submitting">
+            {{ submitButtonText }}
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>

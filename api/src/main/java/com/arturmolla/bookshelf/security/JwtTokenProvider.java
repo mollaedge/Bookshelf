@@ -15,10 +15,8 @@ import org.springframework.stereotype.Component;
 
 import javax.crypto.SecretKey;
 import java.nio.charset.StandardCharsets;
-import java.util.Base64;
 import java.util.Date;
 import java.util.List;
-import java.util.Map;
 import java.util.stream.Collectors;
 
 @Component
@@ -34,27 +32,7 @@ public class JwtTokenProvider {
 
     @PostConstruct
     protected void init() {
-        String encodedKey = Base64.getEncoder().encodeToString(secretKey.getBytes(StandardCharsets.UTF_8));
-        this.key = Keys.hmacShaKeyFor(encodedKey.getBytes(StandardCharsets.UTF_8));
-    }
-
-    public String createToken(String username, Map<String, Object> userDetails, List<String> roles) {
-        Claims claims = Jwts.claims().setSubject(username);
-        claims.put("roles", roles);
-        claims.put("userId", userDetails.get("userId"));
-        claims.put("name", userDetails.get("name"));
-        claims.put("email", userDetails.get("email"));
-        claims.put("picture", userDetails.get("pictureUrl"));
-
-        Date now = new Date();
-        Date validity = new Date(now.getTime() + validityInMilliseconds);
-
-        return Jwts.builder()
-                .setClaims(claims)
-                .setIssuedAt(now)
-                .setExpiration(validity)
-                .signWith(key)
-                .compact();
+        this.key = Keys.hmacShaKeyFor(secretKey.getBytes(StandardCharsets.UTF_8));
     }
 
     public Authentication getAuthentication(String token) {
@@ -62,9 +40,13 @@ public class JwtTokenProvider {
                 .parseClaimsJws(token)
                 .getBody();
 
-        List<SimpleGrantedAuthority> authorities = ((List<String>) claims.get("roles")).stream()
-                .map(SimpleGrantedAuthority::new)
-                .collect(Collectors.toList());
+        Object authoritiesClaim = claims.get("authorities");
+        List<SimpleGrantedAuthority> authorities = authoritiesClaim instanceof List<?> ?
+                ((List<?>) authoritiesClaim).stream()
+                        .map(Object::toString)
+                        .map(SimpleGrantedAuthority::new)
+                        .collect(Collectors.toList()) :
+                List.of();
 
         User principal = new User(claims.getSubject(), "", authorities);
 
@@ -81,10 +63,4 @@ public class JwtTokenProvider {
         }
     }
 
-    public String getUsername(String token) {
-        return Jwts.parserBuilder().setSigningKey(key).build()
-                .parseClaimsJws(token)
-                .getBody()
-                .getSubject();
-    }
 }

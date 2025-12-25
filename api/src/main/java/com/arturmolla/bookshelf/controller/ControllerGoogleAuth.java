@@ -3,8 +3,9 @@ package com.arturmolla.bookshelf.controller;
 import com.arturmolla.bookshelf.model.user.User;
 import com.arturmolla.bookshelf.repository.RepositoryUser;
 import com.arturmolla.bookshelf.security.GoogleTokenVerifier;
+import com.arturmolla.bookshelf.security.JwtService;
 import com.arturmolla.bookshelf.security.JwtTokenProvider;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.AllArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -13,24 +14,18 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
 @RestController
+@AllArgsConstructor
 @RequestMapping("/auth")
 public class ControllerGoogleAuth {
 
-    @Autowired
     private GoogleTokenVerifier googleTokenVerifier;
-
-    @Autowired
     private JwtTokenProvider jwtTokenProvider;
-
-    @Autowired
+    private JwtService jwtService;
     private RepositoryUser userRepository;
-
-    @Autowired
     private PasswordEncoder passwordEncoder;
 
     @PostMapping("/google")
@@ -61,12 +56,11 @@ public class ControllerGoogleAuth {
             userRepository.save(user);
         }
 
+        var claims = new HashMap<String, Object>();
+        claims.put("fullName", user.getFullName());
+
         // Generate our application's JWT token
-        String jwt = jwtTokenProvider.createToken(
-                email,
-                googleUserInfo,
-                Collections.singletonList("ROLE_USER")
-        );
+        String jwt = jwtService.generateToken(claims, user);
 
         Map<String, Object> response = new HashMap<>();
         response.put("token", jwt);
