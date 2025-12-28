@@ -1,1 +1,151 @@
-<p>about works pretty well!</p>
+<div class="page-wrapper">
+  <div class="about-container">
+    <!-- Hero Section -->
+    <section class="hero-section animate-on-scroll">
+    <div class="hero-content">
+      <div class="hero-badge">📖 Welcome to Bookshelf</div>
+      <h1 class="hero-title">Your Personal Library, Reimagined</h1>
+      <p class="hero-subtitle">
+        Organize, track, and discover your next great read with the most intuitive book management platform
+      </p>
+      <div class="hero-buttons">
+        <button class="btn-primary" routerLink="/mybooks">Explore Your Library</button>
+        <button class="btn-secondary" routerLink="/feedback">Share Feedback</button>
+      </div>
+    </div>
+    <div class="hero-illustration">
+      <div class="floating-book book-1">📕</div>
+      <div class="floating-book book-2">📗</div>
+      <div class="floating-book book-3">📘</div>
+      <div class="floating-book book-4">📙</div>
+    </div>
+  </section>
+
+  <!-- Stats Section -->
+  <section class="stats-section animate-on-scroll">
+    <div class="stats-grid">
+      <div class="stat-card" *ngFor="let stat of stats">
+        <div class="stat-value">{{ stat.value }}</div>
+        <div class="stat-label">{{ stat.label }}</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Mission Section -->
+  <section class="mission-section animate-on-scroll">
+    <div class="mission-content">
+      <span class="section-badge">Our Mission</span>
+      <h2 class="section-title">Making Reading More Enjoyable</h2>
+      <p class="section-description">
+        At Bookshelf, we believe that every book tells a story, and every reader's journey is unique. 
+        Our mission is to provide book lovers with the tools they need to organize their collections, 
+        discover new titles, and share their reading experiences with a vibrant community.
+      </p>
+      <p class="section-description">
+        Whether you're a casual reader or a bibliophile with thousands of books, Bookshelf adapts 
+        to your needs, helping you get the most out of your reading life.
+      </p>
+    </div>
+  </section>
+
+  <!-- Features Section -->
+  <section class="features-section">
+    <div class="features-header animate-on-scroll">
+      <span class="section-badge">Features</span>
+      <h2 class="section-title">Everything You Need in One Place</h2>
+      <p class="section-description">
+        Discover the powerful features that make Bookshelf the ultimate companion for book lovers
+      </p>
+    </div>
+    
+    <div class="features-grid">
+      <div class="feature-card animate-on-scroll" *ngFor="let feature of features">
+        <div class="feature-icon">{{ feature.icon }}</div>
+        <h3 class="feature-title">{{ feature.title }}</h3>
+        <p class="feature-description">{{ feature.description }}</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Technology Section -->
+  <section class="tech-section animate-on-scroll">
+    <div class="tech-content">
+      <span class="section-badge">Technology</span>
+      <h2 class="section-title">Built with Modern Technology</h2>
+      <p class="section-description">
+        Bookshelf is built using cutting-edge technologies to ensure a fast, reliable, 
+        and seamless experience across all your devices.
+      </p>
+      <div class="tech-stack">
+        <div class="tech-item">
+          <div class="tech-logo">⚡</div>
+          <span>Angular</span>
+        </div>
+        <div class="tech-item">
+          <div class="tech-logo">🎨</div>
+          <span>Material Design</span>
+        </div>
+        <div class="tech-item">
+          <div class="tech-logo">🔐</div>
+          <span>Secure Auth</span>
+        </div>
+        <div class="tech-item">
+          <div class="tech-logo">☁️</div>
+          <span>Cloud Sync</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Team/CEO Section -->
+  <section class="ceo-section animate-on-scroll">
+    <div class="ceo-card">
+      <div class="ceo-header">
+        <div class="ceo-avatar">
+          <span class="avatar-initials">{{ getInitials(ceo.name) }}</span>
+        </div>
+        <div class="ceo-info">
+          <h3 class="ceo-name">{{ ceo.name }}</h3>
+          <p class="ceo-title">{{ ceo.title }}</p>
+          <p class="ceo-location">{{ ceo.location }}</p>
+        </div>
+      </div>
+      <div class="ceo-content">
+        <div class="quote-icon">"</div>
+        <p class="ceo-bio">{{ ceo.bio }}</p>
+        <p class="ceo-message">
+          Thank you for being part of our journey. Together, we're building something special 
+          for book lovers around the world. Your feedback and support mean everything to us.
+        </p>
+      </div>
+      <div class="ceo-signature">
+        <div class="signature-line">{{ ceo.name }}</div>
+        <div class="signature-title">{{ ceo.title }}</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CTA Section -->
+  <section class="cta-section animate-on-scroll">
+    <div class="cta-content">
+      <h2 class="cta-title">Ready to Organize Your Library?</h2>
+      <p class="cta-description">
+        Join thousands of readers who are already enjoying a better way to manage their books
+      </p>
+      <button class="btn-cta" routerLink="/mybooks">Get Started Now</button>
+    </div>
+  </section>
+
+  <!-- Footer Credits -->
+  <footer class="footer-section">
+    <div class="footer-content">
+      <p class="footer-text">
+        © {{ currentYear }} Bookshelf. Crafted with ❤️ by <strong>{{ ceo.name }}</strong> in {{ ceo.location }}
+      </p>
+      <p class="footer-tagline">
+        Making the world a better place, one book at a time.
+      </p>
+    </div>
+  </footer>
+</div>
+</div>

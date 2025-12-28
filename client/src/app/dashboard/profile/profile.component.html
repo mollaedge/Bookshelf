@@ -1,0 +1,243 @@
+<div class="profile-container">
+  <!-- Profile Header -->
+  <div class="profile-header">
+    <div class="header-background"></div>
+    <div class="header-content">
+      <div class="profile-avatar">
+        <div class="avatar-circle">
+          <span class="avatar-initials">{{ getInitials(user.name) }}</span>
+        </div>
+        <button class="edit-avatar-btn" *ngIf="!isEditMode">
+          <i class="fas fa-camera"></i>
+        </button>
+      </div>
+      
+      <div class="profile-info">
+        <div class="profile-name-section">
+          <h1 class="profile-name" *ngIf="!isEditMode">{{ user.name }}</h1>
+          <input type="text" class="edit-input" [(ngModel)]="editedUser.name" *ngIf="isEditMode" placeholder="Your Name">
+          <span class="profile-location">
+            <i class="fas fa-map-marker-alt"></i>
+            <span *ngIf="!isEditMode">{{ user.location }}</span>
+            <input type="text" class="edit-input-small" [(ngModel)]="editedUser.location" *ngIf="isEditMode" placeholder="Location">
+          </span>
+        </div>
+        
+        <div class="profile-meta">
+          <span class="meta-item">
+            <i class="fas fa-envelope"></i>
+            {{ user.email }}
+          </span>
+          <span class="meta-item">
+            <i class="fas fa-calendar"></i>
+            Member for {{ getMemberDuration() }}
+          </span>
+        </div>
+
+        <div class="profile-bio" *ngIf="!isEditMode">
+          <p>{{ user.bio }}</p>
+        </div>
+        <div class="profile-bio" *ngIf="isEditMode">
+          <textarea [(ngModel)]="editedUser.bio" rows="3" placeholder="Tell us about yourself..."></textarea>
+        </div>
+
+        <div class="profile-actions">
+          <button class="btn-primary" *ngIf="!isEditMode" (click)="toggleEditMode()">
+            <i class="fas fa-edit"></i>
+            Edit Profile
+          </button>
+          <div class="edit-actions" *ngIf="isEditMode">
+            <button class="btn-save" (click)="saveProfile()">
+              <i class="fas fa-check"></i>
+              Save Changes
+            </button>
+            <button class="btn-cancel" (click)="cancelEdit()">
+              <i class="fas fa-times"></i>
+              Cancel
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Stats Cards -->
+  <div class="stats-section">
+    <div class="stat-card" *ngFor="let stat of stats" [style.border-left-color]="stat.color">
+      <div class="stat-icon" [style.color]="stat.color">{{ stat.icon }}</div>
+      <div class="stat-content">
+        <div class="stat-value">{{ stat.value }}{{ stat.suffix || '' }}</div>
+        <div class="stat-label">{{ stat.label }}</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main Content Grid -->
+  <div class="content-grid">
+    <!-- Reading Activity Chart -->
+    <div class="card chart-card">
+      <div class="card-header">
+        <h2>
+          <i class="fas fa-chart-line"></i>
+          Reading Activity
+        </h2>
+        <span class="card-subtitle">Books read per month in 2024</span>
+      </div>
+      <div class="card-body">
+        <div class="bar-chart">
+          <div class="chart-bars">
+            <div class="bar-wrapper" *ngFor="let activity of readingActivity">
+              <div class="bar-container">
+                <div class="bar-value">{{ activity.booksRead }}</div>
+                <div 
+                  class="bar" 
+                  [style.height.%]="getBarHeight(activity.booksRead)"
+                  [class.active]="activity.booksRead > 0">
+                </div>
+              </div>
+              <div class="bar-label">{{ activity.month }}</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Genre Distribution -->
+    <div class="card chart-card">
+      <div class="card-header">
+        <h2>
+          <i class="fas fa-chart-pie"></i>
+          Genre Distribution
+        </h2>
+        <span class="card-subtitle">Your reading preferences</span>
+      </div>
+      <div class="card-body">
+        <div class="genre-chart">
+          <div class="donut-chart">
+            <svg viewBox="0 0 100 100" class="donut">
+              <circle cx="50" cy="50" r="40" fill="none" stroke="#f0f0f0" stroke-width="20"></circle>
+              <circle 
+                *ngFor="let genre of genreDistribution; let i = index"
+                cx="50" 
+                cy="50" 
+                r="40" 
+                fill="none" 
+                [attr.stroke]="genre.color"
+                stroke-width="20"
+                [attr.stroke-dasharray]="(genre.percentage * 2.51) + ' ' + (251 - genre.percentage * 2.51)"
+                [attr.stroke-dashoffset]="getStrokeDashOffset(i)"
+                class="donut-segment">
+              </circle>
+            </svg>
+            <div class="donut-center">
+              <div class="center-value">{{ user.booksRead }}</div>
+              <div class="center-label">Total Books</div>
+            </div>
+          </div>
+          
+          <div class="genre-legend">
+            <div class="legend-item" *ngFor="let genre of genreDistribution">
+              <div class="legend-color" [style.background-color]="genre.color"></div>
+              <div class="legend-content">
+                <span class="legend-label">{{ genre.genre }}</span>
+                <span class="legend-value">{{ genre.count }} ({{ genre.percentage }}%)</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Reading Goals -->
+    <div class="card goals-card">
+      <div class="card-header">
+        <h2>
+          <i class="fas fa-bullseye"></i>
+          Reading Goals
+        </h2>
+        <span class="card-subtitle">Track your progress</span>
+      </div>
+      <div class="card-body">
+        <div class="goal-item" *ngFor="let goal of readingGoals">
+          <div class="goal-header">
+            <span class="goal-title">{{ goal.title }}</span>
+            <span class="goal-stats">{{ goal.current }}/{{ goal.target }} {{ goal.unit }}</span>
+          </div>
+          <div class="progress-bar-container">
+            <div 
+              class="progress-bar" 
+              [style.width.%]="getProgressPercentage(goal.current, goal.target)">
+            </div>
+          </div>
+          <div class="goal-percentage">{{ getProgressPercentage(goal.current, goal.target).toFixed(0) }}% Complete</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Achievements -->
+    <div class="card achievements-card">
+      <div class="card-header">
+        <h2>
+          <i class="fas fa-trophy"></i>
+          Recent Achievements
+        </h2>
+        <span class="card-subtitle">Your reading milestones</span>
+      </div>
+      <div class="card-body">
+        <div class="achievement-item" *ngFor="let achievement of recentAchievements">
+          <div class="achievement-icon">{{ achievement.icon }}</div>
+          <div class="achievement-content">
+            <div class="achievement-title">{{ achievement.title }}</div>
+            <div class="achievement-description">{{ achievement.description }}</div>
+            <div class="achievement-date">{{ formatDate(achievement.date) }}</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Favorite Genres Tags -->
+    <div class="card genres-card">
+      <div class="card-header">
+        <h2>
+          <i class="fas fa-heart"></i>
+          Favorite Genres
+        </h2>
+      </div>
+      <div class="card-body">
+        <div class="genre-tags">
+          <span class="genre-tag" *ngFor="let genre of user.favoriteGenres">
+            {{ genre }}
+          </span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="card actions-card">
+      <div class="card-header">
+        <h2>
+          <i class="fas fa-bolt"></i>
+          Quick Actions
+        </h2>
+      </div>
+      <div class="card-body">
+        <button class="action-btn" routerLink="/mybooks">
+          <i class="fas fa-book"></i>
+          <span>View My Books</span>
+        </button>
+        <button class="action-btn" routerLink="/mybooks">
+          <i class="fas fa-plus"></i>
+          <span>Add New Book</span>
+        </button>
+        <button class="action-btn" routerLink="/feedback">
+          <i class="fas fa-comment"></i>
+          <span>Share Feedback</span>
+        </button>
+        <button class="action-btn">
+          <i class="fas fa-cog"></i>
+          <span>Settings</span>
+        </button>
+      </div>
+    </div>
+  </div>
+</div>

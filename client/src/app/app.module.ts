@@ -22,6 +22,7 @@ import { RegisterComponent } from './dashboard/auth/register/register.component'
 import { MybooksComponent } from './dashboard/mybooks/mybooks.component';
 import { BookComponent } from './dashboard/mybooks/book/book.component';
 import { BookpopupComponent } from './dashboard/mybooks/bookpopup/bookpopup.component';
+import { ProfileComponent } from './dashboard/profile/profile.component';
 
 @NgModule({
   declarations: [
@@ -34,7 +35,8 @@ import { BookpopupComponent } from './dashboard/mybooks/bookpopup/bookpopup.comp
     RegisterComponent,
     MybooksComponent,
     BookComponent,
-    BookpopupComponent
+    BookpopupComponent,
+    ProfileComponent
   ],
   imports: [
     BrowserModule,

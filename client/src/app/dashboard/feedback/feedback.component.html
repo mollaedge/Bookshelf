@@ -1,1 +1,223 @@
-<p>feedback works!</p>
+<div class="feedback-container">
+  <!-- Header Section -->
+  <div class="feedback-header">
+    <div class="header-content">
+      <h1>Feedback & Suggestions</h1>
+      <p>Share your ideas and help us improve the Bookshelf app</p>
+    </div>
+    <button class="btn-add" (click)="openAddModal()">
+      <span class="icon">+</span>
+      Add Feedback
+    </button>
+  </div>
+
+  <!-- Filter and Sort Section -->
+  <div class="controls">
+    <div class="filters">
+      <button 
+        [class.active]="selectedFilter === 'all'"
+        (click)="onFilterChange('all')">
+        All
+      </button>
+      <button 
+        [class.active]="selectedFilter === 'feature'"
+        (click)="onFilterChange('feature')">
+        Features
+      </button>
+      <button 
+        [class.active]="selectedFilter === 'bug'"
+        (click)="onFilterChange('bug')">
+        Bugs
+      </button>
+      <button 
+        [class.active]="selectedFilter === 'improvement'"
+        (click)="onFilterChange('improvement')">
+        Improvements
+      </button>
+      <button 
+        [class.active]="selectedFilter === 'other'"
+        (click)="onFilterChange('other')">
+        Other
+      </button>
+    </div>
+    
+    <div class="sort">
+      <label for="sort">Sort by:</label>
+      <select id="sort" [(ngModel)]="sortBy" (change)="onSortChange(sortBy)">
+        <option value="newest">Newest</option>
+        <option value="oldest">Oldest</option>
+        <option value="most-upvoted">Most Upvoted</option>
+        <option value="most-comments">Most Comments</option>
+      </select>
+    </div>
+  </div>
+
+  <!-- Feedback Cards Grid -->
+  <div class="feedback-grid">
+    <div class="feedback-card" *ngFor="let card of filteredCards">
+      <!-- Card Header -->
+      <div class="card-header">
+        <div class="card-badges">
+          <span 
+            class="badge category" 
+            [style.background-color]="getCategoryColor(card.category)">
+            {{ card.category }}
+          </span>
+          <span 
+            class="badge status"
+            [style.background-color]="getStatusColor(card.status)">
+            {{ card.status }}
+          </span>
+        </div>
+        <span class="card-date">{{ formatDate(card.createdAt) }}</span>
+      </div>
+
+      <!-- Card Content -->
+      <div class="card-content">
+        <h3 class="card-title">{{ card.title }}</h3>
+        <p class="card-description">{{ card.description }}</p>
+        <div class="card-meta">
+          <span class="author">by {{ card.author }}</span>
+        </div>
+      </div>
+
+      <!-- Card Footer -->
+      <div class="card-footer">
+        <button 
+          class="btn-upvote" 
+          [class.upvoted]="hasUpvoted(card)"
+          (click)="toggleUpvote(card)">
+          <span class="upvote-icon">▲</span>
+          <span class="upvote-count">{{ card.upvotes }}</span>
+        </button>
+        
+        <button class="btn-comments" (click)="openComments(card)">
+          <span class="comment-icon">💬</span>
+          <span class="comment-count">{{ card.comments.length }}</span>
+          <span class="comment-text">Comments</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Empty State -->
+    <div class="empty-state" *ngIf="filteredCards.length === 0">
+      <div class="empty-icon">📝</div>
+      <h3>No feedback found</h3>
+      <p>Be the first to share your ideas!</p>
+      <button class="btn-primary" (click)="openAddModal()">Add Feedback</button>
+    </div>
+  </div>
+</div>
+
+<!-- Add Feedback Modal -->
+<div class="modal-overlay" *ngIf="showAddModal" (click)="closeAddModal()">
+  <div class="modal" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h2>Add New Feedback</h2>
+      <button class="btn-close" (click)="closeAddModal()">&times;</button>
+    </div>
+    
+    <div class="modal-body">
+      <div class="form-group">
+        <label for="title">Title *</label>
+        <input 
+          type="text" 
+          id="title" 
+          [(ngModel)]="newFeedback.title"
+          placeholder="Brief description of your feedback"
+          maxlength="100">
+      </div>
+      
+      <div class="form-group">
+        <label for="category">Category *</label>
+        <select id="category" [(ngModel)]="newFeedback.category">
+          <option value="feature">Feature Request</option>
+          <option value="bug">Bug Report</option>
+          <option value="improvement">Improvement</option>
+          <option value="other">Other</option>
+        </select>
+      </div>
+      
+      <div class="form-group">
+        <label for="description">Description *</label>
+        <textarea 
+          id="description" 
+          [(ngModel)]="newFeedback.description"
+          placeholder="Provide details about your feedback..."
+          rows="6"></textarea>
+      </div>
+    </div>
+    
+    <div class="modal-footer">
+      <button class="btn-secondary" (click)="closeAddModal()">Cancel</button>
+      <button class="btn-primary" (click)="submitFeedback()">Submit Feedback</button>
+    </div>
+  </div>
+</div>
+
+<!-- Comments Modal -->
+<div class="modal-overlay" *ngIf="showCommentModal" (click)="closeCommentModal()">
+  <div class="modal modal-large" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <div>
+        <h2>{{ selectedCard?.title }}</h2>
+        <p class="modal-subtitle">{{ (selectedCard?.comments || []).length }} Comments</p>
+      </div>
+      <button class="btn-close" (click)="closeCommentModal()">&times;</button>
+    </div>
+    
+    <div class="modal-body comments-section">
+      <!-- Original Feedback -->
+      <div class="original-feedback">
+        <div class="feedback-badges">
+          <span 
+            class="badge category" 
+            [style.background-color]="getCategoryColor(selectedCard?.category || 'other')">
+            {{ selectedCard?.category }}
+          </span>
+          <span 
+            class="badge status"
+            [style.background-color]="getStatusColor(selectedCard?.status || 'open')">
+            {{ selectedCard?.status }}
+          </span>
+        </div>
+        <p class="feedback-description">{{ selectedCard?.description }}</p>
+        <div class="feedback-meta">
+          <span>by {{ selectedCard?.author }}</span>
+          <span *ngIf="selectedCard">{{ formatDate(selectedCard.createdAt) }}</span>
+        </div>
+      </div>
+
+      <!-- Comments List -->
+      <div class="comments-list">
+        <h3>Comments</h3>
+        
+        <div class="comment" *ngFor="let comment of selectedCard?.comments">
+          <div class="comment-header">
+            <span class="comment-author">{{ comment.author }}</span>
+            <span class="comment-date">{{ formatDate(comment.createdAt) }}</span>
+          </div>
+          <p class="comment-text">{{ comment.text }}</p>
+        </div>
+        
+        <div class="no-comments" *ngIf="(selectedCard?.comments || []).length === 0">
+          <p>No comments yet. Be the first to comment!</p>
+        </div>
+      </div>
+
+      <!-- Add Comment Form -->
+      <div class="add-comment">
+        <textarea 
+          [(ngModel)]="newComment"
+          placeholder="Write a comment..."
+          rows="3"></textarea>
+        <button 
+          class="btn-primary" 
+          (click)="submitComment()"
+          [disabled]="!newComment.trim()">
+          Post Comment
+        </button>
+      </div>
+    </div>
+  </div>
+</div>

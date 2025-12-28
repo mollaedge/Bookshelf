@@ -8,6 +8,7 @@ import { MybooksComponent } from './dashboard/mybooks/mybooks.component';
 import { LoginComponent } from './dashboard/auth/login/login.component';
 import { RegisterComponent } from './dashboard/auth/register/register.component';
 import { AuthGuard } from './service/auth/auth-guard';
+import { ProfileComponent } from './dashboard/profile/profile.component';
 
 const routes: Routes = [
   {
@@ -15,6 +16,7 @@ const routes: Routes = [
     component: NavComponent,
     children: [
       { path: '', redirectTo: 'dashboard', pathMatch: 'full' },
+      { path: 'profile', component: ProfileComponent , canActivate: [AuthGuard]},
       { path: 'dashboard', component: DashComponent },
       { path: 'about', component: AboutComponent , canActivate: [AuthGuard]},
       { path: 'feedback', component: FeedbackComponent , canActivate: [AuthGuard]},
