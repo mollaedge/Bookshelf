@@ -1,5 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { BooksService, Book, PageResponse } from '../../service/book/books.service';
+import { Router } from '@angular/router';
+import { HttpErrorResponse } from '@angular/common/http';
 
 @Component({
   selector: 'app-dash',
@@ -13,7 +15,10 @@ export class DashComponent implements OnInit {
   loading: boolean = false;
   error: string = '';
 
-  constructor(private booksService: BooksService) {}
+  constructor(
+    private booksService: BooksService,
+    private router: Router
+  ) {}
 
   ngOnInit(): void {
     this.loadRecommendedBooks();
@@ -31,6 +36,11 @@ export class DashComponent implements OnInit {
         this.loading = false;
       },
       error: (err) => {
+        if (err instanceof HttpErrorResponse && err.status === 403) {
+          this.router.navigate(['/auth']);
+          return;
+        }
+        console.log(err.message);
         this.error = 'Failed to load books.';
         this.loading = false;
         console.error('Error loading books:', err);
@@ -45,6 +55,10 @@ export class DashComponent implements OnInit {
         alert('Book requested successfully!');
       },
       error: (err) => {
+        if (err instanceof HttpErrorResponse && err.status === 403) {
+          this.router.navigate(['/auth']);
+          return;
+        }
         console.error('Error requesting book:', err);
         alert('Failed to request book. Please try again.');
       }

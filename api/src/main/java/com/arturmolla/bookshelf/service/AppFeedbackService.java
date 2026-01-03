@@ -2,6 +2,7 @@ package com.arturmolla.bookshelf.service;
 
 import com.arturmolla.bookshelf.model.dto.AppFeedbackDto;
 import com.arturmolla.bookshelf.model.dto.CommentDto;
+import com.arturmolla.bookshelf.model.enums.AppFeedbackStatus;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -10,6 +11,7 @@ import java.util.List;
 public class AppFeedbackService {
 
     public AppFeedbackDto save(AppFeedbackDto feedbackDto) {
+
         throw new UnsupportedOperationException("Not implemented yet");
     }
 
@@ -29,7 +31,7 @@ public class AppFeedbackService {
         throw new UnsupportedOperationException("Not implemented yet");
     }
 
-    public AppFeedbackDto changeStatus(Long id, String status) {
+    public AppFeedbackDto changeStatus(Long id, AppFeedbackStatus status) {
         throw new UnsupportedOperationException("Not implemented yet");
     }
 }

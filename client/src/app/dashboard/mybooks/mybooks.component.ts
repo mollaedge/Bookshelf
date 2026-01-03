@@ -1,6 +1,8 @@
 import { Component, OnInit } from '@angular/core';
 import { BooksService, Book, RequestedBook, PageResponse } from '../../service/book/books.service';
 import { Observable } from 'rxjs';
+import { Router } from '@angular/router';
+import { HttpErrorResponse } from '@angular/common/http';
 import Swal from 'sweetalert2';
 
 @Component({
@@ -29,7 +31,10 @@ export class MybooksComponent implements OnInit {
   error: string = '';
   showAddBookModal: boolean = false;
 
-  constructor(private booksService: BooksService) {}
+  constructor(
+    private booksService: BooksService,
+    private router: Router
+  ) {}
 
   ngOnInit(): void {
     this.loadData();
@@ -59,6 +64,11 @@ export class MybooksComponent implements OnInit {
         this.loading = false;
       },
       error: (err: any) => {
+        if (err instanceof HttpErrorResponse && err.status === 403) {
+          this.router.navigate(['/auth']);
+          return;
+        }
+        console.log(err.message);
         this.error = 'Failed to load data. Please try again.';
         this.loading = false;
         console.error('Error loading data:', err);
@@ -139,6 +149,10 @@ export class MybooksComponent implements OnInit {
         this.loadData(this.currentPage);
       },
       error: (err: any) => {
+        if (err instanceof HttpErrorResponse && err.status === 403) {
+          this.router.navigate(['/auth']);
+          return;
+        }
         this.error = 'Failed to approve request.';
         console.error('Error approving request:', err);
       }
@@ -151,6 +165,10 @@ export class MybooksComponent implements OnInit {
         this.loadData(this.currentPage);
       },
       error: (err: any) => {
+        if (err instanceof HttpErrorResponse && err.status === 403) {
+          this.router.navigate(['/auth']);
+          return;
+        }
         this.error = 'Failed to reject request.';
         console.error('Error rejecting request:', err);
       }
@@ -181,6 +199,10 @@ export class MybooksComponent implements OnInit {
             this.loadData(this.currentPage);
           },
           error: (err: any) => {
+            if (err instanceof HttpErrorResponse && err.status === 403) {
+              this.router.navigate(['/auth']);
+              return;
+            }
             this.error = 'Failed to delete book.';
             Swal.fire({
               title: 'Error!',

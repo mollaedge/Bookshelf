@@ -2,6 +2,7 @@ package com.arturmolla.bookshelf.controller;
 
 import com.arturmolla.bookshelf.model.dto.AppFeedbackDto;
 import com.arturmolla.bookshelf.model.dto.CommentDto;
+import com.arturmolla.bookshelf.model.enums.AppFeedbackStatus;
 import com.arturmolla.bookshelf.service.AppFeedbackService;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
@@ -45,7 +46,7 @@ public class ControllerAppFeedback {
     }
 
     @PatchMapping("/{id}/status")
-    public ResponseEntity<AppFeedbackDto> changeStatus(@PathVariable Long id, @RequestParam String status) {
+    public ResponseEntity<AppFeedbackDto> changeStatus(@PathVariable Long id, @RequestParam AppFeedbackStatus status) {
         return ResponseEntity.ok(appFeedbackService.changeStatus(id, status));
     }
 }

@@ -27,11 +27,12 @@ export class AuthStateService {
     if (typeof window !== 'undefined' && window.localStorage) {
       localStorage.removeItem('authToken');
       localStorage.removeItem('authUser');
+      localStorage.removeItem('googleToken');
     }
     this.userSubject.next(null);
   }
 
-  private getUserFromStorage(): AuthUser | null {
+  getUserFromStorage(): AuthUser | null {
     if (typeof window !== 'undefined' && window.localStorage) {
       const user = localStorage.getItem('authUser');
       return user ? JSON.parse(user) : null;
