@@ -15,13 +15,43 @@ services:
     networks:
       - spring-bookshelf
     restart: unless-stopped
-# MAIL
+
+  # SPRING BOOT APP
+  bookshelf-api:
+    container_name: bookshelf-api
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8088:8088"
+    environment:
+      - SPRING_PROFILES_ACTIVE=dev
+      - DB_URL=${DB_URL}
+      - DB_USERNAME=${DB_USERNAME}
+      - DB_PASSWORD=${DB_PASSWORD}
+      - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
+      - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET}
+      - JWT_SECRET_KEY=${JWT_SECRET_KEY}
+      - CORS_ALLOWED_ORIGINS=${CORS_ALLOWED_ORIGINS}
+      - MAIL_USERNAME=${MAIL_USERNAME}
+      - MAIL_PASSWORD=${MAIL_PASSWORD}
+      - JASYPT_ENCRYPTOR_PASSWORD=${JASYPT_ENCRYPTOR_PASSWORD}
+    depends_on:
+      - postgres
+      - mail-dev
+    networks:
+      - spring-bookshelf
+    restart: unless-stopped
+
+  # MAIL
   mail-dev:
     container_name: mail-bsh
     image: maildev/maildev
     ports:
       - 1080:1080
       - 1025:1025
+    networks:
+      - spring-bookshelf
 
 networks:
   spring-bookshelf:
