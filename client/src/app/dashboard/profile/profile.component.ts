@@ -1,4 +1,7 @@
 import { Component, OnInit } from '@angular/core';
+import { ProfileService, UserProfileResponse } from '../../service/profile/profile.service';
+import { AuthStateService } from '../../service/auth/auth-state.service';
+import { Router } from '@angular/router';
 
 interface UserProfile {
   name: string;
@@ -33,17 +36,20 @@ interface GenreDistribution {
 })
 export class ProfileComponent implements OnInit {
   user: UserProfile = {
-    name: 'John Doe',
-    email: 'john.doe@example.com',
-    joinDate: new Date('2024-01-15'),
+    name: '',
+    email: '',
+    joinDate: new Date(),
     avatar: '',
     bio: 'Passionate reader and book enthusiast. Love exploring different genres and sharing my reading experiences.',
-    location: 'New York, USA',
+    location: '',
     booksRead: 127,
     currentlyReading: 3,
     toRead: 45,
     favoriteGenres: ['Fiction', 'Science Fiction', 'Mystery', 'Biography']
   };
+
+  isLoading = true;
+  backendProfile: UserProfileResponse | null = null;
 
   stats = [
     { label: 'Books Read', value: 127, icon: '📚', color: '#4CAF50' },
@@ -91,8 +97,44 @@ export class ProfileComponent implements OnInit {
   isEditMode = false;
   editedUser: UserProfile = { ...this.user };
 
+  constructor(
+    private profileService: ProfileService,
+    private authState: AuthStateService,
+    private router: Router
+  ) {}
+
   ngOnInit(): void {
-    // In a real app, fetch user data from a service
+    // Try to load profile immediately - will use cached token or fetch from backend
+    this.loadProfile();
+  }
+
+  loadProfile(): void {
+    this.isLoading = true;
+    
+    this.profileService.getProfile().subscribe({
+      next: (profile) => {
+        this.backendProfile = profile;
+        this.user = {
+          name: profile.fullName || `${profile.firstname} ${profile.lastname}`,
+          email: profile.email,
+          joinDate: profile.dateOfBirth ? new Date(profile.dateOfBirth) : new Date(),
+          avatar: '',
+          bio: this.user.bio,
+          location: this.user.location,
+          booksRead: this.user.booksRead,
+          currentlyReading: this.user.currentlyReading,
+          toRead: this.user.toRead,
+          favoriteGenres: this.user.favoriteGenres
+        };
+        this.editedUser = { ...this.user };
+        this.isLoading = false;
+      },
+      error: (error) => {
+        // If profile fetch fails (no auth), redirect to login
+        this.isLoading = false;
+        this.router.navigate(['/auth']);
+      }
+    });
   }
 
   getMaxReading(): number {
@@ -118,8 +160,25 @@ export class ProfileComponent implements OnInit {
   saveProfile(): void {
     this.user = { ...this.editedUser };
     this.isEditMode = false;
-    // In a real app, save to backend
-    console.log('Profile saved:', this.user);
+    
+    // Update backend if needed
+    if (this.backendProfile) {
+      const updatedProfile: Partial<UserProfileResponse> = {
+        firstname: this.user.name.split(' ')[0],
+        lastname: this.user.name.split(' ').slice(1).join(' '),
+        email: this.user.email
+      };
+      
+      this.profileService.updateProfile(updatedProfile).subscribe({
+        next: (profile) => {
+          console.log('Profile updated successfully:', profile);
+          this.backendProfile = profile;
+        },
+        error: (error) => {
+          console.error('Error updating profile:', error);
+        }
+      });
+    }
   }
 
   cancelEdit(): void {

@@ -7,9 +7,9 @@ import com.arturmolla.bookshelf.model.dto.DtoRequestedBooksResponse;
 import com.arturmolla.bookshelf.model.entity.EntityBook;
 import com.arturmolla.bookshelf.model.entity.EntityBookTransactionHistory;
 import com.arturmolla.bookshelf.service.utils.UtilsFile;
-import org.springframework.stereotype.Service;
+import org.springframework.stereotype.Component;
 
-@Service
+@Component
 public class MapperBook {
 
     public EntityBook toEntityBook(DtoBookRequest request) {

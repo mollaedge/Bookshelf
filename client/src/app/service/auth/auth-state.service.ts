@@ -11,11 +11,19 @@ export interface AuthUser {
   providedIn: 'root'
 })
 export class AuthStateService {
-  private userSubject = new BehaviorSubject<AuthUser | null>(this.getUserFromStorage());
+  private userSubject!: BehaviorSubject<AuthUser | null>;
+  user$!: Observable<AuthUser | null>;
+  private cachedUser: AuthUser | null = null;
 
-  user$: Observable<AuthUser | null> = this.userSubject.asObservable();
+  constructor() {
+    // Cache the user on initialization for fast access
+    this.cachedUser = this.getUserFromStorage();
+    this.userSubject = new BehaviorSubject<AuthUser | null>(this.cachedUser);
+    this.user$ = this.userSubject.asObservable();
+  }
 
   setUser(user: AuthUser) {
+    this.cachedUser = user;
     if (typeof window !== 'undefined' && window.localStorage) {
       localStorage.setItem('authToken', user.token);
       localStorage.setItem('authUser', JSON.stringify(user));
@@ -24,6 +32,7 @@ export class AuthStateService {
   }
 
   clearUser() {
+    this.cachedUser = null;
     if (typeof window !== 'undefined' && window.localStorage) {
       localStorage.removeItem('authToken');
       localStorage.removeItem('authUser');
@@ -32,10 +41,26 @@ export class AuthStateService {
     this.userSubject.next(null);
   }
 
+  // Fast cached access - returns immediately without localStorage read
+  getCurrentUser(): AuthUser | null {
+    // If not cached yet and we're in browser, load it once
+    if (!this.cachedUser && typeof window !== 'undefined' && window.localStorage) {
+      const user = localStorage.getItem('authUser');
+      this.cachedUser = user ? JSON.parse(user) : null;
+    }
+    return this.cachedUser;
+  }
+
+  // Returns immediately if cached, otherwise reads from storage
   getUserFromStorage(): AuthUser | null {
+    if (this.cachedUser) {
+      return this.cachedUser;
+    }
+    
     if (typeof window !== 'undefined' && window.localStorage) {
       const user = localStorage.getItem('authUser');
-      return user ? JSON.parse(user) : null;
+      this.cachedUser = user ? JSON.parse(user) : null;
+      return this.cachedUser;
     }
     return null;
   }

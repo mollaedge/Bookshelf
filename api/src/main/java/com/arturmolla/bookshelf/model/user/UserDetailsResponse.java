@@ -1,29 +1,19 @@
 package com.arturmolla.bookshelf.model.user;
 
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+
 import java.util.Map;
 
+@Getter
+@Setter
+@Builder
+@AllArgsConstructor
+@NoArgsConstructor
 public class UserDetailsResponse {
     private String token;
     private Map<String, Object> user;
-
-    public UserDetailsResponse(String token, Map<String, Object> user) {
-        this.token = token;
-        this.user = user;
-    }
-
-    public String getToken() {
-        return token;
-    }
-
-    public void setToken(String token) {
-        this.token = token;
-    }
-
-    public Map<String, Object> getUser() {
-        return user;
-    }
-
-    public void setUser(Map<String, Object> user) {
-        this.user = user;
-    }
 }

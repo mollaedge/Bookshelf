@@ -4,11 +4,11 @@ import com.arturmolla.bookshelf.model.dto.DtoFeedbackRequest;
 import com.arturmolla.bookshelf.model.dto.DtoFeedbackResponse;
 import com.arturmolla.bookshelf.model.entity.EntityBook;
 import com.arturmolla.bookshelf.model.entity.EntityFeedback;
-import org.springframework.stereotype.Service;
+import org.springframework.stereotype.Component;
 
 import java.util.Objects;
 
-@Service
+@Component
 public class MapperFeedback {
 
     public EntityFeedback toFeedbackEntity(DtoFeedbackRequest request) {

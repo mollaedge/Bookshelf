@@ -1,4 +1,12 @@
 <div class="profile-container">
+  <!-- Loading Indicator -->
+  <div class="loading-container" *ngIf="isLoading">
+    <div class="spinner"></div>
+    <p>Loading profile...</p>
+  </div>
+
+  <!-- Profile Content -->
+  <div *ngIf="!isLoading">
   <!-- Profile Header -->
   <div class="profile-header">
     <div class="header-background"></div>
@@ -239,5 +247,6 @@
         </button>
       </div>
     </div>
+  </div>
   </div>
 </div>

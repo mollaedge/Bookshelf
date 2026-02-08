@@ -52,7 +52,6 @@ export class LoginService {
         this.authState.setUser({
           email: authRequest.email,
           token: response.token
-          // Add any other user properties from the response
         });
       })
     );

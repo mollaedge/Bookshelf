@@ -1,8 +1,7 @@
-import { Injectable, Inject, PLATFORM_ID } from '@angular/core';
-import { HttpClient, HttpHeaders } from '@angular/common/http';
+import { Injectable } from '@angular/core';
+import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from '../../../environments/environment';
-import { isPlatformBrowser } from '@angular/common';
 
 export interface PageResponse<T> {
   content: T[];
@@ -51,80 +50,67 @@ export class BooksService {
   private apiUrl = environment.apiUrl;
   private baseUrl = `${this.apiUrl}/books`;
 
-  constructor(
-    private http: HttpClient,
-    @Inject(PLATFORM_ID) private platformId: Object
-  ) { }
-
-  private getAuthHeaders(): HttpHeaders {
-    let token = '';
-    if (isPlatformBrowser(this.platformId)) {
-      token = localStorage.getItem('authToken') || '';
-    }
-    return new HttpHeaders({
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${token}`
-    });
-  }
+  // Note: Authorization headers are automatically added by AuthInterceptor
+  constructor(private http: HttpClient) { }
 
   // Get all shareable books
   getAllShareableBooks(page: number = 0, size: number = 15): Observable<PageResponse<Book>> {
-    return this.http.get<PageResponse<Book>>(`${this.baseUrl}?page=${page}&size=${size}`, { headers: this.getAuthHeaders() });
+    return this.http.get<PageResponse<Book>>(`${this.baseUrl}?page=${page}&size=${size}`);
   }
 
   // Get all user's books
   getMyBooks(page: number = 0, size: number = 15): Observable<PageResponse<Book>> {
-    return this.http.get<PageResponse<Book>>(`${this.baseUrl}/owner?page=${page}&size=${size}`, { headers: this.getAuthHeaders() });
+    return this.http.get<PageResponse<Book>>(`${this.baseUrl}/owner?page=${page}&size=${size}`);
   }
 
   // Get returned books
   getReturnedBooks(page: number = 0, size: number = 15): Observable<PageResponse<Book>> {
-    return this.http.get<PageResponse<Book>>(`${this.baseUrl}/returned?page=${page}&size=${size}`, { headers: this.getAuthHeaders() });
+    return this.http.get<PageResponse<Book>>(`${this.baseUrl}/returned?page=${page}&size=${size}`);
   }
 
   // Get borrowed books
   getBorrowedBooks(page: number = 0, size: number = 15): Observable<PageResponse<Book>> {
-    return this.http.get<PageResponse<Book>>(`${this.baseUrl}/borrowed?page=${page}&size=${size}`, { headers: this.getAuthHeaders() });
+    return this.http.get<PageResponse<Book>>(`${this.baseUrl}/borrowed?page=${page}&size=${size}`);
   }
 
   // Get requested books
   getRequestedBooks(page: number = 0, size: number = 15): Observable<PageResponse<RequestedBook>> {
-    return this.http.get<PageResponse<RequestedBook>>(`${this.baseUrl}/requested?page=${page}&size=${size}`, { headers: this.getAuthHeaders() });
+    return this.http.get<PageResponse<RequestedBook>>(`${this.baseUrl}/requested?page=${page}&size=${size}`);
   }
 
   // Approve a book request
   approveRequest(bookId: number): Observable<any> {
-    return this.http.post(`${this.baseUrl}/approve-request/${bookId}`, {}, { headers: this.getAuthHeaders() });
+    return this.http.post(`${this.baseUrl}/approve-request/${bookId}`, {});
   }
 
   // Reject a book request
   rejectRequest(bookId: number): Observable<any> {
-    return this.http.post(`${this.baseUrl}/reject-request/${bookId}`, {}, { headers: this.getAuthHeaders() });
+    return this.http.post(`${this.baseUrl}/reject-request/${bookId}`, {});
   }
 
   // Get a single book by ID
   getBookById(bookId: number): Observable<Book> {
-    return this.http.get<Book>(`${this.baseUrl}/${bookId}`, { headers: this.getAuthHeaders() });
+    return this.http.get<Book>(`${this.baseUrl}/${bookId}`);
   }
 
   // Create a new book
   createBook(book: Partial<Book>): Observable<Book> {
-    return this.http.post<Book>(this.baseUrl, book, { headers: this.getAuthHeaders() });
+    return this.http.post<Book>(this.baseUrl, book);
   }
 
   // Update a book
   updateBook(bookId: number, book: Partial<Book>): Observable<Book> {
-    return this.http.put<Book>(`${this.baseUrl}/${bookId}`, book, { headers: this.getAuthHeaders() });
+    return this.http.put<Book>(`${this.baseUrl}/${bookId}`, book);
   }
 
   // Delete a book
   deleteBook(bookId: number): Observable<any> {
-    return this.http.delete(`${this.baseUrl}/${bookId}`, { headers: this.getAuthHeaders() });
+    return this.http.delete(`${this.baseUrl}/${bookId}`);
   }
 
   // Request a book
   requestBook(bookId: number): Observable<any> {
-    return this.http.post(`${this.baseUrl}/borrow/${bookId}`, {}, { headers: this.getAuthHeaders() });
+    return this.http.post(`${this.baseUrl}/borrow/${bookId}`, {});
   }
 
   // Search books from Google Books API
