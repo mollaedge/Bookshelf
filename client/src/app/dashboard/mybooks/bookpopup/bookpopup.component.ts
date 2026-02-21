@@ -42,7 +42,23 @@ export class BookpopupComponent implements OnInit {
   showSearchResults: boolean = false;
   error: string = '';
   isCoverUrlFromApi: boolean = false;
-  
+
+  currentPage: number = 0;
+  readonly pageSize: number = 10;
+  totalItems: number = 0;
+
+  get totalPages(): number {
+    return Math.ceil(this.totalItems / this.pageSize);
+  }
+
+  get firstResultIndex(): number {
+    return this.totalItems === 0 ? 0 : this.currentPage * this.pageSize + 1;
+  }
+
+  get lastResultIndex(): number {
+    return Math.min((this.currentPage + 1) * this.pageSize, this.totalItems);
+  }
+
   private searchSubject = new Subject<string>();
 
   constructor(
@@ -51,16 +67,18 @@ export class BookpopupComponent implements OnInit {
   ) {}
 
   ngOnInit(): void {
-    // Set up search with debounce
+    // Set up search with debounce — always resets to page 0 on new query
     this.searchSubject.pipe(
       debounceTime(500),
       distinctUntilChanged()
     ).subscribe(query => {
       if (query.trim().length > 2) {
-        this.searchExternalBooks(query);
+        this.searchExternalBooks(query, 0);
       } else {
         this.searchResults = [];
         this.showSearchResults = false;
+        this.totalItems = 0;
+        this.currentPage = 0;
       }
     });
 
@@ -75,28 +93,42 @@ export class BookpopupComponent implements OnInit {
     this.searchSubject.next(query);
   }
 
-  searchExternalBooks(query: string): void {
+  searchExternalBooks(query: string, page: number): void {
     this.isSearching = true;
-    this.booksService.searchExternalBooks(query).subscribe({
+    this.currentPage = page;
+    this.booksService.searchExternalBooks(query, page, this.pageSize).subscribe({
       next: (response) => {
         this.searchResults = response.items || [];
+        this.totalItems = response.totalItems || 0;
         this.showSearchResults = true;
         this.isSearching = false;
       },
-      error: (err) => {
-        console.error('Error searching books:', err);
+      error: () => {
         this.isSearching = false;
         this.searchResults = [];
+        this.totalItems = 0;
       }
     });
   }
 
+  nextPage(): void {
+    if (this.currentPage + 1 < this.totalPages) {
+      this.searchExternalBooks(this.searchQuery, this.currentPage + 1);
+    }
+  }
+
+  prevPage(): void {
+    if (this.currentPage > 0) {
+      this.searchExternalBooks(this.searchQuery, this.currentPage - 1);
+    }
+  }
+
   selectExternalBook(externalBook: ExternalBook): void {
     const volumeInfo = externalBook.volumeInfo;
-    
-    const coverUrl = volumeInfo.imageLinks?.thumbnail?.replace('http://', 'https://') || 
+
+    const coverUrl = volumeInfo.imageLinks?.thumbnail?.replace('http://', 'https://') ||
              volumeInfo.imageLinks?.smallThumbnail?.replace('http://', 'https://') || '';
-    
+
     this.bookFormData = {
       title: volumeInfo.title,
       authorName: volumeInfo.authors?.join(', ') || 'Unknown Author',
@@ -106,14 +138,14 @@ export class BookpopupComponent implements OnInit {
       isbn: volumeInfo.industryIdentifiers ? volumeInfo.industryIdentifiers[0].identifier : '',
     };
 
-    // Mark URL as from API if it exists
     this.isCoverUrlFromApi = !!coverUrl;
 
     this.showSearchResults = false;
     this.searchQuery = '';
     this.searchResults = [];
-    
-    // Manually trigger change detection to update button state
+    this.currentPage = 0;
+    this.totalItems = 0;
+
     this.cdr.detectChanges();
   }
 
@@ -121,6 +153,8 @@ export class BookpopupComponent implements OnInit {
     this.searchQuery = '';
     this.searchResults = [];
     this.showSearchResults = false;
+    this.currentPage = 0;
+    this.totalItems = 0;
   }
 
   onSubmit(): void {
@@ -140,9 +174,8 @@ export class BookpopupComponent implements OnInit {
         this.bookSaved.emit(book);
         this.close();
       },
-      error: (err) => {
+      error: () => {
         this.error = `Failed to ${this.mode} book. Please try again.`;
-        console.error(`Error ${this.mode}ing book:`, err);
       }
     });
   }
@@ -154,6 +187,8 @@ export class BookpopupComponent implements OnInit {
     this.showSearchResults = false;
     this.error = '';
     this.isCoverUrlFromApi = false;
+    this.currentPage = 0;
+    this.totalItems = 0;
     this.closePopup.emit();
   }
 
@@ -164,5 +199,4 @@ export class BookpopupComponent implements OnInit {
   get submitButtonText(): string {
     return this.mode === 'edit' ? 'Update Book' : 'Add Book';
   }
-  
 }

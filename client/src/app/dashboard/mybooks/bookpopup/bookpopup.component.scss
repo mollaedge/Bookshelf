@@ -309,6 +309,41 @@
   font-size: 0.95rem;
 }
 
+.search-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.6rem 1rem;
+  border-top: 1px solid #e0e0e0;
+  background: #f0f0f0;
+
+  .pagination-btn {
+    padding: 0.35rem 0.9rem;
+    background: #667eea;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    font-size: 0.85rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background 0.2s ease;
+
+    &:hover:not(:disabled) {
+      background: #5568d3;
+    }
+
+    &:disabled {
+      background: #c5c5c5;
+      cursor: not-allowed;
+    }
+  }
+
+  .pagination-info {
+    font-size: 0.85rem;
+    color: #666;
+  }
+}
+
 // Divider
 .divider {
   display: flex;

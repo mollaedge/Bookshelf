@@ -1,6 +1,7 @@
 <div class="dashboard">
   <div class="dashboard-header">
-    <p class="subtitle">Welcome back, let's explore your activity</p>
+    <p class="subtitle" *ngIf="!userDashboard">Welcome back, let's explore your activity</p>
+    <p class="subtitle" *ngIf="userDashboard">Welcome back, {{ userDashboard.fullName }} — here's your activity</p>
   </div>
 
   <div class="stats-grid">
@@ -9,8 +10,9 @@
         <i class="fas fa-book"></i>
       </div>
       <div class="stat-info">
-        <h3>Total Books</h3>
-        <p class="stat-number">{{ totalBooks }}</p>
+        <h3>Books Owned</h3>
+        <p class="stat-number" *ngIf="!dashboardLoading">{{ userDashboard?.stats?.booksOwned ?? '-' }}</p>
+        <p class="stat-number loading-placeholder" *ngIf="dashboardLoading">...</p>
       </div>
     </div>
     <div class="stat-card">
@@ -18,8 +20,9 @@
         <i class="fas fa-bookmark"></i>
       </div>
       <div class="stat-info">
-        <h3>Reading Now</h3>
-        <p class="stat-number">3</p>
+        <h3>Borrowed</h3>
+        <p class="stat-number" *ngIf="!dashboardLoading">{{ userDashboard?.stats?.currentlyBorrowed ?? '-' }}</p>
+        <p class="stat-number loading-placeholder" *ngIf="dashboardLoading">...</p>
       </div>
     </div>
     <div class="stat-card">
@@ -27,8 +30,9 @@
         <i class="fas fa-check-circle"></i>
       </div>
       <div class="stat-info">
-        <h3>Completed</h3>
-        <p class="stat-number">156</p>
+        <h3>Books Read</h3>
+        <p class="stat-number" *ngIf="!dashboardLoading">{{ userDashboard?.stats?.booksRead ?? '-' }}</p>
+        <p class="stat-number loading-placeholder" *ngIf="dashboardLoading">...</p>
       </div>
     </div>
     <div class="stat-card">
@@ -36,8 +40,9 @@
         <i class="fas fa-clock"></i>
       </div>
       <div class="stat-info">
-        <h3>Reading Time</h3>
-        <p class="stat-number">342h</p>
+        <h3>Pending Requests</h3>
+        <p class="stat-number" *ngIf="!dashboardLoading">{{ userDashboard?.stats?.pendingRequests ?? '-' }}</p>
+        <p class="stat-number loading-placeholder" *ngIf="dashboardLoading">...</p>
       </div>
     </div>
   </div>
@@ -46,21 +51,96 @@
     <div class="content-card large">
       <h2>Reading Progress</h2>
       <div class="card-content">
-        <!-- Add chart or progress visualization here -->
+
+        <div class="progress-placeholder" *ngIf="!isLoggedIn">
+          <i class="fas fa-book-open"></i>
+          <p>Sign in to see your reading progress</p>
+        </div>
+
+        <div class="progress-loading" *ngIf="isLoggedIn && dashboardLoading">
+          <p>Loading...</p>
+        </div>
+
+        <div class="progress-breakdown" *ngIf="userDashboard && !dashboardLoading">
+          <p class="progress-summary">
+            You've read <strong>{{ userDashboard.stats.booksRead }}</strong> books
+            across a library of <strong>{{ userDashboard.stats.booksOwned }}</strong>
+          </p>
+
+          <div class="progress-row">
+            <div class="progress-label">
+              <span class="label-name">Books Owned</span>
+              <span class="label-value">{{ userDashboard.stats.booksOwned }}</span>
+            </div>
+            <div class="progress-track">
+              <div class="progress-fill owned"
+                [style.width.%]="readBarWidth(userDashboard.stats.booksOwned)"></div>
+            </div>
+          </div>
+
+          <div class="progress-row">
+            <div class="progress-label">
+              <span class="label-name">Books Read</span>
+              <span class="label-value">{{ userDashboard.stats.booksRead }}</span>
+            </div>
+            <div class="progress-track">
+              <div class="progress-fill read"
+                [style.width.%]="readBarWidth(userDashboard.stats.booksRead)"></div>
+            </div>
+          </div>
+
+          <div class="progress-row">
+            <div class="progress-label">
+              <span class="label-name">Currently Borrowed</span>
+              <span class="label-value">{{ userDashboard.stats.currentlyBorrowed }}</span>
+            </div>
+            <div class="progress-track">
+              <div class="progress-fill borrowed"
+                [style.width.%]="readBarWidth(userDashboard.stats.currentlyBorrowed)"></div>
+            </div>
+          </div>
+
+          <div class="progress-legend">
+            <span class="legend-dot owned"></span><span>Owned</span>
+            <span class="legend-dot read"></span><span>Read</span>
+            <span class="legend-dot borrowed"></span><span>Borrowed</span>
+          </div>
+        </div>
+
       </div>
     </div>
     
     <div class="content-card">
-      <h2>Recent Books</h2>
-      <div class="book-list">
-        <div class="book-item">
-          <img src="assets/book-cover.jpg" alt="Book cover">
+      <div class="card-header-row">
+        <h2>Recently Added</h2>
+        <a routerLink="/mybooks" class="card-link">View all</a>
+      </div>
+
+      <div class="recent-loading" *ngIf="recentBooksLoading">
+        <div class="skeleton-item" *ngFor="let i of [1,2,3]"></div>
+      </div>
+
+      <div class="recent-empty" *ngIf="!recentBooksLoading && !isLoggedIn">
+        <p>Sign in to see your library</p>
+      </div>
+
+      <div class="recent-empty" *ngIf="!recentBooksLoading && isLoggedIn && recentBooks.length === 0">
+        <p>No books in your library yet</p>
+      </div>
+
+      <div class="book-list" *ngIf="!recentBooksLoading && recentBooks.length > 0">
+        <div class="book-item" *ngFor="let book of recentBooks">
+          <div class="recent-book-cover">
+            <img *ngIf="book.cover" [src]="'data:image/jpeg;base64,' + book.cover" [alt]="book.title">
+            <img *ngIf="!book.cover && book.coverUrl" [src]="book.coverUrl" [alt]="book.title">
+            <div *ngIf="!book.cover && !book.coverUrl" class="recent-book-emoji">📚</div>
+          </div>
           <div class="book-info">
-            <h4>The Great Gatsby</h4>
-            <p>Page 145 of 180</p>
+            <h4>{{ book.title }}</h4>
+            <p class="book-author">{{ book.authorName }}</p>
+            <span class="genre-badge" *ngIf="book.genre">{{ book.genre }}</span>
           </div>
         </div>
-        <!-- Add more book items -->
       </div>
     </div>
 

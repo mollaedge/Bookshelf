@@ -1,6 +1,8 @@
 import { Component, OnInit } from '@angular/core';
 import { BooksService, Book, PageResponse } from '../../service/book/books.service';
-import { Router } from '@angular/router';
+import { ProfileService } from '../../service/profile/profile.service';
+import { AuthStateService } from '../../service/auth/auth-state.service';
+import { UserDashboardResponse } from '../../interfaces/user.interface';
 import { HttpErrorResponse } from '@angular/common/http';
 
 @Component({
@@ -15,20 +17,59 @@ export class DashComponent implements OnInit {
   loading: boolean = false;
   error: string = '';
 
+  userDashboard: UserDashboardResponse | null = null;
+  dashboardLoading: boolean = false;
+  isLoggedIn: boolean = false;
+
+  recentBooks: Book[] = [];
+  recentBooksLoading: boolean = false;
+
   constructor(
     private booksService: BooksService,
-    private router: Router
+    private profileService: ProfileService,
+    private authState: AuthStateService
   ) {}
 
   ngOnInit(): void {
     this.loadRecommendedBooks();
+
+    this.isLoggedIn = !!this.authState.getCurrentUser();
+    if (this.isLoggedIn) {
+      this.loadUserDashboard();
+      this.loadRecentBooks();
+    }
+  }
+
+  loadUserDashboard(): void {
+    this.dashboardLoading = true;
+    this.profileService.getDashboard().subscribe({
+      next: (data) => {
+        this.userDashboard = data;
+        this.dashboardLoading = false;
+      },
+      error: () => {
+        this.dashboardLoading = false;
+      }
+    });
+  }
+
+  loadRecentBooks(): void {
+    this.recentBooksLoading = true;
+    this.booksService.getRecentBooks(3).subscribe({
+      next: (response) => {
+        this.recentBooks = response.content;
+        this.recentBooksLoading = false;
+      },
+      error: () => {
+        this.recentBooksLoading = false;
+      }
+    });
   }
 
   loadRecommendedBooks(): void {
     this.loading = true;
     this.error = '';
 
-    // Get all books with pagination (first page, larger size to show more)
     this.booksService.getAllShareableBooks(0, 50).subscribe({
       next: (response: PageResponse<Book>) => {
         this.recommendedBooks = response.content;
@@ -36,14 +77,12 @@ export class DashComponent implements OnInit {
         this.loading = false;
       },
       error: (err) => {
-        if (err instanceof HttpErrorResponse && err.status === 403) {
-          this.router.navigate(['/auth']);
-          return;
-        }
-        console.log(err.message);
-        this.error = 'Failed to load books.';
         this.loading = false;
-        console.error('Error loading books:', err);
+        if (err instanceof HttpErrorResponse && err.status === 0) {
+          this.error = 'Service is temporarily unavailable. Please try again later.';
+        } else {
+          this.error = 'Failed to load books. Please try again.';
+        }
       }
     });
   }
@@ -51,17 +90,25 @@ export class DashComponent implements OnInit {
   requestBook(bookId: number): void {
     this.booksService.requestBook(bookId).subscribe({
       next: () => {
-        // Optionally show success message or refresh the list
         alert('Book requested successfully!');
       },
       error: (err) => {
-        if (err instanceof HttpErrorResponse && err.status === 403) {
-          this.router.navigate(['/auth']);
-          return;
+        if (err instanceof HttpErrorResponse && err.status === 0) {
+          alert('Service is temporarily unavailable. Please try again later.');
+        } else {
+          alert('Failed to request book. Please try again.');
         }
-        console.error('Error requesting book:', err);
-        alert('Failed to request book. Please try again.');
       }
     });
+  }
+
+  get maxStatValue(): number {
+    if (!this.userDashboard) return 1;
+    const { booksOwned, booksRead, currentlyBorrowed } = this.userDashboard.stats;
+    return Math.max(booksOwned, booksRead, currentlyBorrowed, 1);
+  }
+
+  readBarWidth(value: number): number {
+    return Math.round((value / this.maxStatValue) * 100);
   }
 }

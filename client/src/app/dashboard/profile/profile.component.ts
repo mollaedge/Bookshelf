@@ -1,7 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { ProfileService, UserProfileResponse } from '../../service/profile/profile.service';
-import { AuthStateService } from '../../service/auth/auth-state.service';
-import { Router } from '@angular/router';
+import { UserDashboardResponse } from '../../interfaces/user.interface';
 
 interface UserProfile {
   name: string;
@@ -10,23 +9,22 @@ interface UserProfile {
   avatar: string;
   bio: string;
   location: string;
-  booksRead: number;
-  currentlyReading: number;
-  toRead: number;
   favoriteGenres: string[];
 }
 
-interface ReadingActivity {
+interface ProfileReadingActivity {
   month: string;
   booksRead: number;
 }
 
-interface GenreDistribution {
+interface ProfileGenreDistribution {
   genre: string;
   count: number;
   percentage: number;
   color: string;
 }
+
+const GENRE_COLORS = ['#1976D2', '#64B5F6', '#0D47A1', '#90CAF9', '#BBDEFB', '#42A5F5', '#1565C0'];
 
 @Component({
   selector: 'app-profile',
@@ -40,110 +38,116 @@ export class ProfileComponent implements OnInit {
     email: '',
     joinDate: new Date(),
     avatar: '',
-    bio: 'Passionate reader and book enthusiast. Love exploring different genres and sharing my reading experiences.',
+    bio: '',
     location: '',
-    booksRead: 127,
-    currentlyReading: 3,
-    toRead: 45,
-    favoriteGenres: ['Fiction', 'Science Fiction', 'Mystery', 'Biography']
+    favoriteGenres: []
   };
 
   isLoading = true;
-  backendProfile: UserProfileResponse | null = null;
+  profileError: string = '';
+  saveError: string = '';
+  dashboard: UserDashboardResponse | null = null;
 
-  stats = [
-    { label: 'Books Read', value: 127, icon: '📚', color: '#4CAF50' },
-    { label: 'Currently Reading', value: 3, icon: '📖', color: '#2196F3' },
-    { label: 'Want to Read', value: 45, icon: '⭐', color: '#FF9800' },
-    { label: 'Reading Streak', value: 15, icon: '🔥', color: '#F44336', suffix: ' days' }
-  ];
+  stats: { label: string; value: number | string; icon: string; color: string; suffix?: string }[] = [];
 
-  readingActivity: ReadingActivity[] = [
-    { month: 'Jan', booksRead: 8 },
-    { month: 'Feb', booksRead: 12 },
-    { month: 'Mar', booksRead: 15 },
-    { month: 'Apr', booksRead: 10 },
-    { month: 'May', booksRead: 14 },
-    { month: 'Jun', booksRead: 11 },
-    { month: 'Jul', booksRead: 13 },
-    { month: 'Aug', booksRead: 16 },
-    { month: 'Sep', booksRead: 9 },
-    { month: 'Oct', booksRead: 12 },
-    { month: 'Nov', booksRead: 7 },
-    { month: 'Dec', booksRead: 0 }
-  ];
+  readingActivity: ProfileReadingActivity[] = [];
 
-  genreDistribution: GenreDistribution[] = [
-    { genre: 'Fiction', count: 45, percentage: 35, color: '#1976D2' },
-    { genre: 'Science Fiction', count: 30, percentage: 24, color: '#64B5F6' },
-    { genre: 'Mystery', count: 25, percentage: 20, color: '#0D47A1' },
-    { genre: 'Biography', count: 15, percentage: 12, color: '#90CAF9' },
-    { genre: 'Other', count: 12, percentage: 9, color: '#BBDEFB' }
-  ];
+  genreDistribution: ProfileGenreDistribution[] = [];
 
   recentAchievements = [
-    { title: 'Bookworm', description: 'Read 100 books', icon: '🏆', date: new Date('2024-11-01') },
+    { title: 'Bookworm', description: 'Read 100 books', icon: '📚', date: new Date('2024-11-01') },
     { title: 'Speed Reader', description: 'Finished 5 books in a week', icon: '⚡', date: new Date('2024-10-15') },
     { title: 'Genre Explorer', description: 'Read books from 10 different genres', icon: '🌟', date: new Date('2024-09-20') },
     { title: 'Consistent Reader', description: '30-day reading streak', icon: '📅', date: new Date('2024-08-10') }
   ];
 
   readingGoals = [
-    { title: 'Annual Reading Goal', current: 127, target: 150, unit: 'books' },
-    { title: 'Monthly Goal', current: 7, target: 12, unit: 'books' },
-    { title: 'Reading Time', current: 85, target: 100, unit: 'hours' }
+    { title: 'Annual Reading Goal', current: 0, target: 150, unit: 'books' },
+    { title: 'Monthly Goal', current: 0, target: 12, unit: 'books' }
   ];
 
   isEditMode = false;
   editedUser: UserProfile = { ...this.user };
 
-  constructor(
-    private profileService: ProfileService,
-    private authState: AuthStateService,
-    private router: Router
-  ) {}
+  constructor(private profileService: ProfileService) {}
 
   ngOnInit(): void {
-    // Try to load profile immediately - will use cached token or fetch from backend
     this.loadProfile();
   }
 
   loadProfile(): void {
     this.isLoading = true;
-    
-    this.profileService.getProfile().subscribe({
-      next: (profile) => {
-        this.backendProfile = profile;
-        this.user = {
-          name: profile.fullName || `${profile.firstname} ${profile.lastname}`,
-          email: profile.email,
-          joinDate: profile.dateOfBirth ? new Date(profile.dateOfBirth) : new Date(),
-          avatar: '',
-          bio: this.user.bio,
-          location: this.user.location,
-          booksRead: this.user.booksRead,
-          currentlyReading: this.user.currentlyReading,
-          toRead: this.user.toRead,
-          favoriteGenres: this.user.favoriteGenres
-        };
-        this.editedUser = { ...this.user };
+    this.profileError = '';
+
+    this.profileService.getDashboard().subscribe({
+      next: (data) => {
+        this.dashboard = data;
+        this.mapDashboardToView(data);
         this.isLoading = false;
       },
-      error: (error) => {
-        // If profile fetch fails (no auth), redirect to login
+      error: () => {
         this.isLoading = false;
-        this.router.navigate(['/auth']);
+        this.profileError = 'Failed to load profile. Please try again.';
       }
     });
   }
 
+  private mapDashboardToView(data: UserDashboardResponse): void {
+    this.user = {
+      name: data.fullName || `${data.firstname} ${data.lastname}`,
+      email: data.email,
+      joinDate: data.joinDate ? new Date(data.joinDate) : new Date(),
+      avatar: '',
+      bio: data.bio ?? '',
+      location: data.location ?? '',
+      favoriteGenres: data.genreDistribution.slice(0, 4).map(g => g.genre)
+    };
+    this.editedUser = { ...this.user };
+
+    this.stats = [
+      { label: 'Books Owned', value: data.stats.booksOwned, icon: '📚', color: '#4CAF50' },
+      { label: 'Currently Borrowed', value: data.stats.currentlyBorrowed, icon: '📖', color: '#2196F3' },
+      { label: 'Books Read', value: data.stats.booksRead, icon: '⭐', color: '#FF9800' },
+      { label: 'Reading Streak', value: data.readingStreak, icon: '🔥', color: '#F44336', suffix: ' days' }
+    ];
+
+    this.readingActivity = data.readingActivity.map(a => ({
+      month: this.formatMonth(a.month),
+      booksRead: a.booksRead
+    }));
+
+    const totalRead = data.genreDistribution.reduce((sum, g) => sum + g.count, 0);
+    this.genreDistribution = data.genreDistribution.map((g, i) => ({
+      genre: g.genre,
+      count: g.count,
+      percentage: totalRead > 0 ? Math.round((g.count / totalRead) * 100) : g.percentage,
+      color: GENRE_COLORS[i % GENRE_COLORS.length]
+    }));
+
+    this.readingGoals = [
+      { title: 'Annual Reading Goal', current: data.stats.booksRead, target: 150, unit: 'books' },
+      { title: 'Monthly Goal', current: data.stats.booksRead % 12, target: 12, unit: 'books' }
+    ];
+  }
+
+  /** Converts "YYYY-MM" to abbreviated month name e.g. "Jan" */
+  private formatMonth(yearMonth: string): string {
+    const [year, month] = yearMonth.split('-');
+    const date = new Date(+year, +month - 1);
+    return date.toLocaleString('default', { month: 'short' });
+  }
+
+  get booksRead(): number {
+    return this.dashboard?.stats?.booksRead ?? 0;
+  }
+
   getMaxReading(): number {
-    return Math.max(...this.readingActivity.map(a => a.booksRead));
+    const max = Math.max(...this.readingActivity.map(a => a.booksRead));
+    return max === 0 ? 1 : max;
   }
 
   getBarHeight(count: number): number {
-    const max = this.getMaxReading();
-    return (count / max) * 100;
+    return (count / this.getMaxReading()) * 100;
   }
 
   getProgressPercentage(current: number, target: number): number {
@@ -160,22 +164,20 @@ export class ProfileComponent implements OnInit {
   saveProfile(): void {
     this.user = { ...this.editedUser };
     this.isEditMode = false;
-    
-    // Update backend if needed
-    if (this.backendProfile) {
+
+    if (this.dashboard) {
       const updatedProfile: Partial<UserProfileResponse> = {
         firstname: this.user.name.split(' ')[0],
         lastname: this.user.name.split(' ').slice(1).join(' '),
         email: this.user.email
       };
-      
+
       this.profileService.updateProfile(updatedProfile).subscribe({
-        next: (profile) => {
-          console.log('Profile updated successfully:', profile);
-          this.backendProfile = profile;
+        next: () => {
+          this.saveError = '';
         },
-        error: (error) => {
-          console.error('Error updating profile:', error);
+        error: () => {
+          this.saveError = 'Failed to save profile. Please try again.';
         }
       });
     }
@@ -199,7 +201,7 @@ export class ProfileComponent implements OnInit {
     const joined = new Date(this.user.joinDate);
     const diffTime = Math.abs(now.getTime() - joined.getTime());
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    
+
     if (diffDays < 30) return `${diffDays} days`;
     if (diffDays < 365) return `${Math.floor(diffDays / 30)} months`;
     return `${Math.floor(diffDays / 365)} years`;

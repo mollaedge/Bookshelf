@@ -1,6 +1,7 @@
 package com.arturmolla.bookshelf.config;
 
 import com.arturmolla.bookshelf.config.exceptions.OperationNotPermittedException;
+import com.arturmolla.bookshelf.config.exceptions.RateLimitExceededException;
 import com.arturmolla.bookshelf.model.dto.ExceptionResponse;
 import com.arturmolla.bookshelf.model.enums.BusinessErrorCodes;
 import io.jsonwebtoken.ExpiredJwtException;
@@ -99,6 +100,20 @@ public class ConfigGlobalExceptionHandler {
                 .body(
                         ExceptionResponse
                                 .builder()
+                                .error(exp.getMessage())
+                                .build()
+                );
+    }
+
+    @ExceptionHandler(RateLimitExceededException.class)
+    public ResponseEntity<ExceptionResponse> handleException(RateLimitExceededException exp) {
+        return ResponseEntity
+                .status(HttpStatus.TOO_MANY_REQUESTS)
+                .body(
+                        ExceptionResponse
+                                .builder()
+                                .businessErrorCode(BusinessErrorCodes.RATE_LIMIT_EXCEEDED.getCode())
+                                .businessErrorDescription(BusinessErrorCodes.RATE_LIMIT_EXCEEDED.getDescription())
                                 .error(exp.getMessage())
                                 .build()
                 );

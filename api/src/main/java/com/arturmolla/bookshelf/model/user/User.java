@@ -50,6 +50,8 @@ public class User implements UserDetails, Principal {
     private String email;
     private String password;
     private String provider; // e.g., GOOGLE, LOCAL
+    private String bio;
+    private String location;
     private boolean accountLocked;
     private boolean enabled;
 

@@ -113,9 +113,15 @@ export class BooksService {
     return this.http.post(`${this.baseUrl}/borrow/${bookId}`, {});
   }
 
+  // Get recently added books from user's library
+  getRecentBooks(size: number = 3): Observable<PageResponse<Book>> {
+    return this.http.get<PageResponse<Book>>(`${this.baseUrl}/owner/recent?size=${size}`);
+  }
+
   // Search books from Google Books API
-  searchExternalBooks(query: string): Observable<any> {
-    const googleBooksUrl = `https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(query)}&maxResults=10`;
+  searchExternalBooks(query: string, page: number = 0, pageSize: number = 10): Observable<any> {
+    const startIndex = page * pageSize;
+    const googleBooksUrl = `https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(query)}&startIndex=${startIndex}&maxResults=${pageSize}`;
     return this.http.get(googleBooksUrl);
   }
 }

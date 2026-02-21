@@ -144,4 +144,12 @@ public class ControllerBook {
         serviceBook.deleteBookById(bookId, connectedUser);
         return ResponseEntity.noContent().build();
     }
+
+    @GetMapping("/owner/recent")
+    public ResponseEntity<PageResponse<DtoBookResponse>> getRecentBooks(
+            @RequestParam(defaultValue = "3") int size,
+            Authentication connectedUser
+    ) {
+        return ResponseEntity.ok(serviceBook.getRecentBooks(size, connectedUser));
+    }
 }
