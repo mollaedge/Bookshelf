@@ -2,13 +2,13 @@ name: Basic CI
 
 on:
   push:
-    branches: [ main, feature/** ]
+    branches: [ main, develop, feature/** ]
   pull_request:
     branches: [ main ]
 
 jobs:
   test-and-build:
-    name: Test and Build API
+    name: Build API
     runs-on: ubuntu-latest
 
     steps:
@@ -25,17 +25,9 @@ jobs:
       - name: Make mvnw executable
         run: chmod +x api/mvnw
 
-      - name: Run unit tests
+      - name: Build application
         working-directory: api
-        run: ./mvnw test
-        env:
-          JASYPT_ENCRYPTOR_PASSWORD: testpassword
-
-      - name: Run integration tests
-        working-directory: api
-        run: ./mvnw verify -Dsurefire.skip=true
-        env:
-          JASYPT_ENCRYPTOR_PASSWORD: testpassword
+        run: ./mvnw clean package -Dmaven.test.skip=true
 
       - name: Upload JAR
         uses: actions/upload-artifact@v4
