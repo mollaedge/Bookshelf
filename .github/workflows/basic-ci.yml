@@ -25,13 +25,17 @@ jobs:
       - name: Make mvnw executable
         run: chmod +x api/mvnw
 
-      - name: Run tests
+      - name: Run unit tests
         working-directory: api
-        run: ./mvnw clean test
+        run: ./mvnw test
+        env:
+          JASYPT_ENCRYPTOR_PASSWORD: testpassword
 
-      - name: Build application
+      - name: Run integration tests
         working-directory: api
-        run: ./mvnw clean compile package -DskipTests
+        run: ./mvnw verify -Dsurefire.skip=true
+        env:
+          JASYPT_ENCRYPTOR_PASSWORD: testpassword
 
       - name: Upload JAR
         uses: actions/upload-artifact@v4
