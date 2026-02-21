@@ -786,3 +786,38 @@
     100% { transform: rotate(360deg); }
   }
 }
+
+// Error Banner
+.error-banner {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  margin: 2rem auto;
+  max-width: 600px;
+  padding: 1rem 1.5rem;
+  background-color: #fff3f3;
+  border: 1px solid #f5c6cb;
+  border-radius: 8px;
+  color: #c0392b;
+
+  p {
+    margin: 0;
+    font-size: 0.95rem;
+  }
+
+  button {
+    padding: 0.4rem 1rem;
+    background-color: #c0392b;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.85rem;
+    white-space: nowrap;
+
+    &:hover {
+      background-color: #a93226;
+    }
+  }
+}

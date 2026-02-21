@@ -5,8 +5,19 @@
     <p>Loading profile...</p>
   </div>
 
+  <!-- Profile Load Error -->
+  <div class="error-banner" *ngIf="!isLoading && profileError">
+    <p>{{ profileError }}</p>
+    <button (click)="loadProfile()">Retry</button>
+  </div>
+
+  <!-- Save Error -->
+  <div class="error-banner" *ngIf="saveError && !isLoading">
+    <p>{{ saveError }}</p>
+  </div>
+
   <!-- Profile Content -->
-  <div *ngIf="!isLoading">
+  <div *ngIf="!isLoading && !profileError">
   <!-- Profile Header -->
   <div class="profile-header">
     <div class="header-background"></div>
@@ -138,8 +149,8 @@
               </circle>
             </svg>
             <div class="donut-center">
-              <div class="center-value">{{ user.booksRead }}</div>
-              <div class="center-label">Total Books</div>
+              <div class="center-value">{{ booksRead }}</div>
+              <div class="center-label">Books Read</div>
             </div>
           </div>
           

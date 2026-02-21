@@ -3,7 +3,6 @@ server:
 
 spring:
   datasource:
-    platform: postgres
     url: ${DB_URL}
     username: ${DB_USERNAME}
     password: ${DB_PASSWORD}
@@ -12,10 +11,11 @@ spring:
     database: POSTGRESQL
     show-sql: true
     hibernate:
-      ddl-auto: update
+      ddl-auto: validate
     properties:
       hibernate:
         format_sql: true
+        default_schema: public
     database-platform: org.hibernate.dialect.PostgreSQLDialect
   mail:
     host: localhost
@@ -32,6 +32,12 @@ spring:
         connectiontimeout: 5000
         timeout: 3000
         writetimeout: 5000
+  flyway:
+    default-schema: public
+    schemas: public
+  sql:
+    init:
+      platform: postgres
 
 application:
   security:

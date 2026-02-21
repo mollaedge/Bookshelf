@@ -2,6 +2,7 @@ import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from '../../../environments/environment';
+import { UserDashboardResponse } from '../../interfaces/user.interface';
 
 export interface UserProfileResponse {
   id: number;
@@ -19,16 +20,15 @@ export interface UserProfileResponse {
   providedIn: 'root'
 })
 export class ProfileService {
-  private apiUrl = `${environment.apiUrl}/app-profile/profile`;
+  private apiUrl = `${environment.apiUrl}/app-profile`;
 
-  // Note: Authorization headers are automatically added by AuthInterceptor
   constructor(private http: HttpClient) { }
 
-  getProfile(): Observable<UserProfileResponse> {
-    return this.http.get<UserProfileResponse>(this.apiUrl);
+  getDashboard(): Observable<UserDashboardResponse> {
+    return this.http.get<UserDashboardResponse>(`${this.apiUrl}/me`);
   }
 
   updateProfile(profile: Partial<UserProfileResponse>): Observable<UserProfileResponse> {
-    return this.http.put<UserProfileResponse>(this.apiUrl, profile);
+    return this.http.put<UserProfileResponse>(`${this.apiUrl}/profile`, profile);
   }
 }

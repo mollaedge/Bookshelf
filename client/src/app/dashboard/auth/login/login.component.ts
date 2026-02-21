@@ -1,9 +1,10 @@
 import { Component, OnInit, Inject, PLATFORM_ID } from '@angular/core';
-import { FormBuilder, FormGroup, Validators, FormControl } from '@angular/forms';
-import { Router } from '@angular/router';
+import { FormBuilder, FormGroup, Validators } from '@angular/forms';
+import { Router, ActivatedRoute } from '@angular/router';
 import { LoginService } from '../../../service/auth/login.service';
 import { environment } from '../../../../environments/environment';
 import { isPlatformBrowser } from '@angular/common';
+import { HttpErrorResponse } from '@angular/common/http';
 
 declare const google: any;
 declare global {
@@ -22,21 +23,30 @@ export class LoginComponent implements OnInit {
   loginForm!: FormGroup;
   hidePassword = true;
   isLoading = false;
+  errorMessage = '';
 
   isBrowser: boolean;
 
   constructor(
     private formBuilder: FormBuilder,
     private router: Router,
+    private route: ActivatedRoute,
     private loginService: LoginService,
     @Inject(PLATFORM_ID) platformId: Object
   ) {
     this.isBrowser = isPlatformBrowser(platformId);
   }
-  
+
   ngOnInit(): void {
     this.initLoginForm();
-    
+
+    // Show message if redirected due to service unavailability
+    this.route.queryParams.subscribe(params => {
+      if (params['reason'] === 'unavailable') {
+        this.errorMessage = 'The service is temporarily unavailable. Please try again later.';
+      }
+    });
+
     if (this.isBrowser) {
       setTimeout(() => {
         this.initGoogleSignIn();
@@ -112,20 +122,26 @@ export class LoginComponent implements OnInit {
   onSignIn(): void {
     if (this.loginForm.valid) {
       this.isLoading = true;
-      
+      this.errorMessage = '';
+
       const authRequest = {
         email: this.loginForm.value.email,
         password: this.loginForm.value.password
       };
-      
+
       this.loginService.authenticate(authRequest).subscribe({
         next: () => {
-          console.log('Authentication successful');
           this.router.navigate(['/dashboard']);
         },
-        error: (error) => {
-          console.error('Authentication failed:', error);
+        error: (error: HttpErrorResponse) => {
           this.isLoading = false;
+          if (error.status === 0) {
+            this.errorMessage = 'Unable to reach the server. Please check your connection or try again later.';
+          } else if (error.status === 401 || error.status === 403) {
+            this.errorMessage = 'Invalid email or password.';
+          } else {
+            this.errorMessage = 'Sign in failed. Please try again.';
+          }
         },
         complete: () => {
           this.isLoading = false;

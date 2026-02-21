@@ -33,15 +33,15 @@
         <!-- Search Results -->
         <div class="search-results" *ngIf="showSearchResults && searchResults.length">
           <div class="search-results-header">
-            <span>{{ searchResults.length }} results found</span>
+            <span>{{ firstResultIndex }}–{{ lastResultIndex }} of ~{{ totalItems }} results</span>
           </div>
           <div class="search-results-list">
-            <div 
-              class="search-result-item" 
+            <div
+              class="search-result-item"
               *ngFor="let book of searchResults"
               (click)="selectExternalBook(book)">
-              <img 
-                [src]="book.volumeInfo.imageLinks?.thumbnail || book.volumeInfo.imageLinks?.smallThumbnail || 'assets/default-book.png'" 
+              <img
+                [src]="book.volumeInfo.imageLinks?.thumbnail || book.volumeInfo.imageLinks?.smallThumbnail || 'assets/default-book.png'"
                 [alt]="book.volumeInfo.title"
                 class="result-thumbnail">
               <div class="result-info">
@@ -53,6 +53,23 @@
               </div>
               <button class="use-btn" type="button">Use This</button>
             </div>
+          </div>
+          <div class="search-pagination">
+            <button
+              class="pagination-btn"
+              type="button"
+              [disabled]="currentPage === 0 || isSearching"
+              (click)="prevPage()">
+              &lsaquo; Prev
+            </button>
+            <span class="pagination-info">Page {{ currentPage + 1 }} of {{ totalPages }}</span>
+            <button
+              class="pagination-btn"
+              type="button"
+              [disabled]="currentPage + 1 >= totalPages || isSearching"
+              (click)="nextPage()">
+              Next &rsaquo;
+            </button>
           </div>
         </div>
 

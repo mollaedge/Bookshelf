@@ -1,5 +1,6 @@
 package com.arturmolla.bookshelf.config;
 
+import com.arturmolla.bookshelf.config.exceptions.RateLimitExceededException;
 import io.github.bucket4j.Bandwidth;
 import io.github.bucket4j.Bucket;
 import io.github.bucket4j.Refill;
@@ -40,8 +41,7 @@ public class RateLimitFilter extends OncePerRequestFilter {
         if (bucket.tryConsume(1)) {
             filterChain.doFilter(request, response);
         } else {
-            response.setStatus(429);
-            response.getWriter().write("Too Many Requests");
+            throw new RateLimitExceededException();
         }
     }
 

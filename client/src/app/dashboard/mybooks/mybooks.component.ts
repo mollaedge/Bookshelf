@@ -1,8 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { BooksService, Book, RequestedBook, PageResponse } from '../../service/book/books.service';
 import { Observable } from 'rxjs';
-import { Router } from '@angular/router';
-import { HttpErrorResponse } from '@angular/common/http';
 import Swal from 'sweetalert2';
 
 @Component({
@@ -13,12 +11,12 @@ import Swal from 'sweetalert2';
 })
 export class MybooksComponent implements OnInit {
   activeTab: 'mybooks' | 'returned' | 'borrowed' | 'requested' = 'mybooks';
-  
+
   myBooks: Book[] = [];
   returnedBooks: Book[] = [];
   borrowedBooks: Book[] = [];
   requestedBooks: RequestedBook[] = [];
-  
+
   // Pagination properties
   currentPage: number = 0;
   pageSize: number = 15;
@@ -26,14 +24,13 @@ export class MybooksComponent implements OnInit {
   totalElements: number = 0;
   isFirstPage: boolean = true;
   isLastPage: boolean = true;
-  
+
   loading: boolean = false;
   error: string = '';
   showAddBookModal: boolean = false;
 
   constructor(
-    private booksService: BooksService,
-    private router: Router
+    private booksService: BooksService
   ) {}
 
   ngOnInit(): void {
@@ -52,7 +49,7 @@ export class MybooksComponent implements OnInit {
     this.currentPage = page;
 
     const serviceCall = this.getServiceCall(page);
-    
+
     serviceCall.subscribe({
       next: (response: PageResponse<Book | RequestedBook>) => {
         const filteredContent = this.filterContentByTab(response.content);
@@ -64,14 +61,8 @@ export class MybooksComponent implements OnInit {
         this.loading = false;
       },
       error: (err: any) => {
-        if (err instanceof HttpErrorResponse && err.status === 403) {
-          this.router.navigate(['/auth']);
-          return;
-        }
-        console.log(err.message);
         this.error = 'Failed to load data. Please try again.';
         this.loading = false;
-        console.error('Error loading data:', err);
       }
     });
   }
@@ -149,12 +140,7 @@ export class MybooksComponent implements OnInit {
         this.loadData(this.currentPage);
       },
       error: (err: any) => {
-        if (err instanceof HttpErrorResponse && err.status === 403) {
-          this.router.navigate(['/auth']);
-          return;
-        }
-        this.error = 'Failed to approve request.';
-        console.error('Error approving request:', err);
+        this.error = 'Failed to approve request. Please try again.';
       }
     });
   }
@@ -165,12 +151,7 @@ export class MybooksComponent implements OnInit {
         this.loadData(this.currentPage);
       },
       error: (err: any) => {
-        if (err instanceof HttpErrorResponse && err.status === 403) {
-          this.router.navigate(['/auth']);
-          return;
-        }
-        this.error = 'Failed to reject request.';
-        console.error('Error rejecting request:', err);
+        this.error = 'Failed to reject request. Please try again.';
       }
     });
   }
@@ -199,18 +180,13 @@ export class MybooksComponent implements OnInit {
             this.loadData(this.currentPage);
           },
           error: (err: any) => {
-            if (err instanceof HttpErrorResponse && err.status === 403) {
-              this.router.navigate(['/auth']);
-              return;
-            }
-            this.error = 'Failed to delete book.';
+            this.error = 'Failed to delete book. Please try again.';
             Swal.fire({
               title: 'Error!',
               text: 'Failed to delete the book. Please try again.',
               icon: 'error',
               confirmButtonText: 'OK'
             });
-            console.error('Error deleting book:', err);
           }
         });
       }

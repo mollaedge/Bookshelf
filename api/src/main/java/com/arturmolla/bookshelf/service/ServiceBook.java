@@ -202,6 +202,12 @@ public class ServiceBook {
         repositoryBook.deleteById(bookId);
     }
 
+    public PageResponse<DtoBookResponse> getRecentBooks(int size, Authentication connectedUser) {
+        User user = (User) connectedUser.getPrincipal();
+        Pageable pageable = PageRequest.of(0, Math.min(size, 10));
+        return mapPageToCustomWrapper(repositoryBook.findByOwnerOrderByCreatedDateDesc(user, pageable));
+    }
+
     // HELPER METHODS
 
     private PageResponse<DtoBorrowedBooksResponse> mapPageToCustomWrapperHistories(Page<EntityBookTransactionHistory> allBorrowedBooks) {

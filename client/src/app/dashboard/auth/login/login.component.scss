@@ -41,9 +41,13 @@
   }
   
   .error-message {
-    color: #dc3545;
+    color: #c0392b;
     font-size: 14px;
-    margin-top: 5px;
+    margin-bottom: 16px;
+    padding: 10px 14px;
+    background-color: #fff3f3;
+    border: 1px solid #f5c6cb;
+    border-radius: 4px;
   }
   
   .form-actions {

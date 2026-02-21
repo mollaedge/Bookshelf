@@ -11,7 +11,8 @@ public enum BusinessErrorCodes {
     NEW_PASSWORD_DOES_NOT_MATCH(301, HttpStatus.BAD_REQUEST, "New password does not match"),
     ACCOUNT_DISABLED(303, HttpStatus.FORBIDDEN, "User account disabled"),
     BAD_CREDENTIALS(304, HttpStatus.FORBIDDEN, "Login and / or password is incorrect"),
-    JWT_EXPIRED(305, HttpStatus.UNAUTHORIZED, "JWT token has expired");
+    JWT_EXPIRED(305, HttpStatus.UNAUTHORIZED, "JWT token has expired"),
+    RATE_LIMIT_EXCEEDED(429, HttpStatus.TOO_MANY_REQUESTS, "Too many requests. Please slow down and try again later.");
 
     @Getter
     private final int code;

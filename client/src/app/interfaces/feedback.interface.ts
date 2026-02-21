@@ -1,19 +1,26 @@
-export interface FeedbackCard {
-  id: string;
-  title: string;
-  description: string;
-  category: 'feature' | 'bug' | 'improvement' | 'other';
-  upvotes: number;
-  upvotedBy: string[];
-  comments: Comment[];
-  author: string;
-  createdAt: Date;
-  status: 'open' | 'under-review' | 'planned' | 'completed';
+export type FeedbackStatus = 'NEW' | 'IN_PROGRESS' | 'RESOLVED' | 'CLOSED';
+
+export interface CommentDto {
+  authorId: number;
+  fullName: string;
+  message: string;
+  createdAt: string;
 }
 
-export interface Comment {
-  id: string;
-  text: string;
-  author: string;
-  createdAt: Date;
+export interface AppFeedbackDto {
+  id: number;
+  title: string;
+  description: string;
+  status: FeedbackStatus;
+  upvoteCount: number;
+  upvotedByCurrentUser: boolean;
+  ownFeedback: boolean;
+  age: string;
+  author?: string;
+  comments: CommentDto[];
+}
+
+export interface AppFeedbackRequest {
+  title: string;
+  description: string;
 }

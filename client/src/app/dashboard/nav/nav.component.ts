@@ -54,6 +54,6 @@ export class NavComponent {
 
   logout(): void {
     this.authService.clearUser();
-    this.router.navigate(['/']);
+    this.router.navigate(['/auth']);
   }
 }
