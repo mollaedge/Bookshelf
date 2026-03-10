@@ -4,7 +4,6 @@ import com.arturmolla.bookshelf.config.exceptions.OperationNotPermittedException
 import com.arturmolla.bookshelf.model.dto.DtoSignalRequest;
 import com.arturmolla.bookshelf.model.dto.DtoStreamEvent;
 import com.arturmolla.bookshelf.model.dto.DtoStreamInfo;
-import com.arturmolla.bookshelf.model.dto.DtoStreamStartRequest;
 import com.arturmolla.bookshelf.model.enums.StreamEventType;
 import com.arturmolla.bookshelf.model.user.User;
 import com.arturmolla.bookshelf.service.stream.LiveStream;
@@ -48,7 +47,7 @@ public class ServiceStream {
      * @return an {@link SseEmitter} that keeps the host's connection alive and
      * delivers stream events to them in real time
      */
-    public SseEmitter startStream(DtoStreamStartRequest request, Authentication auth) {
+    public SseEmitter startStream(String title, Authentication auth) {
         User host = principal(auth);
 
         if (registry.hasStream(host.getId())) {
@@ -56,9 +55,9 @@ public class ServiceStream {
                     "You already have an active stream. Stop it before starting a new one.");
         }
 
-        LiveStream stream = new LiveStream(host.getId(), host.getFullName(), request.title());
+        LiveStream stream = new LiveStream(host.getId(), host.getFullName(), title);
         registry.register(stream);
-        log.info("Stream started: hostId={} title='{}'", host.getId(), request.title());
+        log.info("Stream started: hostId={} title='{}'", host.getId(), title);
 
         SseEmitter emitter = createEmitter(stream, host.getId());
         stream.addParticipant(host.getId(), host.getFullName(), emitter);
@@ -177,7 +176,8 @@ public class ServiceStream {
                 .streamId(hostId)
                 .actorId(sender.getId())
                 .actorName(sender.getFullName())
-                .payload(request.type() + ":" + request.payload()) // prefix type for FE parsing
+                .signalType(request.signalType())
+                .payload(request.payload())
                 .watcherCount(stream.getWatcherCount())
                 .build();
 
@@ -230,12 +230,20 @@ public class ServiceStream {
     /**
      * Creates an {@link SseEmitter} and wires up cleanup callbacks so the participant
      * is automatically removed from the stream on timeout or connection error.
+     * <p>
+     * An {@link java.util.concurrent.atomic.AtomicBoolean} ensures the cleanup
+     * body runs at most once, even if Tomcat fires both {@code onError} and
+     * {@code onCompletion} for the same emitter (which happens when
+     * {@code closeAll()} is called from {@code stopStream}).
      */
     private SseEmitter createEmitter(LiveStream stream, Long userId) {
         SseEmitter emitter = new SseEmitter(SSE_TIMEOUT_MS);
+        java.util.concurrent.atomic.AtomicBoolean cleaned = new java.util.concurrent.atomic.AtomicBoolean(false);
 
         Runnable cleanup = () -> {
-            if (!stream.hasParticipant(userId)) return; // already cleaned up
+            // Guard: only execute once regardless of how many callbacks fire
+            if (!cleaned.compareAndSet(false, true)) return;
+            if (!stream.hasParticipant(userId)) return;
 
             // Capture name BEFORE removing the participant
             String displayName = stream.getParticipantNames().getOrDefault(userId, "unknown");
@@ -270,8 +278,6 @@ public class ServiceStream {
 
         emitter.onTimeout(cleanup);
         emitter.onError(e -> cleanup.run());
-        // onCompletion fires for normal completions too (e.g. stopStream calling closeAll),
-        // so only run cleanup if the participant is still registered.
         emitter.onCompletion(cleanup);
 
         return emitter;

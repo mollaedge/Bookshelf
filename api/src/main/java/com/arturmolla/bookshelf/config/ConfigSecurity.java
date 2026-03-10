@@ -1,6 +1,7 @@
 package com.arturmolla.bookshelf.config;
 
 import com.arturmolla.bookshelf.security.JwtFilter;
+import jakarta.servlet.DispatcherType;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
@@ -38,24 +39,29 @@ public class ConfigSecurity {
                 .cors(Customizer.withDefaults())
                 .csrf(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(req ->
-                        req.requestMatchers(
+                        req
+                                // Async dispatches (SSE emitter callbacks) must never be re-evaluated
+                                // by the authorization filter — the SecurityContext is empty on those
+                                // threads and would cause AuthorizationDeniedException.
+                                .dispatcherTypeMatchers(DispatcherType.ASYNC).permitAll()
+                                .requestMatchers(
                                         "/google",
                                         "/auth/**",
                                         "/app-feedbacks",
                                         "/app-feedbacks/public",
                                         "/app-feedbacks/public/**",
                                         "/books/search",
-                                "/v3/api-docs",
-                                "/v3/api-docs/**",
-                                "/swagger-resources",
-                                "/swagger-resources/**",
-                                "/configuration/ui",
-                                "/configuration/security",
-                                "/swagger-ui/**",
-                                "/webjars/**",
-                                "/swagger-ui.html"
-                        ).permitAll().anyRequest()
-                            .authenticated()
+                                        "/v3/api-docs",
+                                        "/v3/api-docs/**",
+                                        "/swagger-resources",
+                                        "/swagger-resources/**",
+                                        "/configuration/ui",
+                                        "/configuration/security",
+                                        "/swagger-ui/**",
+                                        "/webjars/**",
+                                        "/swagger-ui.html"
+                                ).permitAll()
+                                .anyRequest().authenticated()
                 )
                 .sessionManagement(session ->
                         session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))

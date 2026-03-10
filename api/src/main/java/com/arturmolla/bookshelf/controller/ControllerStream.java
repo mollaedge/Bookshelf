@@ -2,21 +2,24 @@ package com.arturmolla.bookshelf.controller;
 
 import com.arturmolla.bookshelf.model.dto.DtoSignalRequest;
 import com.arturmolla.bookshelf.model.dto.DtoStreamInfo;
-import com.arturmolla.bookshelf.model.dto.DtoStreamStartRequest;
 import com.arturmolla.bookshelf.service.ServiceStream;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
@@ -74,6 +77,7 @@ import java.util.List;
 @RequiredArgsConstructor
 @RequestMapping("streams")
 @Tag(name = "Live Streaming")
+@Validated
 public class ControllerStream {
 
     private final ServiceStream serviceStream;
@@ -85,18 +89,24 @@ public class ControllerStream {
     /**
      * Start a new live stream for the authenticated user.
      * <p>
-     * Returns a long-lived SSE connection. The host stays connected here and
-     * receives all stream events (watchers joining/leaving, WebRTC signals).
-     * <p>
-     * Only ONE stream per user is allowed. Starting a second will return 403.
+     * Uses GET so the browser's native {@code EventSource} API can connect directly:
+     * <pre>
+     * const es = new EventSource('/streams/start?title=My+Stream');
+     * </pre>
+     * Returns a long-lived SSE connection. Only ONE stream per user is allowed.
+     *
+     * @param title the stream title (max 120 chars, required)
      */
-    @PostMapping(value = "/start", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
-    @Operation(summary = "Start a new live stream (one per user)")
+    @GetMapping(value = "/start", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+    @Operation(summary = "Start a new live stream (one per user) — SSE")
     public SseEmitter startStream(
-            @Valid @RequestBody DtoStreamStartRequest request,
+            @RequestParam
+            @NotBlank(message = "Stream title must not be blank")
+            @Size(max = 120, message = "Title must be at most 120 characters")
+            String title,
             Authentication connectedUser
     ) {
-        return serviceStream.startStream(request, connectedUser);
+        return serviceStream.startStream(title, connectedUser);
     }
 
     /**
@@ -208,7 +218,7 @@ public class ControllerStream {
      *
      * @param hostId the stream identifier (host's userId)
      */
-    @GetMapping("/{host-id}")
+    @GetMapping("/{host-id}/info")
     @Operation(summary = "Get metadata of a specific stream")
     public ResponseEntity<DtoStreamInfo> getStreamInfo(
             @PathVariable("host-id") Long hostId

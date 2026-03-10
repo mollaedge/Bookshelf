@@ -1,0 +1,50 @@
+@if (isOpen) {
+  <div class="modal-overlay" (click)="onClose()">
+    <div class="modal-content stream-modal" (click)="stopPropagation($event)">
+      <div class="modal-header">
+        <h2>
+          <i class="fas fa-broadcast-tower"></i>
+          Start Live Reading Stream
+        </h2>
+        <button class="close-modal" (click)="onClose()">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+      
+      <div class="modal-body">
+        <p class="stream-info">
+          <i class="fas fa-info-circle"></i>
+          Start broadcasting your reading session live! Give your stream a title so others know what you're reading.
+        </p>
+        
+        <div class="form-group">
+          <label for="streamTitle">
+            <i class="fas fa-heading"></i> Stream Title
+            <span class="required">*</span>
+          </label>
+          <input 
+            type="text" 
+            id="streamTitle" 
+            [(ngModel)]="streamTitle"
+            placeholder="e.g., Reading The Hobbit - Chapter 5"
+            maxlength="120"
+            class="form-control"
+            required
+            (keyup.enter)="onStartStream()">
+          <small class="char-count">{{ streamTitle.length }}/120 characters</small>
+        </div>
+      </div>
+      
+      <div class="modal-footer">
+        <button class="btn-cancel" (click)="onClose()">
+          <i class="fas fa-times-circle"></i>
+          Cancel
+        </button>
+        <button class="btn-start-streaming" (click)="onStartStream()" [disabled]="!streamTitle.trim()">
+          <i class="fas fa-broadcast-tower"></i>
+          Go Live
+        </button>
+      </div>
+    </div>
+  </div>
+}

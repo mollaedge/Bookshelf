@@ -26,6 +26,7 @@ import { BookpopupComponent } from './dashboard/mybooks/bookpopup/bookpopup.comp
 import { MybooksComponent } from './dashboard/mybooks/mybooks.component';
 import { HomeComponent } from './dashboard/home/home.component';
 import { CreatePostComponent } from './dashboard/home/create-post/create-post.component';
+import { StartStreamComponent } from './dashboard/home/start-stream/start-stream.component';
 
 @NgModule({
   declarations: [
@@ -41,7 +42,8 @@ import { CreatePostComponent } from './dashboard/home/create-post/create-post.co
     BookpopupComponent,
     MybooksComponent,
     HomeComponent,
-    CreatePostComponent
+    CreatePostComponent,
+    StartStreamComponent
   ],
   imports: [
     BrowserModule,
