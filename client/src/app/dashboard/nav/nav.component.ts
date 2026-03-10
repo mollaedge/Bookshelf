@@ -2,6 +2,7 @@ import { Component } from '@angular/core';
 import { Observable } from 'rxjs';
 import { Router } from '@angular/router';
 import { AuthStateService } from '../../service/auth/auth-state.service';
+import { NavigationTrackerService } from '../../service/navigation/navigation-tracker.service';
 import { trigger, transition, style, animate } from '@angular/animations';
 
 @Component({
@@ -26,10 +27,12 @@ export class NavComponent {
   isNavCollapsed = false;
   showAuthModal = false;
   isRegisterView = false;
+  showAddBookPopup = false;
 
   constructor(
     private authService: AuthStateService,
-    private router: Router
+    private router: Router,
+    private navigationTracker: NavigationTrackerService
   ) {
     this.user$ = this.authService.user$;
   }
@@ -53,7 +56,14 @@ export class NavComponent {
   }
 
   logout(): void {
+    // Clear the user session
     this.authService.clearUser();
-    this.router.navigate(['/auth']);
+    
+    // Navigate to the appropriate page after logout
+    const redirectUrl = this.navigationTracker.getPostLogoutRedirectUrl();
+    this.router.navigate([redirectUrl]);
   }
+
+  openAddBook(): void { this.showAddBookPopup = true; }
+  closeAddBook(): void { this.showAddBookPopup = false; }
 }

@@ -1,1 +1,65 @@
-<p>book works!</p>
+<div class="book-card" (click)="onCardClick()">
+  <!-- Hover Actions Overlay -->
+  <div class="action-overlay">
+    <button class="action-btn action-edit" (click)="onEdit($event)" title="Edit book">
+      <i class="fas fa-edit"></i>
+    </button>
+    <button class="action-btn action-archive" (click)="onArchive($event)" title="Archive book">
+      <i class="fas fa-archive"></i>
+    </button>
+    <button class="action-btn action-delete" (click)="onDelete($event)" title="Delete book">
+      <i class="fas fa-trash"></i>
+    </button>
+  </div>
+
+  <!-- Book Cover -->
+  <div class="book-cover">
+    <img *ngIf="book.coverUrl" [src]="book.coverUrl" [alt]="book.title">
+    <img *ngIf="!book.coverUrl && book.cover" [src]="'data:image/jpeg;base64,' + book.cover" [alt]="book.title">
+    <div *ngIf="!book.coverUrl && !book.cover" class="book-cover-placeholder">
+      <i class="fas fa-book-open"></i>
+    </div>
+    
+    <!-- Status Badges on Cover -->
+    <div class="cover-badges">
+      <span class="badge badge-favourite" *ngIf="book.favourite" title="Favourite">
+        <i class="fas fa-heart"></i>
+      </span>
+      <span class="badge badge-read" *ngIf="book.read" title="Read">
+        <i class="fas fa-check-circle"></i>
+      </span>
+    </div>
+  </div>
+
+  <!-- Book Info -->
+  <div class="book-info">
+    <h3 class="book-title">{{ book.title }}</h3>
+    <p class="book-author">
+      <i class="fas fa-user-edit"></i>
+      {{ book.authorName }}
+    </p>
+    
+    <div class="book-metadata">
+      <span class="metadata-item" *ngIf="book.genre">
+        <i class="fas fa-tag"></i>
+        {{ book.genre }}
+      </span>
+      <span class="metadata-item" *ngIf="book.rate">
+        <i class="fas fa-star"></i>
+        {{ book.rate }}
+      </span>
+    </div>
+
+    <p class="book-synopsis" *ngIf="book.synopsis">{{ book.synopsis }}</p>
+    
+    <!-- Bottom Badges -->
+    <div class="status-badges">
+      <span class="badge-pill badge-archived" *ngIf="book.archived">
+        <i class="fas fa-archive"></i> Archived
+      </span>
+      <span class="badge-pill badge-shareable" *ngIf="book.shareable">
+        <i class="fas fa-share-alt"></i> Shareable
+      </span>
+    </div>
+  </div>
+</div>

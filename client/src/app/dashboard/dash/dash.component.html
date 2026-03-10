@@ -113,7 +113,7 @@
     <div class="content-card">
       <div class="card-header-row">
         <h2>Recently Added</h2>
-        <a routerLink="/mybooks" class="card-link">View all</a>
+        <a routerLink="/profile" fragment="books" class="card-link">View all</a>
       </div>
 
       <div class="recent-loading" *ngIf="recentBooksLoading">
@@ -131,9 +131,9 @@
       <div class="book-list" *ngIf="!recentBooksLoading && recentBooks.length > 0">
         <div class="book-item" *ngFor="let book of recentBooks">
           <div class="recent-book-cover">
-            <img *ngIf="book.cover" [src]="'data:image/jpeg;base64,' + book.cover" [alt]="book.title">
-            <img *ngIf="!book.cover && book.coverUrl" [src]="book.coverUrl" [alt]="book.title">
-            <div *ngIf="!book.cover && !book.coverUrl" class="recent-book-emoji">📚</div>
+            <img *ngIf="book.coverUrl" [src]="book.coverUrl" [alt]="book.title">
+            <img *ngIf="!book.coverUrl && book.cover" [src]="'data:image/jpeg;base64,' + book.cover" [alt]="book.title">
+            <div *ngIf="!book.coverUrl && !book.cover" class="recent-book-emoji">📚</div>
           </div>
           <div class="book-info">
             <h4>{{ book.title }}</h4>
@@ -188,9 +188,9 @@
           <tr *ngFor="let book of recommendedBooks">
             <td>
               <div class="table-book-cover">
-                <img *ngIf="book.cover" [src]="'data:image/jpeg;base64,' + book.cover" [alt]="book.title">
-                <img *ngIf="!book.cover && book.coverUrl" [src]="book.coverUrl" [alt]="book.title">
-                <div *ngIf="!book.cover && !book.coverUrl" class="table-book-emoji">📚</div>
+                <img *ngIf="book.coverUrl" [src]="book.coverUrl" [alt]="book.title">
+                <img *ngIf="!book.coverUrl && book.cover" [src]="'data:image/jpeg;base64,' + book.cover" [alt]="book.title">
+                <div *ngIf="!book.coverUrl && !book.cover" class="table-book-emoji">📚</div>
               </div>
             </td>
             <td>

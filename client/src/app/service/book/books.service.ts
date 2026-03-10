@@ -43,6 +43,26 @@ export interface RequestedBook {
   coverUrl?: string; // URL to the cover image
 }
 
+export enum BookSearchSource {
+  GOOGLE_BOOKS = 'GOOGLE_BOOKS',
+  OPEN_LIBRARY = 'OPEN_LIBRARY'
+}
+
+export interface BookSearchResultDto {
+  title: string;
+  authors: string[];
+  isbn: string;
+  publishedDate: string;
+  synopsis: string;
+  genre: string;
+  pageCount: number;
+  coverUrl: string;
+  publisher?: string;
+  externalId?: string;
+  source: BookSearchSource;
+  previewLink?: string;
+}
+
 @Injectable({
   providedIn: 'root'
 })
@@ -113,15 +133,34 @@ export class BooksService {
     return this.http.post(`${this.baseUrl}/borrow/${bookId}`, {});
   }
 
+  // Return a borrowed book
+  returnBook(bookId: number): Observable<any> {
+    return this.http.post(`${this.baseUrl}/return/${bookId}`, {});
+  }
+
   // Get recently added books from user's library
   getRecentBooks(size: number = 3): Observable<PageResponse<Book>> {
     return this.http.get<PageResponse<Book>>(`${this.baseUrl}/owner/recent?size=${size}`);
   }
 
-  // Search books from Google Books API
+  // Search books from external sources (Google Books, Open Library)
+  searchBooks(query: string, source: BookSearchSource, page: number = 0, size: number = 15): Observable<PageResponse<BookSearchResultDto>> {
+    return this.http.get<PageResponse<BookSearchResultDto>>(`${this.baseUrl}/search`, {
+      params: { query, source, page: page.toString(), size: size.toString() }
+    });
+  }
+
+  // Search books from Google Books API (deprecated - use searchBooks instead)
   searchExternalBooks(query: string, page: number = 0, pageSize: number = 10): Observable<any> {
     const startIndex = page * pageSize;
     const googleBooksUrl = `https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(query)}&startIndex=${startIndex}&maxResults=${pageSize}`;
     return this.http.get(googleBooksUrl);
+  }
+
+  // Upload book cover image
+  uploadBookCover(bookId: number, file: File): Observable<any> {
+    const formData = new FormData();
+    formData.append('file', file);
+    return this.http.post(`${this.baseUrl}/${bookId}/cover`, formData);
   }
 }

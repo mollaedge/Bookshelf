@@ -2,15 +2,20 @@ package com.arturmolla.bookshelf.service.mapper;
 
 import com.arturmolla.bookshelf.model.dto.DtoBookRequest;
 import com.arturmolla.bookshelf.model.dto.DtoBookResponse;
+import com.arturmolla.bookshelf.model.dto.DtoBookUpdateRequest;
 import com.arturmolla.bookshelf.model.dto.DtoBorrowedBooksResponse;
 import com.arturmolla.bookshelf.model.dto.DtoRequestedBooksResponse;
 import com.arturmolla.bookshelf.model.entity.EntityBook;
 import com.arturmolla.bookshelf.model.entity.EntityBookTransactionHistory;
-import com.arturmolla.bookshelf.service.utils.UtilsFile;
+import com.arturmolla.bookshelf.service.ServiceFileStorage;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
 @Component
+@RequiredArgsConstructor
 public class MapperBook {
+
+    private final ServiceFileStorage serviceFileStorage;
 
     public EntityBook toEntityBook(DtoBookRequest request) {
         return EntityBook.builder()
@@ -29,6 +34,19 @@ public class MapperBook {
                 .build();
     }
 
+    public void updateEntityFromRequest(EntityBook book, DtoBookUpdateRequest request) {
+        if (request.title() != null) book.setTitle(request.title());
+        if (request.authorName() != null) book.setAuthorName(request.authorName());
+        if (request.isbn() != null) book.setIsbn(request.isbn());
+        if (request.synopsis() != null) book.setSynopsis(request.synopsis());
+        if (request.genre() != null) book.setGenre(request.genre());
+        if (request.coverUrl() != null) book.setCoverUrl(request.coverUrl());
+        if (request.favourite() != null) book.setFavourite(request.favourite());
+        if (request.archived() != null) book.setArchived(request.archived());
+        if (request.shareable() != null) book.setShareable(request.shareable());
+        if (request.read() != null) book.setRead(request.read());
+    }
+
     public DtoBookResponse toDtoBookResponse(EntityBook entity) {
         return DtoBookResponse.builder()
                 .id(entity.getId())
@@ -42,7 +60,7 @@ public class MapperBook {
                 .shareable(entity.getShareable())
                 .read(entity.getRead())
                 .owner(entity.getOwner().getFullName())
-                .cover(UtilsFile.readFileFromLocation(entity.getCover()))
+                .cover(serviceFileStorage.loadFile(entity.getId()))
                 .coverUrl(entity.getCoverUrl())
                 .genre(entity.getGenre())
                 .build();
@@ -70,7 +88,7 @@ public class MapperBook {
                 .requested(history.getRequested())
                 .requestApproved(history.getRequestApproved())
                 .requesterName(history.getUser().getFullName())
-                .cover(UtilsFile.readFileFromLocation(history.getBook().getCover()))
+                .cover(serviceFileStorage.loadFile(history.getBook().getId()))
                 .coverUrl(history.getBook().getCoverUrl())
                 .build();
     }

@@ -33,7 +33,30 @@ export class DashComponent implements OnInit {
   ngOnInit(): void {
     this.loadRecommendedBooks();
 
+    // Set initial login state
     this.isLoggedIn = !!this.authState.getCurrentUser();
+    
+    let isInitialLoad = true;
+    this.authState.user$.subscribe(user => {
+      const wasLoggedIn = this.isLoggedIn;
+      this.isLoggedIn = !!user;
+      
+      if (!isInitialLoad) {
+        // User logged in - load user-specific data
+        if (!wasLoggedIn && this.isLoggedIn) {
+          this.loadUserDashboard();
+          this.loadRecentBooks();
+        }
+        // User logged out - clear user-specific data
+        else if (wasLoggedIn && !this.isLoggedIn) {
+          this.userDashboard = null;
+          this.recentBooks = [];
+        }
+      }
+      isInitialLoad = false;
+    });
+    
+    // Load initial user-specific data if logged in
     if (this.isLoggedIn) {
       this.loadUserDashboard();
       this.loadRecentBooks();

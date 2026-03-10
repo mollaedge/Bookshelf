@@ -20,10 +20,12 @@ import { AboutComponent } from './dashboard/about/about.component';
 import { NavComponent } from './dashboard/nav/nav.component';
 import { LoginComponent } from './dashboard/auth/login/login.component';
 import { RegisterComponent } from './dashboard/auth/register/register.component';
-import { MybooksComponent } from './dashboard/mybooks/mybooks.component';
+import { ProfileComponent } from './dashboard/profile/profile.component';
 import { BookComponent } from './dashboard/mybooks/book/book.component';
 import { BookpopupComponent } from './dashboard/mybooks/bookpopup/bookpopup.component';
-import { ProfileComponent } from './dashboard/profile/profile.component';
+import { MybooksComponent } from './dashboard/mybooks/mybooks.component';
+import { HomeComponent } from './dashboard/home/home.component';
+import { CreatePostComponent } from './dashboard/home/create-post/create-post.component';
 
 @NgModule({
   declarations: [
@@ -34,10 +36,12 @@ import { ProfileComponent } from './dashboard/profile/profile.component';
     NavComponent,
     LoginComponent,
     RegisterComponent,
-    MybooksComponent,
+    ProfileComponent,
     BookComponent,
     BookpopupComponent,
-    ProfileComponent
+    MybooksComponent,
+    HomeComponent,
+    CreatePostComponent
   ],
   imports: [
     BrowserModule,

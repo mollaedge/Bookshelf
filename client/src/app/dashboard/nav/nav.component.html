@@ -10,13 +10,19 @@
     </button>
 
     <div class="nav-links">
+      @if (user$ | async) {
+        <button class="btn-add-book-nav" (click)="openAddBook()" [title]="isNavCollapsed ? 'Add Book' : ''">
+          <i class="fas fa-plus"></i>
+          <span *ngIf="!isNavCollapsed">Add Book</span>
+        </button>
+      }
       <a routerLink="/home" routerLinkActive="active" [title]="isNavCollapsed ? 'Home' : ''">
         <i class="fas fa-home"></i>
         <span *ngIf="!isNavCollapsed">Home</span>
       </a>
-      <a routerLink="/mybooks" routerLinkActive="active" [title]="isNavCollapsed ? 'My Books' : ''">
-        <i class="fas fa-book"></i>
-        <span *ngIf="!isNavCollapsed">My Books</span>
+      <a routerLink="/dashboard" routerLinkActive="active" [title]="isNavCollapsed ? 'Dashboard' : ''">
+        <i class="fas fa-tachometer-alt"></i>
+        <span *ngIf="!isNavCollapsed">Dashboard</span>
       </a>
       <a routerLink="/about" routerLinkActive="active" [title]="isNavCollapsed ? 'About' : ''">
         <i class="fas fa-info-circle"></i>
@@ -51,6 +57,14 @@
     <router-outlet></router-outlet>
   </main>
 </div>
+
+<app-bookpopup
+  [isOpen]="showAddBookPopup"
+  [mode]="'add'"
+  [book]="null"
+  (closePopup)="closeAddBook()"
+  (bookSaved)="closeAddBook()">
+</app-bookpopup>
 
 <!-- Auth Modal Overlay -->
 <div class="auth-modal" [class.active]="showAuthModal">

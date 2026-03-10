@@ -4,6 +4,7 @@ import com.arturmolla.bookshelf.model.common.PageResponse;
 import com.arturmolla.bookshelf.model.dto.AppFeedbackDto;
 import com.arturmolla.bookshelf.model.dto.AppFeedbackRequest;
 import com.arturmolla.bookshelf.model.dto.CommentDto;
+import com.arturmolla.bookshelf.model.dto.PublicAppFeedbackDto;
 import com.arturmolla.bookshelf.model.enums.AppFeedbackStatus;
 import com.arturmolla.bookshelf.service.AppFeedbackService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -130,5 +131,22 @@ public class ControllerAppFeedback {
             Authentication connectedUser
     ) {
         return ResponseEntity.ok(appFeedbackService.getAllByStatus(status, page, size, connectedUser));
+    }
+
+    @GetMapping("/public")
+    @Operation(summary = "Get all feedbacks publicly (no auth required), with author info")
+    public ResponseEntity<PageResponse<PublicAppFeedbackDto>> getPublicFeedbacks(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "15") int size
+    ) {
+        return ResponseEntity.ok(appFeedbackService.getPublicFeedbacks(page, size));
+    }
+
+    @GetMapping("/public/{id}")
+    @Operation(summary = "Get a single feedback publicly (no auth required), with author and comments")
+    public ResponseEntity<PublicAppFeedbackDto> getPublicFeedbackById(
+            @PathVariable Long id
+    ) {
+        return ResponseEntity.ok(appFeedbackService.getPublicFeedbackById(id));
     }
 }

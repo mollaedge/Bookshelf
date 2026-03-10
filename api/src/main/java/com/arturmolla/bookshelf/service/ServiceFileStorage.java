@@ -1,74 +1,163 @@
 package com.arturmolla.bookshelf.service;
 
-import lombok.NonNull;
+import com.arturmolla.bookshelf.model.entity.EntityBookCover;
+import com.arturmolla.bookshelf.repository.RepositoryBookCover;
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.io.File;
+import javax.imageio.IIOImage;
+import javax.imageio.ImageIO;
+import javax.imageio.ImageWriteParam;
+import javax.imageio.ImageWriter;
+import javax.imageio.stream.ImageOutputStream;
+import java.awt.*;
+import java.awt.image.BufferedImage;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
+import java.time.LocalDateTime;
+import java.util.Iterator;
 
 @Service
 @Slf4j
 @RequiredArgsConstructor
 public class ServiceFileStorage {
 
-    @Value("${application.file.uploads.photos-output-path}")
-    private String fileUploadPath;
+    /**
+     * Files larger than this threshold will be compressed before storage.
+     */
+    private static final long COMPRESS_THRESHOLD_BYTES = 2 * 1024 * 1024; // 2 MB
 
-    public String saveFile(
-            @NonNull MultipartFile sourceFile,
-            @NonNull Long userId
-    ) {
-        final String fileUploadSubPath = "users" + File.separator + userId;
-        return uploadFile(sourceFile, fileUploadSubPath);
-    }
+    /**
+     * Maximum dimension (width or height) after downscaling.
+     */
+    private static final int MAX_DIMENSION = 1200;
 
-    private String uploadFile(
-            @NonNull MultipartFile sourceFile,
-            @NonNull String fileUploadSubPath
-    ) {
-        final String finalUploadPath = fileUploadPath
-                + File.separator
-                + fileUploadSubPath;
-        File targetFolder = new File(finalUploadPath);
-        if (!targetFolder.exists()) {
-            boolean folderCreated = targetFolder.mkdirs();
-            if (!folderCreated) {
-                log.warn("Failed to create the target folder");
-                return null;
-            }
-        }
-        final String fileExtension = getFileExtension(sourceFile.getOriginalFilename());
-        String targetFilePath = finalUploadPath
-                + File.separator
-                + System.currentTimeMillis()
-                + "."
-                + fileExtension;
-        Path targetPath = Paths.get(targetFilePath);
+    /**
+     * JPEG quality for compressed output (0.0 – 1.0).
+     */
+    private static final float JPEG_QUALITY = 0.85f;
+
+    private final RepositoryBookCover repositoryBookCover;
+
+    /**
+     * Saves (or replaces) the cover image for the given book in the database.
+     * Images larger than {@value #COMPRESS_THRESHOLD_BYTES} bytes are automatically
+     * scaled down and re-encoded as JPEG before storage.
+     *
+     * @param file   the uploaded multipart file
+     * @param bookId the id of the book this cover belongs to
+     * @throws IllegalArgumentException if the file cannot be read or processed
+     */
+    @Transactional
+    public void saveFile(MultipartFile file, Long bookId) {
         try {
-            Files.write(targetPath, sourceFile.getBytes());
-            log.info("File was saved to the target location {}", targetFilePath);
-            return targetFilePath;
+            byte[] bytes = file.getBytes();
+            String contentType = file.getContentType();
+
+            if (bytes.length > COMPRESS_THRESHOLD_BYTES) {
+                log.info("Cover for bookId={} is {} bytes — compressing", bookId, bytes.length);
+                bytes = compressImage(bytes);
+                contentType = "image/jpeg";
+                log.info("Cover for bookId={} compressed to {} bytes", bookId, bytes.length);
+            }
+
+            EntityBookCover cover = repositoryBookCover.findByBookId(bookId)
+                    .orElseGet(() -> EntityBookCover.builder().bookId(bookId).build());
+
+            cover.setData(bytes);
+            cover.setContentType(contentType);
+            cover.setFileName(file.getOriginalFilename());
+            cover.setFileSize((long) bytes.length);
+            cover.setUploadedAt(LocalDateTime.now());
+
+            repositoryBookCover.save(cover);
+            log.info("Cover image saved to DB for bookId={}, final size={} bytes", bookId, bytes.length);
         } catch (IOException e) {
-            log.error("File was not saved {}", e.getMessage());
+            log.error("Failed to process uploaded file: {}", e.getMessage());
+            throw new IllegalArgumentException("Could not process uploaded file", e);
         }
-        return null;
     }
 
-    private String getFileExtension(String filename) {
-        if (filename == null || filename.isEmpty()) {
-            return null;
+    /**
+     * Retrieves the cover image bytes for the given book from the database.
+     *
+     * @param bookId the book id
+     * @return the raw bytes, or {@code null} if no cover is stored
+     */
+    public byte[] loadFile(Long bookId) {
+        return repositoryBookCover.findByBookId(bookId)
+                .map(EntityBookCover::getData)
+                .orElse(null);
+    }
+
+    // -------------------------------------------------------------------------
+    // Private helpers
+    // -------------------------------------------------------------------------
+
+    /**
+     * Scales the image so its longest side is at most {@value #MAX_DIMENSION} px,
+     * then re-encodes it as JPEG at {@value #JPEG_QUALITY} quality.
+     * <p>
+     * Package-visible so that other services (e.g. {@code ServiceHomePost}) can
+     * reuse this logic without duplicating code.
+     */
+    byte[] compressImageBytes(byte[] originalBytes) throws IOException {
+        return compressImage(originalBytes);
+    }
+
+    private byte[] compressImage(byte[] originalBytes) throws IOException {
+        BufferedImage original = ImageIO.read(new ByteArrayInputStream(originalBytes));
+        if (original == null) {
+            throw new IllegalArgumentException("Uploaded file is not a readable image");
         }
-        int lastDotIndex = filename.lastIndexOf(".");
-        if (lastDotIndex == -1) {
-            return "";
+
+        int origWidth = original.getWidth();
+        int origHeight = original.getHeight();
+
+        // Calculate target dimensions preserving aspect ratio
+        int targetWidth;
+        int targetHeight;
+        if (origWidth >= origHeight) {
+            targetWidth = Math.min(origWidth, MAX_DIMENSION);
+            targetHeight = (int) Math.round((double) origHeight / origWidth * targetWidth);
+        } else {
+            targetHeight = Math.min(origHeight, MAX_DIMENSION);
+            targetWidth = (int) Math.round((double) origWidth / origHeight * targetHeight);
         }
-        return filename.substring(lastDotIndex + 1).toLowerCase();
+
+        // Draw scaled image
+        BufferedImage scaled = new BufferedImage(targetWidth, targetHeight, BufferedImage.TYPE_INT_RGB);
+        Graphics2D g2d = scaled.createGraphics();
+        try {
+            g2d.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BILINEAR);
+            g2d.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY);
+            g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+            g2d.drawImage(original, 0, 0, targetWidth, targetHeight, null);
+        } finally {
+            g2d.dispose();
+        }
+
+        // Encode as JPEG with controlled quality
+        ByteArrayOutputStream out = new ByteArrayOutputStream();
+        Iterator<ImageWriter> writers = ImageIO.getImageWritersByFormatName("jpeg");
+        if (!writers.hasNext()) {
+            throw new IllegalStateException("No JPEG ImageWriter found");
+        }
+        ImageWriter writer = writers.next();
+        try (ImageOutputStream ios = ImageIO.createImageOutputStream(out)) {
+            writer.setOutput(ios);
+            ImageWriteParam param = writer.getDefaultWriteParam();
+            param.setCompressionMode(ImageWriteParam.MODE_EXPLICIT);
+            param.setCompressionQuality(JPEG_QUALITY);
+            writer.write(null, new IIOImage(scaled, null, null), param);
+        } finally {
+            writer.dispose();
+        }
+
+        return out.toByteArray();
     }
 }

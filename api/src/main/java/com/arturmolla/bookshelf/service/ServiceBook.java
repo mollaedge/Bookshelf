@@ -4,6 +4,7 @@ import com.arturmolla.bookshelf.config.exceptions.OperationNotPermittedException
 import com.arturmolla.bookshelf.model.common.PageResponse;
 import com.arturmolla.bookshelf.model.dto.DtoBookRequest;
 import com.arturmolla.bookshelf.model.dto.DtoBookResponse;
+import com.arturmolla.bookshelf.model.dto.DtoBookUpdateRequest;
 import com.arturmolla.bookshelf.model.dto.DtoBorrowedBooksResponse;
 import com.arturmolla.bookshelf.model.dto.DtoRequestedBooksResponse;
 import com.arturmolla.bookshelf.model.entity.EntityBook;
@@ -43,6 +44,17 @@ public class ServiceBook {
         EntityBook book = mapperBook.toEntityBook(request);
         book.setOwner(user);
         return repositoryBook.save(book).getId();
+    }
+
+    public DtoBookResponse updateBook(Long bookId, DtoBookUpdateRequest request, Authentication connectedUser) {
+        var user = (User) connectedUser.getPrincipal();
+        EntityBook book = repositoryBook.findById(bookId)
+                .orElseThrow(() -> new EntityNotFoundException(BOOK_NOT_FOUND + bookId));
+        if (!Objects.equals(book.getCreatedBy(), user.getId())) {
+            throw new OperationNotPermittedException("You can not perform this action!");
+        }
+        mapperBook.updateEntityFromRequest(book, request);
+        return mapperBook.toDtoBookResponse(repositoryBook.save(book));
     }
 
     public DtoBookResponse findBookById(Long bookId) {
@@ -94,7 +106,7 @@ public class ServiceBook {
         var book = repositoryBook.findById(bookId)
                 .orElseThrow(() -> new EntityNotFoundException(BOOK_NOT_FOUND + bookId));
         var user = (User) connectedUser.getPrincipal();
-        if (!Objects.equals(book.getOwner().getId(), user.getId())) {
+        if (!Objects.equals(book.getCreatedBy(), user.getId())) {
             throw new OperationNotPermittedException("You can not perform this action!");
         }
         book.setShareable(!book.getShareable());
@@ -106,7 +118,7 @@ public class ServiceBook {
         var book = repositoryBook.findById(bookId)
                 .orElseThrow(() -> new EntityNotFoundException(BOOK_NOT_FOUND + bookId));
         var user = (User) connectedUser.getPrincipal();
-        if (!Objects.equals(book.getOwner().getId(), user.getId())) {
+        if (!Objects.equals(book.getCreatedBy(), user.getId())) {
             throw new OperationNotPermittedException("You can not perform this action!");
         }
         book.setArchived(!book.getArchived());
@@ -187,16 +199,26 @@ public class ServiceBook {
         var book = repositoryBook.findById(bookId)
                 .orElseThrow(() -> new EntityNotFoundException(BOOK_NOT_FOUND + bookId));
         var user = (User) connectedUser.getPrincipal();
-        var cover = serviceFileStorage.saveFile(file, user.getId());
-        book.setCover(cover);
+        if (!Objects.equals(book.getCreatedBy(), user.getId())) {
+            throw new OperationNotPermittedException("You can not perform this action!");
+        }
+        serviceFileStorage.saveFile(file, bookId);
+        // Cover is now stored in book_cover table; clear any stale local-path reference
+        book.setCover(null);
         repositoryBook.save(book);
+    }
+
+    public byte[] getBookCoverImage(Long bookId) {
+        repositoryBook.findById(bookId)
+                .orElseThrow(() -> new EntityNotFoundException(BOOK_NOT_FOUND + bookId));
+        return serviceFileStorage.loadFile(bookId);
     }
 
     public void deleteBookById(Long bookId, Authentication connectedUser) {
         var book = repositoryBook.findById(bookId)
                 .orElseThrow(() -> new EntityNotFoundException(BOOK_NOT_FOUND + bookId));
         var user = (User) connectedUser.getPrincipal();
-        if (!Objects.equals(book.getOwner().getId(), user.getId())) {
+        if (!Objects.equals(book.getCreatedBy(), user.getId())) {
             throw new OperationNotPermittedException("You can not perform this action!");
         }
         repositoryBook.deleteById(bookId);

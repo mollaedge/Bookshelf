@@ -1,0 +1,121 @@
+@if (isOpen) {
+  <div class="modal-overlay" (click)="onOverlayClick($event)">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2>
+          <i class="fas" [class.fa-plus-circle]="!postToEdit" [class.fa-edit]="postToEdit"></i>
+          {{ postToEdit ? 'Edit Post' : 'Create Post' }}
+        </h2>
+        <button class="close-modal" (click)="close()">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+      
+      @if (error) {
+        <div class="error-banner">
+          <i class="fas fa-exclamation-circle"></i>
+          <span>{{ error }}</span>
+          <button (click)="error = ''" class="close-error">
+            <i class="fas fa-times"></i>
+          </button>
+        </div>
+      }
+      
+      <div class="modal-body">
+        <div class="form-group">
+          <label for="postTitle">
+            <i class="fas fa-heading"></i> Title
+            <span class="required">*</span>
+          </label>
+          <input 
+            type="text" 
+            id="postTitle" 
+            [(ngModel)]="newPostTitle"
+            placeholder="Enter post title..."
+            class="form-control"
+            [disabled]="creatingPost">
+        </div>
+        
+        <div class="form-group">
+          <label for="postContent">
+            <i class="fas fa-align-left"></i> Content
+            <span class="required">*</span>
+          </label>
+          <textarea 
+            id="postContent" 
+            [(ngModel)]="newPostContent"
+            placeholder="Share your thoughts about books..."
+            rows="6"
+            class="form-control"
+            [disabled]="creatingPost"></textarea>
+        </div>
+        
+        @if (!postToEdit) {
+          <div class="form-group">
+            <label for="postFiles">
+              <i class="fas fa-paperclip"></i> Attachments
+              <span class="optional">(optional)</span>
+            </label>
+            <div class="file-input-wrapper">
+              <input 
+                type="file" 
+                id="postFiles" 
+                (change)="onFilesSelected($event)"
+                multiple
+                class="file-input"
+                accept="image/*,.pdf,.doc,.docx"
+                [disabled]="creatingPost">
+              <label for="postFiles" class="file-input-label">
+                <i class="fas fa-upload"></i>
+                <span>Choose files or drag here</span>
+              </label>
+          </div>
+          
+          @if (selectedFiles.length > 0) {
+            <div class="selected-files">
+              <p class="files-count">
+                <i class="fas fa-check-circle"></i>
+                {{ selectedFiles.length }} file{{ selectedFiles.length > 1 ? 's' : '' }} selected
+              </p>
+              @for (file of selectedFiles; track $index) {
+                <div class="selected-file-item">
+                  <i class="fas" [class.fa-file-image]="file.type.startsWith('image/')" 
+                     [class.fa-file-pdf]="file.type === 'application/pdf'"
+                     [class.fa-file-word]="file.type.includes('word')"
+                     [class.fa-file]="!file.type.startsWith('image/') && file.type !== 'application/pdf' && !file.type.includes('word')"></i>
+                  <div class="file-info">
+                    <span class="file-name">{{ file.name }}</span>
+                    <span class="file-size">{{ (file.size / 1024).toFixed(1) }} KB</span>
+                  </div>
+                  <button type="button" (click)="removeFile($index)" class="remove-file" [disabled]="creatingPost">
+                    <i class="fas fa-times"></i>
+                  </button>
+                </div>
+              }
+            </div>
+          }
+        </div>
+        }
+      </div>
+      
+      <div class="modal-footer">
+        <button class="btn-cancel" (click)="close()" [disabled]="creatingPost">
+          <i class="fas fa-times-circle"></i>
+          Cancel
+        </button>
+        <button 
+          class="btn-create" 
+          [disabled]="creatingPost || !newPostTitle.trim() || !newPostContent.trim()"
+          (click)="createPost()">
+          @if (creatingPost) {
+            <i class="fas fa-spinner fa-spin"></i>
+            {{ postToEdit ? 'Updating...' : 'Creating...' }}
+          } @else {
+            <i class="fas" [class.fa-save]="postToEdit" [class.fa-paper-plane]="!postToEdit"></i>
+            {{ postToEdit ? 'Update Post' : 'Create Post' }}
+          }
+        </button>
+      </div>
+    </div>
+  </div>
+}

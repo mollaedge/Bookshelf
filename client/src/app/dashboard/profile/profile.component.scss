@@ -821,3 +821,39 @@
     }
   }
 }
+
+// My Library Section
+.library-section {
+  margin: 3rem 0;
+  padding-top: 2rem;
+  scroll-margin-top: 80px; // Account for any fixed header
+
+  .section-header {
+    margin-bottom: 2rem;
+
+    h2 {
+      font-size: 1.8rem;
+      font-weight: 700;
+      color: #2c3e50;
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      margin: 0;
+
+      i {
+        color: #1976D2;
+        font-size: 1.6rem;
+      }
+    }
+
+    &::after {
+      content: '';
+      display: block;
+      width: 60px;
+      height: 4px;
+      background: linear-gradient(90deg, #1976D2, #64B5F6);
+      border-radius: 2px;
+      margin-top: 1rem;
+    }
+  }
+}

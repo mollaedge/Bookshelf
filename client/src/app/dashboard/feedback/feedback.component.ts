@@ -1,7 +1,8 @@
 import { Component, OnInit } from '@angular/core';
-import { AppFeedbackDto, AppFeedbackRequest } from '../../interfaces/feedback.interface';
+import { AppFeedbackDto, AppFeedbackRequest, PublicFeedbackDto } from '../../interfaces/feedback.interface';
 import { FeedbackService } from '../../service/feedback/feedback.service';
 import { PageResponse } from '../../service/book/books.service';
+import { AuthStateService } from '../../service/auth/auth-state.service';
 import Swal from 'sweetalert2';
 
 @Component({
@@ -13,6 +14,7 @@ import Swal from 'sweetalert2';
 export class FeedbackComponent implements OnInit {
   feedbacks: AppFeedbackDto[] = [];
   sortedFeedbacks: AppFeedbackDto[] = [];
+  isLoggedIn = false;
 
   loading = false;
   error = '';
@@ -44,9 +46,20 @@ export class FeedbackComponent implements OnInit {
   newComment = '';
   commentSubmitting = false;
 
-  constructor(private feedbackService: FeedbackService) {}
+  constructor(private feedbackService: FeedbackService, private authService: AuthStateService) {}
 
   ngOnInit(): void {
+    let isInitialLoad = true;
+    this.authService.user$.subscribe(user => { 
+      const wasLoggedIn = this.isLoggedIn;
+      this.isLoggedIn = !!user;
+      
+      // Reload feedbacks when auth state changes (skip initial load)
+      if (!isInitialLoad && wasLoggedIn !== this.isLoggedIn) {
+        this.loadFeedbacks(0);
+      }
+      isInitialLoad = false;
+    });
     this.loadFeedbacks();
   }
 
@@ -54,6 +67,25 @@ export class FeedbackComponent implements OnInit {
     this.loading = true;
     this.error = '';
     this.currentPage = page;
+
+    // Use public API if user is not logged in
+    if (!this.isLoggedIn) {
+      this.feedbackService.getPublic(page, this.pageSize).subscribe({
+        next: (response: PageResponse<PublicFeedbackDto>) => {
+          this.feedbacks = response.content.map(this.mapPublicToAppFeedback);
+          this.totalPages = response.totalPages;
+          this.isFirstPage = response.first;
+          this.isLastPage = response.last;
+          this.applySort();
+          this.loading = false;
+        },
+        error: () => {
+          this.error = 'Failed to load feedback. Please try again.';
+          this.loading = false;
+        }
+      });
+      return;
+    }
 
     const call = this.activeTab === 'all'
       ? this.feedbackService.getAll(page, this.pageSize)
@@ -287,5 +319,25 @@ export class FeedbackComponent implements OnInit {
     if (days < 7) return `${days} days ago`;
     if (days < 30) return `${Math.floor(days / 7)} weeks ago`;
     return date.toLocaleDateString();
+  }
+
+  private mapPublicToAppFeedback(publicFeedback: PublicFeedbackDto): AppFeedbackDto {
+    return {
+      id: publicFeedback.id,
+      title: publicFeedback.title,
+      description: publicFeedback.description,
+      status: publicFeedback.status,
+      upvoteCount: publicFeedback.upvoteCount,
+      upvotedByCurrentUser: false,
+      ownFeedback: false,
+      age: publicFeedback.age,
+      author: publicFeedback.authorName,
+      comments: publicFeedback.comments.map(comment => ({
+        authorId: 0, // Not available in public API
+        fullName: comment.authorName,
+        message: comment.message,
+        createdAt: comment.createdAt
+      }))
+    };
   }
 }

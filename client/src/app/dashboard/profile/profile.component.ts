@@ -1,4 +1,6 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, AfterViewInit } from '@angular/core';
+import { ActivatedRoute } from '@angular/router';
+import { ViewportScroller } from '@angular/common';
 import { ProfileService, UserProfileResponse } from '../../service/profile/profile.service';
 import { UserDashboardResponse } from '../../interfaces/user.interface';
 
@@ -32,7 +34,7 @@ const GENRE_COLORS = ['#1976D2', '#64B5F6', '#0D47A1', '#90CAF9', '#BBDEFB', '#4
   templateUrl: './profile.component.html',
   styleUrl: './profile.component.scss'
 })
-export class ProfileComponent implements OnInit {
+export class ProfileComponent implements OnInit, AfterViewInit {
   user: UserProfile = {
     name: '',
     email: '',
@@ -49,9 +51,7 @@ export class ProfileComponent implements OnInit {
   dashboard: UserDashboardResponse | null = null;
 
   stats: { label: string; value: number | string; icon: string; color: string; suffix?: string }[] = [];
-
   readingActivity: ProfileReadingActivity[] = [];
-
   genreDistribution: ProfileGenreDistribution[] = [];
 
   recentAchievements = [
@@ -69,10 +69,26 @@ export class ProfileComponent implements OnInit {
   isEditMode = false;
   editedUser: UserProfile = { ...this.user };
 
-  constructor(private profileService: ProfileService) {}
+  constructor(
+    private profileService: ProfileService,
+    private route: ActivatedRoute,
+    private viewportScroller: ViewportScroller
+  ) {}
 
   ngOnInit(): void {
     this.loadProfile();
+  }
+
+  ngAfterViewInit(): void {
+    // Handle fragment scrolling after view initialization
+    this.route.fragment.subscribe(fragment => {
+      if (fragment) {
+        // Use setTimeout to ensure the DOM is fully rendered
+        setTimeout(() => {
+          this.viewportScroller.scrollToAnchor(fragment);
+        }, 300);
+      }
+    });
   }
 
   loadProfile(): void {
@@ -130,7 +146,6 @@ export class ProfileComponent implements OnInit {
     ];
   }
 
-  /** Converts "YYYY-MM" to abbreviated month name e.g. "Jan" */
   private formatMonth(yearMonth: string): string {
     const [year, month] = yearMonth.split('-');
     const date = new Date(+year, +month - 1);
@@ -173,12 +188,8 @@ export class ProfileComponent implements OnInit {
       };
 
       this.profileService.updateProfile(updatedProfile).subscribe({
-        next: () => {
-          this.saveError = '';
-        },
-        error: () => {
-          this.saveError = 'Failed to save profile. Please try again.';
-        }
+        next: () => { this.saveError = ''; },
+        error: () => { this.saveError = 'Failed to save profile. Please try again.'; }
       });
     }
   }

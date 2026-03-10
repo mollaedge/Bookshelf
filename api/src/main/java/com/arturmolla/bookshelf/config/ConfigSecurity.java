@@ -41,7 +41,10 @@ public class ConfigSecurity {
                         req.requestMatchers(
                                         "/google",
                                         "/auth/**",
-                                "/v2/api-docs",
+                                        "/app-feedbacks",
+                                        "/app-feedbacks/public",
+                                        "/app-feedbacks/public/**",
+                                        "/books/search",
                                 "/v3/api-docs",
                                 "/v3/api-docs/**",
                                 "/swagger-resources",
