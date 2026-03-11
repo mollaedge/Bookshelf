@@ -1,6 +1,7 @@
 import { Component, Input, Output, EventEmitter, OnChanges, SimpleChanges } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
-import { BooksService, Book, BookSearchResultDto, BookSearchSource } from '../../../service/book/books.service';
+import { Book, BookSearchResultDto, BookSearchSource } from '../../../interfaces/book.interface';
+import { BooksService } from '../../../service/book/books.service';
 
 @Component({
   selector: 'app-bookpopup',

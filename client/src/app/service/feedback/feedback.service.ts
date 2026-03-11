@@ -3,7 +3,7 @@ import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import { AppFeedbackDto, AppFeedbackRequest, PublicFeedbackDto } from '../../interfaces/feedback.interface';
-import { PageResponse } from '../book/books.service';
+import { PageResponse } from '../../interfaces/page.interface';
 
 @Injectable({ providedIn: 'root' })
 export class FeedbackService {

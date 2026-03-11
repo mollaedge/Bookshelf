@@ -102,6 +102,28 @@
           margin: 0;
         }
 
+        .name-inputs {
+          display: flex;
+          gap: 1rem;
+          flex-wrap: wrap;
+
+          .edit-input {
+            font-size: 1.5rem;
+            font-weight: 700;
+            padding: 0.5rem;
+            border: 2px solid #64B5F6;
+            border-radius: 8px;
+            width: 200px;
+            flex: 1;
+            min-width: 150px;
+
+            &:focus {
+              outline: none;
+              border-color: #1976D2;
+            }
+          }
+        }
+
         .edit-input {
           font-size: 2rem;
           font-weight: 800;
@@ -183,6 +205,14 @@
             outline: none;
             border-color: #1976D2;
           }
+        }
+
+        .char-counter {
+          display: block;
+          text-align: right;
+          color: #999;
+          font-size: 0.85rem;
+          margin-top: 0.25rem;
         }
       }
 

@@ -26,7 +26,7 @@ import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 import java.util.List;
 
 /**
- * Live streaming controller.
+ * Live-streaming controller.
  *
  * <h2>Flow</h2>
  * <pre>

@@ -1,5 +1,7 @@
 import { Component, OnInit } from '@angular/core';
-import { BooksService, Book, PageResponse } from '../../service/book/books.service';
+import { BooksService } from '../../service/book/books.service';
+import { Book } from '../../interfaces/book.interface';
+import { PageResponse } from '../../interfaces/page.interface';
 import { ProfileService } from '../../service/profile/profile.service';
 import { AuthStateService } from '../../service/auth/auth-state.service';
 import { UserDashboardResponse } from '../../interfaces/user.interface';

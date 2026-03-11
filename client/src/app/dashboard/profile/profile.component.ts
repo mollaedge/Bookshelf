@@ -1,13 +1,16 @@
 import { Component, OnInit, AfterViewInit } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 import { ViewportScroller } from '@angular/common';
-import { ProfileService, UserProfileResponse } from '../../service/profile/profile.service';
-import { UserDashboardResponse } from '../../interfaces/user.interface';
+import { ProfileService } from '../../service/profile/profile.service';
+import { UserDashboardResponse, UserProfileResponse, UpdateProfileRequest } from '../../interfaces/user.interface';
 
 interface UserProfile {
+  firstname: string;
+  lastname: string;
   name: string;
   email: string;
   joinDate: Date;
+  dateOfBirth?: Date;
   avatar: string;
   bio: string;
   location: string;
@@ -36,9 +39,12 @@ const GENRE_COLORS = ['#1976D2', '#64B5F6', '#0D47A1', '#90CAF9', '#BBDEFB', '#4
 })
 export class ProfileComponent implements OnInit, AfterViewInit {
   user: UserProfile = {
+    firstname: '',
+    lastname: '',
     name: '',
     email: '',
     joinDate: new Date(),
+    dateOfBirth: undefined,
     avatar: '',
     bio: '',
     location: '',
@@ -110,9 +116,12 @@ export class ProfileComponent implements OnInit, AfterViewInit {
 
   private mapDashboardToView(data: UserDashboardResponse): void {
     this.user = {
+      firstname: data.firstname,
+      lastname: data.lastname,
       name: data.fullName || `${data.firstname} ${data.lastname}`,
       email: data.email,
       joinDate: data.joinDate ? new Date(data.joinDate) : new Date(),
+      dateOfBirth: undefined,
       avatar: '',
       bio: data.bio ?? '',
       location: data.location ?? '',
@@ -177,21 +186,48 @@ export class ProfileComponent implements OnInit, AfterViewInit {
   }
 
   saveProfile(): void {
-    this.user = { ...this.editedUser };
-    this.isEditMode = false;
-
-    if (this.dashboard) {
-      const updatedProfile: Partial<UserProfileResponse> = {
-        firstname: this.user.name.split(' ')[0],
-        lastname: this.user.name.split(' ').slice(1).join(' '),
-        email: this.user.email
-      };
-
-      this.profileService.updateProfile(updatedProfile).subscribe({
-        next: () => { this.saveError = ''; },
-        error: () => { this.saveError = 'Failed to save profile. Please try again.'; }
-      });
+    if (!this.editedUser.firstname?.trim() || !this.editedUser.lastname?.trim()) {
+      this.saveError = 'First name and last name are required.';
+      return;
     }
+
+    this.saveError = '';
+    this.isLoading = true;
+
+    const updateRequest: UpdateProfileRequest = {
+      firstname: this.editedUser.firstname.trim(),
+      lastname: this.editedUser.lastname.trim(),
+      bio: this.editedUser.bio?.trim() || undefined,
+      location: this.editedUser.location?.trim() || undefined,
+      dateOfBirth: this.editedUser.dateOfBirth ? this.formatDateForBackend(this.editedUser.dateOfBirth) : undefined
+    };
+
+    this.profileService.updateProfile(updateRequest).subscribe({
+      next: (response) => {
+        this.user = {
+          ...this.editedUser,
+          name: response.fullName || `${response.firstname} ${response.lastname}`,
+          firstname: response.firstname,
+          lastname: response.lastname
+        };
+        this.isEditMode = false;
+        this.isLoading = false;
+        this.saveError = '';
+        // Reload dashboard to refresh all stats
+        this.loadProfile();
+      },
+      error: () => {
+        this.isLoading = false;
+        this.saveError = 'Failed to save profile. Please try again.';
+      }
+    });
+  }
+
+  private formatDateForBackend(date: Date): string {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
   }
 
   cancelEdit(): void {

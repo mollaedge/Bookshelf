@@ -1,5 +1,6 @@
 import { Component, EventEmitter, Input, Output, OnChanges, SimpleChanges } from '@angular/core';
-import { HomePostService, CreatePostRequest, UpdatePostRequest, HomePost } from '../../../service/home/home-post.service';
+import { CreatePostRequest, UpdatePostRequest, HomePost } from '../../../interfaces/post.interface';
+import { HomePostService } from '../../../service/home/home-post.service';
 import { HttpErrorResponse } from '@angular/common/http';
 
 @Component({

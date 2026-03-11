@@ -1,7 +1,9 @@
 import { Component, OnInit } from '@angular/core';
 import { Observable } from 'rxjs';
 import Swal from 'sweetalert2';
-import { BooksService, Book, RequestedBook, PageResponse } from '../../service/book/books.service';
+import { PageResponse } from '../../interfaces/page.interface';
+import { BooksService } from '../../service/book/books.service';
+import { Book, RequestedBook } from '../../interfaces/book.interface';
 
 @Component({
   selector: 'app-mybooks',

@@ -2,41 +2,8 @@ import { Injectable } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from '../../../environments/environment';
-import { PageResponse } from '../book/books.service';
-
-export interface PostAttachment {
-  id: number;
-  fileName: string;
-  contentType: string;
-  fileSize: number;
-  uploadedAt: string;
-  /** Ready-to-use Base64 data URI — use as src/href directly */
-  dataUri: string;
-}
-
-export interface HomePost {
-  id: number;
-  title: string;
-  content: string;
-  createdDate: string;
-  lastModifiedDate?: string;
-  authorName: string;
-  ownerId: number;
-  authorEmail: string;
-  attachments: PostAttachment[];
-  likesCount?: number;
-  commentsCount?: number;
-}
-
-export interface CreatePostRequest {
-  title: string;
-  content: string;
-}
-
-export interface UpdatePostRequest {
-  title?: string;
-  content?: string;
-}
+import { PageResponse } from '../../interfaces/page.interface';
+import { HomePost, CreatePostRequest, UpdatePostRequest} from '../../interfaces/post.interface';
 
 @Injectable({
   providedIn: 'root'

@@ -1,10 +1,6 @@
 import { Injectable } from '@angular/core';
-import { StreamService, DtoSignalRequest } from '../stream/stream.service';
-
-interface PeerConnection {
-  connection: RTCPeerConnection;
-  userId: number;
-}
+import { DtoSignalRequest } from '../../interfaces/stream.interface';
+import { StreamService } from '../stream/stream.service';
 
 @Injectable({
   providedIn: 'root'

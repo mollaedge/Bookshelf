@@ -24,16 +24,15 @@ public class StreamRegistry {
      * Registers a new stream.  Overwrites any existing entry for the same host
      * (should not happen in normal flow because {@link #hasStream} is checked first).
      */
-    public LiveStream register(LiveStream stream) {
+    public void register(LiveStream stream) {
         streams.put(stream.getHostId(), stream);
-        return stream;
     }
 
     /**
      * Removes and returns the stream owned by {@code hostId}, or empty if absent.
      */
-    public Optional<LiveStream> remove(Long hostId) {
-        return Optional.ofNullable(streams.remove(hostId));
+    public void remove(Long hostId) {
+        streams.remove(hostId);
     }
 
     // -------------------------------------------------------------------------

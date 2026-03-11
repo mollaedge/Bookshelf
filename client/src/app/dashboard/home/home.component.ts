@@ -1,10 +1,12 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { AuthStateService } from '../../service/auth/auth-state.service';
-import { HomePostService, HomePost } from '../../service/home/home-post.service';
-import { StreamService, DtoStreamInfo, DtoStreamStartRequest } from '../../service/stream/stream.service';
+import { HomePostService } from '../../service/home/home-post.service';
+import { HomePost } from '../../interfaces/post.interface';
+import { StreamService } from '../../service/stream/stream.service';
 import { WebRTCService } from '../../service/webrtc/webrtc.service';
 import { Observable, Subscription } from 'rxjs';
 import { HttpErrorResponse } from '@angular/common/http';
+import { DtoStreamInfo, DtoStreamStartRequest } from '../../interfaces/stream.interface';
 
 type LiveReading = DtoStreamInfo;
 

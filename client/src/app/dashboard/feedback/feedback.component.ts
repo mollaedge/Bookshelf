@@ -1,7 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { AppFeedbackDto, AppFeedbackRequest, PublicFeedbackDto } from '../../interfaces/feedback.interface';
 import { FeedbackService } from '../../service/feedback/feedback.service';
-import { PageResponse } from '../../service/book/books.service';
+import { PageResponse } from '../../interfaces/page.interface';
 import { AuthStateService } from '../../service/auth/auth-state.service';
 import Swal from 'sweetalert2';
 

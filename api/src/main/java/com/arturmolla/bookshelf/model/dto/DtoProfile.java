@@ -21,6 +21,8 @@ public class DtoProfile {
     private String fullName;
     private String email;
     private LocalDate dateOfBirth;
+    private String bio;
+    private String location;
     private String provider;
     private boolean accountLocked;
     private boolean enabled;
