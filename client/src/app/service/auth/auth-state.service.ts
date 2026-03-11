@@ -2,8 +2,10 @@ import { Injectable } from '@angular/core';
 import { BehaviorSubject, Observable } from 'rxjs';
 
 export interface AuthUser {
+  id?: number;
   email: string;
   token: string;
+  fullName?: string;
   // add other user fields as needed
 }
 

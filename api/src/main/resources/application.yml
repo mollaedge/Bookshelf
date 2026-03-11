@@ -27,3 +27,8 @@ spring:
 
 springdoc:
   default-produces-media-type: application/json
+
+book-search:
+  google:
+    api-key: ${GOOGLE_BOOKS_API_KEY:}
+

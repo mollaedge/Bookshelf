@@ -1,6 +1,7 @@
 package com.arturmolla.bookshelf.service.mapper;
 
 import com.arturmolla.bookshelf.model.dto.DtoProfile;
+import com.arturmolla.bookshelf.model.dto.DtoUpdateProfileRequest;
 import com.arturmolla.bookshelf.model.user.User;
 import org.springframework.stereotype.Component;
 
@@ -19,10 +20,30 @@ public class MapperProfile {
                 .fullName(user.getFullName())
                 .email(user.getEmail())
                 .dateOfBirth(user.getDateOfBirth())
+                .bio(user.getBio())
+                .location(user.getLocation())
                 .provider(user.getProvider())
                 .accountLocked(user.isAccountLocked())
                 .enabled(user.isEnabled())
                 .build();
+    }
+
+    public void updateEntityFromRequest(User user, DtoUpdateProfileRequest request) {
+        if (request.getFirstname() != null) {
+            user.setFirstname(request.getFirstname());
+        }
+        if (request.getLastname() != null) {
+            user.setLastname(request.getLastname());
+        }
+        if (request.getDateOfBirth() != null) {
+            user.setDateOfBirth(request.getDateOfBirth());
+        }
+        if (request.getBio() != null) {
+            user.setBio(request.getBio());
+        }
+        if (request.getLocation() != null) {
+            user.setLocation(request.getLocation());
+        }
     }
 
     public User toEntity(DtoProfile dtoProfile) {

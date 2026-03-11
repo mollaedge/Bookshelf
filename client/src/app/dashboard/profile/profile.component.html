@@ -34,10 +34,13 @@
       <div class="profile-info">
         <div class="profile-name-section">
           <h1 class="profile-name" *ngIf="!isEditMode">{{ user.name }}</h1>
-          <input type="text" class="edit-input" [(ngModel)]="editedUser.name" *ngIf="isEditMode" placeholder="Your Name">
+          <div class="name-inputs" *ngIf="isEditMode">
+            <input type="text" class="edit-input" [(ngModel)]="editedUser.firstname" placeholder="First Name" required>
+            <input type="text" class="edit-input" [(ngModel)]="editedUser.lastname" placeholder="Last Name" required>
+          </div>
           <span class="profile-location">
             <i class="fas fa-map-marker-alt"></i>
-            <span *ngIf="!isEditMode">{{ user.location }}</span>
+            <span *ngIf="!isEditMode">{{ user.location || 'Not specified' }}</span>
             <input type="text" class="edit-input-small" [(ngModel)]="editedUser.location" *ngIf="isEditMode" placeholder="Location">
           </span>
         </div>
@@ -54,10 +57,11 @@
         </div>
 
         <div class="profile-bio" *ngIf="!isEditMode">
-          <p>{{ user.bio }}</p>
+          <p>{{ user.bio || 'No bio provided yet.' }}</p>
         </div>
         <div class="profile-bio" *ngIf="isEditMode">
-          <textarea [(ngModel)]="editedUser.bio" rows="3" placeholder="Tell us about yourself..."></textarea>
+          <textarea [(ngModel)]="editedUser.bio" rows="3" placeholder="Tell us about yourself..." maxlength="500"></textarea>
+          <small class="char-counter" *ngIf="isEditMode">{{ editedUser.bio.length || 0 }}/500</small>
         </div>
 
         <div class="profile-actions">
@@ -89,6 +93,11 @@
         <div class="stat-label">{{ stat.label }}</div>
       </div>
     </div>
+  </div>
+
+  <!-- My Library Section -->
+  <div id="books" class="library-section">
+    <app-mybooks></app-mybooks>
   </div>
 
   <!-- Main Content Grid -->
@@ -260,4 +269,5 @@
     </div>
   </div>
   </div>
+
 </div>

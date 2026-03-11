@@ -1,8 +1,8 @@
-<div class="mybooks-container">
-  <div class="page-header">
-    <h1 class="page-title">My Books</h1>
-    <button class="btn-add-book" (click)="openAddBookModal()">
-      <span class="plus-icon">+</span> Add Book
+<div class="library-section">
+  <div class="library-section-header">
+    <h2><i class="fas fa-book"></i> My Library</h2>
+    <button class="btn-add-book" (click)="openAdd()">
+      <i class="fas fa-plus"></i> Add Book
     </button>
   </div>
 
@@ -27,188 +27,99 @@
     </div>
 
     <div class="tabs-content">
+
       <!-- My Books Tab -->
       <div class="tab-panel" *ngIf="activeTab === 'mybooks'">
-        <div class="loading" *ngIf="loading">
-          <p>Loading...</p>
-        </div>
-        <div class="error" *ngIf="error">
-          <p>{{ error }}</p>
-        </div>
+        <div class="books-loading" *ngIf="loading"><p>Loading...</p></div>
+        <div class="books-error" *ngIf="error"><p>{{ error }}</p></div>
         <div class="books-grid" *ngIf="!loading && !error && myBooks.length">
-          <div class="book-card" *ngFor="let book of myBooks">
-            <div class="book-image">
-              <img *ngIf="book.cover" [src]="'data:image/jpeg;base64,' + book.cover" [alt]="book.title">
-              <img *ngIf="!book.cover && book.coverUrl" [src]="book.coverUrl" [alt]="book.title">
-              <div *ngIf="!book.cover && !book.coverUrl" class="book-cover-emoji">📚</div>
-            </div>
-            <div class="book-details">
-              <h3>{{ book.title }}</h3>
-              <p class="author">{{ book.authorName }}</p>
-              <p class="description" *ngIf="book.synopsis">{{ book.synopsis }}</p>
-              <p class="isbn" *ngIf="book.isbn">ISBN: {{ book.isbn }}</p>
-            </div>
-            <div class="book-meta">
-              <span class="rate" *ngIf="book.rate">⭐ {{ book.rate }}</span>
-              <span class="badge-fav" *ngIf="book.favourite">❤️ Favourite</span>
-              <span class="badge-read" *ngIf="book.read">📖 Read</span>
-              <span class="badge-archived" *ngIf="book.archived">📦 Archived</span>
-              <span class="badge-shareable" *ngIf="book.shareable">🔗 Shareable</span>
-            </div>
-            <div class="book-actions">
-              <button class="btn-compact"><span class="icon">👁️</span> View</button>
-              <button class="btn-compact"><span class="icon">✏️</span> Edit</button>
-              <button class="btn-compact"><span class="icon">📦</span> Archive</button>
-              <button class="btn-compact" (click)="deleteBook(book.id)"><span class="icon">🗑️</span> Delete</button>
-            </div>
-          </div>
+          <app-book
+            *ngFor="let book of myBooks"
+            [book]="book"
+            (editBook)="openEdit($event)"
+            (deleteBook)="deleteBook($event)"
+            (archiveBook)="archiveBook($event)">
+          </app-book>
         </div>
-        <div class="empty-state" *ngIf="!loading && !error && !myBooks.length">
+        <div class="books-empty" *ngIf="!loading && !error && !myBooks.length">
           <p>You don't have any books yet.</p>
         </div>
-        
-        <!-- Pagination Controls -->
-        <div class="pagination" *ngIf="totalPages > 1 && !loading">
-          <button class="pagination-btn" (click)="previousPage()" [disabled]="isFirstPage">
-            ← Previous
-          </button>
-
-          <div class="pagination-info">
-            <span>Page {{ currentPage + 1 }} / {{ totalPages }} • Size: {{ pageSize }}</span>
-          </div>
-
-          <button class="pagination-btn" (click)="nextPage()" [disabled]="isLastPage">
-            Next →
-          </button>
+        <div class="books-pagination" *ngIf="totalPages > 1 && !loading">
+          <button class="pagination-btn" (click)="prevPage()" [disabled]="isFirstPage">← Previous</button>
+          <div class="pagination-info"><span>Page {{ currentPage + 1 }} / {{ totalPages }}</span></div>
+          <button class="pagination-btn" (click)="nextPage()" [disabled]="isLastPage">Next →</button>
         </div>
       </div>
 
       <!-- Returned Tab -->
       <div class="tab-panel" *ngIf="activeTab === 'returned'">
-        <div class="loading" *ngIf="loading">
-          <p>Loading...</p>
-        </div>
-        <div class="error" *ngIf="error">
-          <p>{{ error }}</p>
-        </div>
-        <div class="books-grid" *ngIf="!loading && !error && returnedBooks.length">
-          <div class="book-card" *ngFor="let book of returnedBooks">
+        <div class="books-loading" *ngIf="loading"><p>Loading...</p></div>
+        <div class="books-grid" *ngIf="!loading && returnedBooks.length">
+          <div class="book-card" *ngFor="let book of returnedBooks" (click)="openEdit(book)">
             <div class="book-image">
-              <img *ngIf="book.cover" [src]="'data:image/jpeg;base64,' + book.cover" [alt]="book.title">
-              <img *ngIf="!book.cover && book.coverUrl" [src]="book.coverUrl" [alt]="book.title">
-              <div *ngIf="!book.cover && !book.coverUrl" class="book-cover-emoji">📚</div>
+              <img *ngIf="book.coverUrl" [src]="book.coverUrl" [alt]="book.title">
+              <img *ngIf="!book.coverUrl && book.cover" [src]="'data:image/jpeg;base64,' + book.cover" [alt]="book.title">
+              <div *ngIf="!book.coverUrl && !book.cover" class="book-cover-emoji">📚</div>
             </div>
             <div class="book-details">
               <h3>{{ book.title }}</h3>
               <p class="author">{{ book.authorName }}</p>
             </div>
-            <div class="book-meta">
-              <!-- Empty for returned books -->
-            </div>
-            <div class="book-actions">
-              <!-- No actions for returned books -->
-            </div>
+            <div class="book-meta"></div>
+            <div class="book-actions"></div>
           </div>
         </div>
-        <div class="empty-state" *ngIf="!loading && !error && !returnedBooks.length">
-          <p>No returned books.</p>
-        </div>
-        
-        <!-- Pagination Controls -->
-        <div class="pagination" *ngIf="totalPages > 1 && !loading">
-          <button class="pagination-btn" (click)="previousPage()" [disabled]="isFirstPage">
-            ← Previous
-          </button>
-
-          <div class="page-numbers">
-            <button *ngFor="let pageNum of pageNumbers" 
-                    class="page-number" 
-                    [class.active]="pageNum === currentPage"
-                    (click)="goToPage(pageNum)">
-              {{ pageNum + 1 }}
-            </button>
-          </div>
-
-          <div class="pagination-info">
-            <span>Page {{ currentPage + 1 }} / {{ totalPages }} • Size: {{ pageSize }}</span>
-          </div>
-
-          <button class="pagination-btn" (click)="nextPage()" [disabled]="isLastPage">
-            Next →
-          </button>
+        <div class="books-empty" *ngIf="!loading && !returnedBooks.length"><p>No returned books.</p></div>
+        <div class="books-pagination" *ngIf="totalPages > 1 && !loading">
+          <button class="pagination-btn" (click)="prevPage()" [disabled]="isFirstPage">← Previous</button>
+          <div class="pagination-info"><span>Page {{ currentPage + 1 }} / {{ totalPages }}</span></div>
+          <button class="pagination-btn" (click)="nextPage()" [disabled]="isLastPage">Next →</button>
         </div>
       </div>
 
       <!-- Borrowed Tab -->
       <div class="tab-panel" *ngIf="activeTab === 'borrowed'">
-        <div class="loading" *ngIf="loading">
-          <p>Loading...</p>
-        </div>
-        <div class="error" *ngIf="error">
-          <p>{{ error }}</p>
-        </div>
-        <div class="books-grid" *ngIf="!loading && !error && borrowedBooks.length">
+        <div class="books-loading" *ngIf="loading"><p>Loading...</p></div>
+        <div class="books-grid" *ngIf="!loading && borrowedBooks.length">
           <div class="book-card" *ngFor="let book of borrowedBooks">
             <div class="book-image">
-              <img *ngIf="book.cover" [src]="'data:image/jpeg;base64,' + book.cover" [alt]="book.title">
-              <img *ngIf="!book.cover && book.coverUrl" [src]="book.coverUrl" [alt]="book.title">
-              <div *ngIf="!book.cover && !book.coverUrl" class="book-cover-emoji">📚</div>
+              <img *ngIf="book.coverUrl" [src]="book.coverUrl" [alt]="book.title">
+              <img *ngIf="!book.coverUrl && book.cover" [src]="'data:image/jpeg;base64,' + book.cover" [alt]="book.title">
+              <div *ngIf="!book.coverUrl && !book.cover" class="book-cover-emoji">📚</div>
             </div>
             <div class="book-details">
               <h3>{{ book.title }}</h3>
               <p class="author">{{ book.authorName }}</p>
+              <p class="isbn" *ngIf="book.isbn">ISBN: {{ book.isbn }}</p>
             </div>
             <div class="book-meta">
-              <!-- Empty for rented books -->
+              <span class="rate" *ngIf="book.rate">⭐ {{ book.rate }}</span>
+              <span class="badge-borrowed">📖 Borrowed</span>
             </div>
             <div class="book-actions">
-              <!-- No actions for rented books -->
+              <button class="btn-return" (click)="returnBook(book.id)">
+                <span class="icon">📤</span> Return Book
+              </button>
             </div>
           </div>
         </div>
-        <div class="empty-state" *ngIf="!loading && !error && !borrowedBooks.length">
-          <p>No currently borrowed books.</p>
-        </div>
-        
-        <!-- Pagination Controls -->
-        <div class="pagination" *ngIf="totalPages > 1 && !loading">
-          <button class="pagination-btn" (click)="previousPage()" [disabled]="isFirstPage">
-            ← Previous
-          </button>
-
-          <div class="page-numbers">
-            <button *ngFor="let pageNum of pageNumbers" 
-                    class="page-number" 
-                    [class.active]="pageNum === currentPage"
-                    (click)="goToPage(pageNum)">
-              {{ pageNum + 1 }}
-            </button>
-          </div>
-
-          <div class="pagination-info">
-            <span>Page {{ currentPage + 1 }} / {{ totalPages }} • Size: {{ pageSize }}</span>
-          </div>
-
-          <button class="pagination-btn" (click)="nextPage()" [disabled]="isLastPage">
-            Next →
-          </button>
+        <div class="books-empty" *ngIf="!loading && !borrowedBooks.length"><p>No currently borrowed books.</p></div>
+        <div class="books-pagination" *ngIf="totalPages > 1 && !loading">
+          <button class="pagination-btn" (click)="prevPage()" [disabled]="isFirstPage">← Previous</button>
+          <div class="pagination-info"><span>Page {{ currentPage + 1 }} / {{ totalPages }}</span></div>
+          <button class="pagination-btn" (click)="nextPage()" [disabled]="isLastPage">Next →</button>
         </div>
       </div>
 
       <!-- Requested Tab -->
       <div class="tab-panel" *ngIf="activeTab === 'requested'">
-        <div class="loading" *ngIf="loading">
-          <p>Loading...</p>
-        </div>
-        <div class="error" *ngIf="error">
-          <p>{{ error }}</p>
-        </div>
-        <div class="books-grid" *ngIf="!loading && !error && requestedBooks.length">
+        <div class="books-loading" *ngIf="loading"><p>Loading...</p></div>
+        <div class="books-grid" *ngIf="!loading && requestedBooks.length">
           <div class="book-card" *ngFor="let book of requestedBooks">
             <div class="book-image">
-              <img *ngIf="book.cover" [src]="'data:image/jpeg;base64,' + book.cover" [alt]="book.title">
-              <img *ngIf="!book.cover && book.coverUrl" [src]="book.coverUrl" [alt]="book.title">
-              <div *ngIf="!book.cover && !book.coverUrl" class="book-cover-emoji">📚</div>
+              <img *ngIf="book.coverUrl" [src]="book.coverUrl" [alt]="book.title">
+              <img *ngIf="!book.coverUrl && book.cover" [src]="'data:image/jpeg;base64,' + book.cover" [alt]="book.title">
+              <div *ngIf="!book.coverUrl && !book.cover" class="book-cover-emoji">📚</div>
             </div>
             <div class="book-details">
               <h3>{{ book.title }}</h3>
@@ -227,30 +138,22 @@
             </div>
           </div>
         </div>
-        <div class="empty-state" *ngIf="!loading && !error && !requestedBooks.length">
-          <p>No pending requests.</p>
-        </div>
-        
-        <!-- Pagination Controls -->
-        <div class="pagination" *ngIf="totalPages > 1 && !loading">
-          <button class="pagination-btn" (click)="previousPage()" [disabled]="isFirstPage">
-            ← Previous
-          </button>
-
-          <div class="pagination-info">
-            <span>Page {{ currentPage + 1 }} / {{ totalPages }} • Size: {{ pageSize }}</span>
-          </div>
-
-          <button class="pagination-btn" (click)="nextPage()" [disabled]="isLastPage">
-            Next →
-          </button>
+        <div class="books-empty" *ngIf="!loading && !requestedBooks.length"><p>No pending requests.</p></div>
+        <div class="books-pagination" *ngIf="totalPages > 1 && !loading">
+          <button class="pagination-btn" (click)="prevPage()" [disabled]="isFirstPage">← Previous</button>
+          <div class="pagination-info"><span>Page {{ currentPage + 1 }} / {{ totalPages }}</span></div>
+          <button class="pagination-btn" (click)="nextPage()" [disabled]="isLastPage">Next →</button>
         </div>
       </div>
+
     </div>
   </div>
 </div>
 
-<!-- Book Popup Component -->
-<app-bookpopup [isOpen]="showAddBookModal" [mode]="'add'" (closePopup)="closeAddBookModal()"
-  (bookSaved)="handleBookSaved($event)">
+<app-bookpopup
+  [isOpen]="showPopup"
+  [mode]="popupMode"
+  [book]="selectedBook"
+  (closePopup)="closePopup()"
+  (bookSaved)="onBookSaved($event)">
 </app-bookpopup>

@@ -102,6 +102,28 @@
           margin: 0;
         }
 
+        .name-inputs {
+          display: flex;
+          gap: 1rem;
+          flex-wrap: wrap;
+
+          .edit-input {
+            font-size: 1.5rem;
+            font-weight: 700;
+            padding: 0.5rem;
+            border: 2px solid #64B5F6;
+            border-radius: 8px;
+            width: 200px;
+            flex: 1;
+            min-width: 150px;
+
+            &:focus {
+              outline: none;
+              border-color: #1976D2;
+            }
+          }
+        }
+
         .edit-input {
           font-size: 2rem;
           font-weight: 800;
@@ -183,6 +205,14 @@
             outline: none;
             border-color: #1976D2;
           }
+        }
+
+        .char-counter {
+          display: block;
+          text-align: right;
+          color: #999;
+          font-size: 0.85rem;
+          margin-top: 0.25rem;
         }
       }
 
@@ -818,6 +848,42 @@
 
     &:hover {
       background-color: #a93226;
+    }
+  }
+}
+
+// My Library Section
+.library-section {
+  margin: 3rem 0;
+  padding-top: 2rem;
+  scroll-margin-top: 80px; // Account for any fixed header
+
+  .section-header {
+    margin-bottom: 2rem;
+
+    h2 {
+      font-size: 1.8rem;
+      font-weight: 700;
+      color: #2c3e50;
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      margin: 0;
+
+      i {
+        color: #1976D2;
+        font-size: 1.6rem;
+      }
+    }
+
+    &::after {
+      content: '';
+      display: block;
+      width: 60px;
+      height: 4px;
+      background: linear-gradient(90deg, #1976D2, #64B5F6);
+      border-radius: 2px;
+      margin-top: 1rem;
     }
   }
 }

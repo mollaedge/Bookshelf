@@ -1,18 +1,18 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
-import { BookComponent } from './book.component';
+import { StartStreamComponent } from './start-stream.component';
 
-describe('BookComponent', () => {
-  let component: BookComponent;
-  let fixture: ComponentFixture<BookComponent>;
+describe('StartStreamComponent', () => {
+  let component: StartStreamComponent;
+  let fixture: ComponentFixture<StartStreamComponent>;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      declarations: [BookComponent]
+      declarations: [StartStreamComponent]
     })
     .compileComponents();
 
-    fixture = TestBed.createComponent(BookComponent);
+    fixture = TestBed.createComponent(StartStreamComponent);
     component = fixture.componentInstance;
     fixture.detectChanges();
   });

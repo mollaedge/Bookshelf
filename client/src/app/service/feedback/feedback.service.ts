@@ -2,8 +2,8 @@ import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from '../../../environments/environment';
-import { AppFeedbackDto, AppFeedbackRequest } from '../../interfaces/feedback.interface';
-import { PageResponse } from '../book/books.service';
+import { AppFeedbackDto, AppFeedbackRequest, PublicFeedbackDto } from '../../interfaces/feedback.interface';
+import { PageResponse } from '../../interfaces/page.interface';
 
 @Injectable({ providedIn: 'root' })
 export class FeedbackService {
@@ -21,6 +21,14 @@ export class FeedbackService {
 
   getById(id: number): Observable<AppFeedbackDto> {
     return this.http.get<AppFeedbackDto>(`${this.apiUrl}/${id}`);
+  }
+
+  getPublic(page: number = 0, size: number = 20): Observable<PageResponse<PublicFeedbackDto>> {
+    return this.http.get<PageResponse<PublicFeedbackDto>>(`${this.apiUrl}/public?page=${page}&size=${size}`);
+  }
+
+  getPublicById(id: number): Observable<PublicFeedbackDto> {
+    return this.http.get<PublicFeedbackDto>(`${this.apiUrl}/public/${id}`);
   }
 
   submit(request: AppFeedbackRequest): Observable<AppFeedbackDto> {

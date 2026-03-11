@@ -1,0 +1,328 @@
+<div class="home-container">
+  <div class="home-header">
+    <h1><i class="fas fa-home"></i> Home</h1>
+    <p class="subtitle">See what the community is reading</p>
+  </div>
+
+  <!-- Error Message -->
+  @if (error) {
+    <div class="error-banner">
+      <i class="fas fa-exclamation-circle"></i>
+      <span>{{ error }}</span>
+      <button (click)="error = ''" class="close-error">
+        <i class="fas fa-times"></i>
+      </button>
+    </div>
+  }
+
+  <div class="home-content">
+    <!-- Live Reading Section -->
+    <section class="live-reading-section">
+      <div class="section-header">
+        <h2><i class="fas fa-book-reader"></i> Live Reading</h2>
+        <div class="header-actions">
+          @if (user$ | async) {
+            @if (!isStreaming) {
+              <button class="btn-start-stream" (click)="openStartStreamModal()">
+                <i class="fas fa-broadcast-tower"></i>
+                <span>Start Streaming</span>
+              </button>
+            } @else {
+              <div class="streaming-status">
+                <span class="live-indicator">
+                  <span class="pulse"></span>
+                  YOU'RE LIVE
+                </span>
+                <span class="watcher-badge">
+                  <i class="fas fa-eye"></i>
+                  {{ streamWatcherCount }}
+                </span>
+                <button class="btn-stop-stream" (click)="stopStream()">
+                  <i class="fas fa-stop-circle"></i>
+                  Stop
+                </button>
+              </div>
+            }
+          }
+        </div>
+      </div>
+      
+      <div class="live-reading-grid">
+        <!-- Remote Stream Video (when watching someone else's stream) -->
+        @if (isWatching && watchedStreamHostId) {
+          <div class="remote-stream-container">
+            <div class="stream-header">
+              <h3>
+                <i class="fas fa-video"></i>
+                Watching {{ watchedStreamHostName }}'s Stream
+              </h3>
+              <button class="btn-leave-stream" (click)="leaveStream()">
+                <i class="fas fa-sign-out-alt"></i>
+                Leave Stream
+              </button>
+            </div>
+            <div class="video-wrapper">
+              <video id="remoteVideo" autoplay playsinline></video>
+              <div class="stream-placeholder">
+                <i class="fas fa-video-slash"></i>
+                <p>Waiting for video stream...</p>
+                <small>WebRTC connection will be established soon</small>
+              </div>
+            </div>
+          </div>
+        }
+
+        <!-- Local Stream Video (when streaming) -->
+        @if (isStreaming) {
+          <div class="local-stream-container">
+            <div class="stream-header">
+              <h3>
+                <i class="fas fa-video"></i>
+                Your Live Stream
+              </h3>
+              <div class="stream-stats">
+                <span class="live-badge">
+                  <span class="pulse"></span>
+                  LIVE
+                </span>
+                <span class="watcher-count">
+                  <i class="fas fa-eye"></i>
+                  {{ streamWatcherCount }} watching
+                </span>
+              </div>
+            </div>
+            <div class="video-wrapper">
+              <video id="localVideo" autoplay muted playsinline></video>
+            </div>
+          </div>
+        }
+
+        @if (liveReadingsLoading) {
+          <div class="loading-spinner">
+            <i class="fas fa-spinner fa-spin"></i>
+            <p>Loading live sessions...</p>
+          </div>
+        } @else if (liveReadings.length === 0) {
+          <div class="empty-state">
+            <i class="fas fa-book-open"></i>
+            <p>No one is currently reading</p>
+          </div>
+        } @else {
+          @for (reading of liveReadings; track reading.streamId) {
+            <div class="live-reading-card">
+              @if (reading.bookCover) {
+                <div class="book-cover">
+                  <img [src]="reading.bookCover" [alt]="reading.bookTitle">
+                </div>
+              }
+              <div class="reading-info">
+                <div class="user-info">
+                  <i class="fas fa-user-circle"></i>
+                  <span class="username">{{ reading.hostName }}</span>
+                  <span class="time">{{ getTimeAgo(reading.startedAt) }}</span>
+                </div>
+                @if (reading.bookTitle) {
+                  <h3 class="book-title">{{ reading.bookTitle }}</h3>
+                }
+                @if (reading.currentPage && reading.totalPages) {
+                  <div class="progress-section">
+                    <div class="progress-bar">
+                      <div 
+                        class="progress-fill" 
+                        [style.width.%]="getReadingProgress(reading)">
+                      </div>
+                    </div>
+                    <span class="progress-text">
+                      {{ reading.currentPage }} / {{ reading.totalPages }} pages ({{ getReadingProgress(reading) }}%)
+                    </span>
+                  </div>
+                }
+                <div class="card-footer">
+                  <div class="watcher-count">
+                    <i class="fas fa-eye"></i>
+                    <span>{{ reading.watcherCount }} watching</span>
+                  </div>
+                  @if (!isCurrentUserStream(reading)) {
+                    @if (!isStreaming && !isWatching) {
+                      <button class="btn-join-stream" (click)="joinStream(reading)">
+                        <i class="fas fa-play-circle"></i>
+                        Join Stream
+                      </button>
+                    } @else {
+                      <span class="busy-indicator">Active in another stream</span>
+                    }
+                  } @else {
+                    <span class="own-stream-indicator">Your stream</span>
+                  }
+                </div>
+              </div>
+            </div>
+          }
+        }
+      </div>
+    </section>
+
+    <!-- User Posts Section -->
+    <section class="user-posts-section">
+      <div class="section-header">
+        <h2><i class="fas fa-comments"></i> Recent Activity</h2>
+        @if (user$ | async) {
+          <button class="btn-create-post" (click)="openCreatePostModal()">
+            <i class="fas fa-plus"></i>
+            <span>Create Post</span>
+          </button>
+        }
+      </div>
+
+      <div class="posts-container">
+        @if (postsLoading) {
+          <div class="loading-spinner">
+            <i class="fas fa-spinner fa-spin"></i>
+            <p>Loading posts...</p>
+          </div>
+        } @else if (userPosts.length === 0) {
+          <div class="empty-state">
+            <i class="fas fa-comment-slash"></i>
+            <p>No posts yet</p>
+            <small>Be the first to share your thoughts!</small>
+          </div>
+        } @else {
+          @for (post of userPosts; track post.id) {
+            <div class="post-card">
+              <div class="post-header">
+                <div class="user-avatar">
+                  <i class="fas fa-user-circle"></i>
+                </div>
+                <div class="post-meta">
+                  <span class="username">{{ post.authorName }}</span>
+                  <span class="timestamp">{{ getTimeAgo(post.createdDate) }}</span>
+                </div>
+                @if (isPostOwner(post)) {
+                  <div class="post-actions">
+                    <button class="edit-post-btn" (click)="openEditPostModal(post)" title="Edit post">
+                      <i class="fas fa-edit"></i>
+                    </button>
+                    <button class="delete-post-btn" (click)="deletePost(post)" title="Delete post">
+                      <i class="fas fa-trash"></i>
+                    </button>
+                  </div>
+                }
+              </div>
+              <div class="post-body">
+                <h3 class="post-title">{{ post.title }}</h3>
+                <p class="post-content">{{ post.content }}</p>
+                
+                @if (post.attachments && post.attachments.length > 0) {
+                  <div class="attachments-section">
+                    <div class="attachments-grid">
+                      @for (attachment of post.attachments; track attachment.id) {
+                        @if (attachment.contentType.startsWith('image/')) {
+                          <!-- Image: Click to preview in lightbox -->
+                          <div class="attachment-item clickable" (click)="openLightbox(attachment.dataUri, attachment.fileName)">
+                            <img [src]="attachment.dataUri" 
+                                 [alt]="attachment.fileName"
+                                 class="attachment-preview">
+                            <div class="preview-overlay">
+                              <i class="fas fa-search-plus"></i>
+                            </div>
+                          </div>
+                        } @else {
+                          <!-- Non-image: Click to download -->
+                          <div class="attachment-item clickable" (click)="downloadAttachment(attachment.dataUri, attachment.fileName)">
+                            <div class="attachment-file">
+                              <i class="fas" 
+                                 [class.fa-file-pdf]="attachment.contentType === 'application/pdf'"
+                                 [class.fa-file-word]="attachment.contentType.includes('word') || attachment.contentType.includes('document')"
+                                 [class.fa-file-image]="attachment.contentType.startsWith('image/')"
+                                 [class.fa-file]="!attachment.contentType.startsWith('image/') && attachment.contentType !== 'application/pdf' && !attachment.contentType.includes('word')"></i>
+                              <span class="file-name">{{ attachment.fileName }}</span>
+                              <span class="file-size">{{ (attachment.fileSize / 1024).toFixed(1) }} KB</span>
+                            </div>
+                            <div class="download-overlay">
+                              <i class="fas fa-download"></i>
+                            </div>
+                          </div>
+                        }
+                      }
+                    </div>
+                  </div>
+                }
+              </div>
+              <div class="post-footer">
+                <button class="like-btn">
+                  <i class="fas fa-heart"></i>
+                  <span>{{ post.likesCount || 0 }}</span>
+                </button>
+                <button class="comment-btn">
+                  <i class="fas fa-comment"></i>
+                  <span>{{ post.commentsCount || 0 }}</span>
+                </button>
+                <button class="share-btn">
+                  <i class="fas fa-share"></i>
+                  <span>Share</span>
+                </button>
+              </div>
+            </div>
+          }
+        }
+      </div>
+
+      <!-- Pagination -->
+      @if (totalPages > 1) {
+        <div class="pagination">
+          <button 
+            class="page-btn" 
+            [disabled]="currentPage === 0"
+            (click)="loadPreviousPage()">
+            <i class="fas fa-chevron-left"></i>
+            Previous
+          </button>
+          <span class="page-info">Page {{ currentPage + 1 }} of {{ totalPages }}</span>
+          <button 
+            class="page-btn" 
+            [disabled]="isLastPage"
+            (click)="loadNextPage()">
+            Next
+            <i class="fas fa-chevron-right"></i>
+          </button>
+        </div>
+      }
+    </section>
+  </div>
+</div>
+
+<!-- Image Lightbox/Preview -->
+@if (showLightbox) {
+  <div class="lightbox-overlay" (click)="closeLightbox()">
+    <div class="lightbox-content" (click)="$event.stopPropagation()">
+      <button class="lightbox-close" (click)="closeLightbox()">
+        <i class="fas fa-times"></i>
+      </button>
+      <div class="lightbox-image-container">
+        <img [src]="lightboxImageUrl" [alt]="lightboxImageName" class="lightbox-image">
+      </div>
+      <div class="lightbox-footer">
+        <span class="lightbox-filename">{{ lightboxImageName }}</span>
+        <button class="lightbox-download" (click)="downloadAttachment(lightboxImageUrl, lightboxImageName)">
+          <i class="fas fa-download"></i>
+          Download
+        </button>
+      </div>
+    </div>
+  </div>
+}
+
+<!-- Create Post Modal Component -->
+<app-create-post 
+  [isOpen]="showCreatePostModal" 
+  [postToEdit]="editingPost"
+  (closeModal)="closeCreatePostModal()"
+  (postCreated)="onPostCreated()">
+</app-create-post>
+
+<!-- Start Stream Modal -->
+<app-start-stream
+  [isOpen]="showStartStreamModal"
+  (closeModal)="closeStartStreamModal()"
+  (streamStart)="onStreamStart($event)">
+</app-start-stream>

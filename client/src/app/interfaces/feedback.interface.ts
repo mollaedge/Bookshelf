@@ -7,6 +7,12 @@ export interface CommentDto {
   createdAt: string;
 }
 
+export interface PublicCommentDto {
+  authorName: string;
+  message: string;
+  createdAt: string;
+}
+
 export interface AppFeedbackDto {
   id: number;
   title: string;
@@ -18,6 +24,18 @@ export interface AppFeedbackDto {
   age: string;
   author?: string;
   comments: CommentDto[];
+}
+
+export interface PublicFeedbackDto {
+  id: number;
+  title: string;
+  description: string;
+  status: FeedbackStatus;
+  upvoteCount: number;
+  age: string;
+  createdDate: string;
+  authorName: string;
+  comments: PublicCommentDto[];
 }
 
 export interface AppFeedbackRequest {

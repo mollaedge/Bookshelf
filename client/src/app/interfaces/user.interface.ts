@@ -32,3 +32,25 @@ export interface UserDashboardResponse {
   genreDistribution: GenreDistribution[];
   readingStreak: number;
 }
+
+export interface UserProfileResponse {
+  id: number;
+  firstname: string;
+  lastname: string;
+  fullName: string;
+  email: string;
+  dateOfBirth: string;
+  bio?: string;
+  location?: string;
+  provider: string;
+  accountLocked: boolean;
+  enabled: boolean;
+}
+
+export interface UpdateProfileRequest {
+  firstname: string;
+  lastname: string;
+  dateOfBirth?: string;
+  bio?: string;
+  location?: string;
+}

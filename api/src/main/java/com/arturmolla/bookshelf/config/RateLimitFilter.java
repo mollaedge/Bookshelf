@@ -30,6 +30,28 @@ public class RateLimitFilter extends OncePerRequestFilter {
 
     private final Map<String, Bucket> buckets = new ConcurrentHashMap<>();
 
+    /**
+     * Skip rate-limiting for:
+     * <ul>
+     *   <li>{@code /streams/**} – SSE connections are long-lived (1 request, open forever)
+     *       and the WebRTC signalling endpoint is called at high frequency (one call per
+     *       ICE candidate / SDP exchange). Applying a token-bucket here would disconnect
+     *       active streamers.</li>
+     *   <li>Async dispatches – internal Tomcat re-dispatches for SSE writes; these are
+     *       never real client requests and must never consume tokens.</li>
+     * </ul>
+     */
+    @Override
+    protected boolean shouldNotFilter(HttpServletRequest request) {
+        String path = request.getRequestURI();
+        String contextPath = request.getContextPath();
+        String relativePath = path.startsWith(contextPath)
+                ? path.substring(contextPath.length())
+                : path;
+        // Bypass for all streaming paths
+        return relativePath.startsWith("/streams/") || relativePath.equals("/streams");
+    }
+
     @Override
     protected void doFilterInternal(HttpServletRequest request,
                                     @NonNull HttpServletResponse response,
@@ -52,3 +74,5 @@ public class RateLimitFilter extends OncePerRequestFilter {
         });
     }
 }
+
+

@@ -5,11 +5,13 @@ import com.arturmolla.bookshelf.model.common.PageResponse;
 import com.arturmolla.bookshelf.model.dto.AppFeedbackDto;
 import com.arturmolla.bookshelf.model.dto.AppFeedbackRequest;
 import com.arturmolla.bookshelf.model.dto.CommentDto;
+import com.arturmolla.bookshelf.model.dto.PublicAppFeedbackDto;
 import com.arturmolla.bookshelf.model.entity.EntityAppFeedback;
 import com.arturmolla.bookshelf.model.entity.EntityAppFeedbackComment;
 import com.arturmolla.bookshelf.model.enums.AppFeedbackStatus;
 import com.arturmolla.bookshelf.model.user.User;
 import com.arturmolla.bookshelf.repository.RepositoryAppFeedback;
+import com.arturmolla.bookshelf.repository.RepositoryUser;
 import com.arturmolla.bookshelf.service.mapper.MapperAppFeedback;
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.transaction.Transactional;
@@ -34,6 +36,7 @@ public class AppFeedbackService {
     private static final String ADMIN_ROLE = "ROLE_ADMIN";
 
     private final RepositoryAppFeedback repositoryAppFeedback;
+    private final RepositoryUser repositoryUser;
     private final MapperAppFeedback mapperAppFeedback;
 
     public AppFeedbackDto save(AppFeedbackRequest request, Authentication connectedUser) {
@@ -163,6 +166,37 @@ public class AppFeedbackService {
                 feedbacks.isFirst(),
                 feedbacks.isLast()
         );
+    }
+
+    public PageResponse<PublicAppFeedbackDto> getPublicFeedbacks(int page, int size) {
+        Pageable pageable = PageRequest.of(page, size, Sort.by("createdDate").descending());
+        Page<EntityAppFeedback> feedbacks = repositoryAppFeedback.findAll(pageable);
+        List<PublicAppFeedbackDto> content = feedbacks.stream()
+                .map(f -> {
+                    String authorName = repositoryUser.findById(f.getCreatedBy())
+                            .map(User::getFullName)
+                            .orElse("Unknown");
+                    return mapperAppFeedback.toPublicDto(f, authorName);
+                })
+                .toList();
+        return new PageResponse<>(
+                content,
+                feedbacks.getNumber(),
+                feedbacks.getSize(),
+                feedbacks.getTotalElements(),
+                feedbacks.getTotalPages(),
+                feedbacks.isFirst(),
+                feedbacks.isLast()
+        );
+    }
+
+    public PublicAppFeedbackDto getPublicFeedbackById(Long id) {
+        EntityAppFeedback feedback = repositoryAppFeedback.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException(FEEDBACK_NOT_FOUND + id));
+        String authorName = repositoryUser.findById(feedback.getCreatedBy())
+                .map(User::getFullName)
+                .orElse("Unknown");
+        return mapperAppFeedback.toPublicDto(feedback, authorName);
     }
 
     private boolean isAdmin(Authentication authentication) {

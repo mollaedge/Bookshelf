@@ -5,7 +5,7 @@
       <h1>Feedback & Suggestions</h1>
       <p>Share your ideas and help us improve the Bookshelf app</p>
     </div>
-    <button class="btn-add" (click)="openAddModal()">
+    <button class="btn-add" *ngIf="isLoggedIn" (click)="openAddModal()">
       <i class="fas fa-plus"></i>
       Add Feedback
     </button>
@@ -20,6 +20,7 @@
         All Feedback
       </button>
       <button
+        *ngIf="isLoggedIn"
         [class.active]="activeTab === 'my'"
         (click)="switchTab('my')">
         My Feedback
@@ -79,12 +80,17 @@
       <!-- Card Footer -->
       <div class="card-footer">
         <button
+          *ngIf="isLoggedIn"
           class="btn-upvote"
           [class.upvoted]="card.upvotedByCurrentUser"
           (click)="toggleUpvote(card)">
           <i class="fas fa-arrow-up upvote-icon"></i>
           <span class="upvote-count">{{ card.upvoteCount }}</span>
         </button>
+        <span *ngIf="!isLoggedIn" class="btn-upvote static">
+          <i class="fas fa-arrow-up upvote-icon"></i>
+          <span class="upvote-count">{{ card.upvoteCount }}</span>
+        </span>
 
         <button class="btn-comments" (click)="openComments(card)">
           <i class="fas fa-comment comment-icon"></i>
@@ -99,7 +105,7 @@
       <i class="fas fa-lightbulb empty-icon"></i>
       <h3>No feedback yet</h3>
       <p>Be the first to share your ideas!</p>
-      <button class="btn-primary" (click)="openAddModal()">Add Feedback</button>
+      <button class="btn-primary" *ngIf="isLoggedIn" (click)="openAddModal()">Add Feedback</button>
     </div>
   </div>
 
@@ -243,7 +249,7 @@
       </div>
 
       <!-- Add Comment Form -->
-      <div class="add-comment">
+      <div class="add-comment" *ngIf="isLoggedIn">
         <textarea
           [(ngModel)]="newComment"
           placeholder="Write a comment..."

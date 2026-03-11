@@ -3,13 +3,14 @@ package com.arturmolla.bookshelf.controller;
 import com.arturmolla.bookshelf.model.common.PageResponse;
 import com.arturmolla.bookshelf.model.dto.DtoBookRequest;
 import com.arturmolla.bookshelf.model.dto.DtoBookResponse;
+import com.arturmolla.bookshelf.model.dto.DtoBookUpdateRequest;
 import com.arturmolla.bookshelf.model.dto.DtoBorrowedBooksResponse;
 import com.arturmolla.bookshelf.model.dto.DtoRequestedBooksResponse;
 import com.arturmolla.bookshelf.service.ServiceBook;
-import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -17,6 +18,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -36,6 +38,15 @@ public class ControllerBook {
     public ResponseEntity<Long> saveBook(@Valid @RequestBody DtoBookRequest request,
                                          Authentication connectedUser) {
         return ResponseEntity.ok(serviceBook.saveBook(request, connectedUser));
+    }
+
+    @PutMapping("/{book-id}")
+    public ResponseEntity<DtoBookResponse> updateBook(
+            @PathVariable("book-id") Long bookId,
+            @RequestBody DtoBookUpdateRequest request,
+            Authentication connectedUser
+    ) {
+        return ResponseEntity.ok(serviceBook.updateBook(bookId, request, connectedUser));
     }
 
     @GetMapping("/{book-id}")
@@ -88,22 +99,6 @@ public class ControllerBook {
         return ResponseEntity.ok(serviceBook.getAllReturnedBooks(page, size, connectedUser));
     }
 
-    @PatchMapping("/shareable/{book-id}")
-    public ResponseEntity<Long> updateShareableStatus(
-            @PathVariable("book-id") Long bookId,
-            Authentication connectedUser
-    ) {
-        return ResponseEntity.ok(serviceBook.updateShareableStatus(bookId, connectedUser));
-    }
-
-    @PatchMapping("/archive/{book-id}")
-    public ResponseEntity<Long> updateArchiveStatus(
-            @PathVariable("book-id") Long bookId,
-            Authentication connectedUser
-    ) {
-        return ResponseEntity.ok(serviceBook.updateArchiveStatus(bookId, connectedUser));
-    }
-
     @PostMapping("/borrow/{book-id}")
     public ResponseEntity<Long> borrowBook(
             @PathVariable("book-id") Long bookId,
@@ -128,17 +123,6 @@ public class ControllerBook {
         return ResponseEntity.ok(serviceBook.approveReturnBorrowedBook(bookId, connectedUser));
     }
 
-    @PostMapping(value = "/cover/{book-id}", consumes = "multipart/form-data")
-    public ResponseEntity<?> uploadBookCoverImage(
-            @PathVariable("book-id") Long bookId,
-            @Parameter()
-            @RequestPart("file") MultipartFile file,
-            Authentication connectedUser
-    ) {
-        serviceBook.uploadBookCoverImage(file, connectedUser, bookId);
-        return ResponseEntity.accepted().build();
-    }
-
     @DeleteMapping("/{book-id}")
     public ResponseEntity<Void> deleteBookById(@PathVariable("book-id") Long bookId, Authentication connectedUser) {
         serviceBook.deleteBookById(bookId, connectedUser);
@@ -151,5 +135,26 @@ public class ControllerBook {
             Authentication connectedUser
     ) {
         return ResponseEntity.ok(serviceBook.getRecentBooks(size, connectedUser));
+    }
+
+    @PostMapping(value = "/{book-id}/cover", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<Void> uploadBookCover(
+            @PathVariable("book-id") Long bookId,
+            @RequestPart("file") MultipartFile file,
+            Authentication connectedUser
+    ) {
+        serviceBook.uploadBookCoverImage(file, connectedUser, bookId);
+        return ResponseEntity.accepted().build();
+    }
+
+    @GetMapping(value = "/{book-id}/cover", produces = MediaType.IMAGE_JPEG_VALUE)
+    public ResponseEntity<byte[]> getBookCover(@PathVariable("book-id") Long bookId) {
+        byte[] cover = serviceBook.getBookCoverImage(bookId);
+        if (cover == null || cover.length == 0) {
+            return ResponseEntity.noContent().build();
+        }
+        return ResponseEntity.ok()
+                .contentType(MediaType.IMAGE_JPEG)
+                .body(cover);
     }
 }

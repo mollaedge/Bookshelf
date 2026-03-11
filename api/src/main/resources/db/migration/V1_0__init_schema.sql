@@ -1,5 +1,5 @@
 -- ============================================================
--- V1__init_schema.sql
+-- V1_0__init_schema.sql
 -- Full initial schema for the Bookshelf application.
 -- Covers every entity class and their relationships.
 -- The default schema (public) is configured via JPA properties.
@@ -150,7 +150,7 @@ CREATE TABLE IF NOT EXISTS app_feedback_comments (
 
 -- Default roles (INSERT ... ON CONFLICT to make script idempotent)
 INSERT INTO role (name, created_date) VALUES
-  ('ROLE_USER',  NOW()),
-  ('ROLE_ADMIN', NOW())
+  ('USER',  NOW()),
+  ('ADMIN', NOW())
 ON CONFLICT (name) DO NOTHING;
 
