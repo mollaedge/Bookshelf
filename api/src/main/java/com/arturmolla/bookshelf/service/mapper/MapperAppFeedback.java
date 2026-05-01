@@ -1,10 +1,8 @@
 package com.arturmolla.bookshelf.service.mapper;
 
-import com.arturmolla.bookshelf.model.dto.AppFeedbackDto;
+import com.arturmolla.bookshelf.model.dto.DtoAppFeedback;
 import com.arturmolla.bookshelf.model.dto.AppFeedbackRequest;
-import com.arturmolla.bookshelf.model.dto.CommentDto;
-import com.arturmolla.bookshelf.model.dto.PublicAppFeedbackDto;
-import com.arturmolla.bookshelf.model.dto.PublicCommentDto;
+import com.arturmolla.bookshelf.model.dto.DtoComment;
 import com.arturmolla.bookshelf.model.entity.EntityAppFeedback;
 import com.arturmolla.bookshelf.model.entity.EntityAppFeedbackComment;
 import org.springframework.stereotype.Component;
@@ -22,8 +20,8 @@ public class MapperAppFeedback {
                 .build();
     }
 
-    public AppFeedbackDto toDto(EntityAppFeedback entity, Long currentUserId) {
-        return AppFeedbackDto.builder()
+    public DtoAppFeedback toDto(EntityAppFeedback entity, Long currentUserId) {
+        return DtoAppFeedback.builder()
                 .id(entity.getId())
                 .title(entity.getTitle())
                 .description(entity.getDescription())
@@ -38,24 +36,24 @@ public class MapperAppFeedback {
                 .build();
     }
 
-    private List<CommentDto> mapComments(EntityAppFeedback entity) {
+    private List<DtoComment> mapComments(EntityAppFeedback entity) {
         if (entity.getComments() == null) return Collections.emptyList();
         return entity.getComments().stream()
                 .map(this::toCommentDto)
                 .toList();
     }
 
-    private CommentDto toCommentDto(EntityAppFeedbackComment comment) {
-        return CommentDto.builder()
+    private DtoComment toCommentDto(EntityAppFeedbackComment comment) {
+        return DtoComment.builder()
                 .authorId(comment.getAuthorId())
-                .fullName(comment.getAuthorName())
+                .authorName(comment.getAuthorName())
                 .message(comment.getMessage())
                 .createdAt(comment.getCreatedAt())
                 .build();
     }
 
-    public PublicAppFeedbackDto toPublicDto(EntityAppFeedback entity, String authorName) {
-        return PublicAppFeedbackDto.builder()
+    public DtoAppFeedback toPublicDto(EntityAppFeedback entity, String authorName) {
+        return DtoAppFeedback.builder()
                 .id(entity.getId())
                 .title(entity.getTitle())
                 .description(entity.getDescription())
@@ -64,23 +62,7 @@ public class MapperAppFeedback {
                 .age(entity.getAge())
                 .createdDate(entity.getCreatedDate())
                 .authorName(authorName)
-                .comments(mapPublicComments(entity))
-                .build();
-    }
-
-    private List<PublicCommentDto> mapPublicComments(EntityAppFeedback entity) {
-        if (entity.getComments() == null) return Collections.emptyList();
-        return entity.getComments().stream()
-                .map(this::toPublicCommentDto)
-                .toList();
-    }
-
-    private PublicCommentDto toPublicCommentDto(EntityAppFeedbackComment comment) {
-        return PublicCommentDto.builder()
-                .authorName(comment.getAuthorName())
-                .message(comment.getMessage())
-                .createdAt(comment.getCreatedAt())
+                .comments(mapComments(entity))
                 .build();
     }
 }
-

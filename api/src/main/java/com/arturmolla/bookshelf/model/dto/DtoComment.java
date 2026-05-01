@@ -11,8 +11,9 @@ import java.time.LocalDateTime;
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
-public class PublicCommentDto {
+public class DtoComment {
 
+    private Long authorId;
     private String authorName;
     private String message;
     private LocalDateTime createdAt;

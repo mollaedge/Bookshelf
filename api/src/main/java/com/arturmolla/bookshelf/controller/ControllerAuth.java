@@ -2,7 +2,7 @@ package com.arturmolla.bookshelf.controller;
 
 import com.arturmolla.bookshelf.aspects.annotation.RateLimit;
 import com.arturmolla.bookshelf.model.dto.AuthenticationRequest;
-import com.arturmolla.bookshelf.model.dto.AuthenticationResponse;
+import com.arturmolla.bookshelf.model.dto.DtoToken;
 import com.arturmolla.bookshelf.model.dto.DtoRegistrationRequest;
 import com.arturmolla.bookshelf.service.ServiceAuthentication;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -30,7 +30,7 @@ public class ControllerAuth {
     }
 
     @PostMapping("/authenticate")
-    public ResponseEntity<AuthenticationResponse> authenticate(@RequestBody @Valid AuthenticationRequest authenticationRequest) {
+    public ResponseEntity<DtoToken> authenticate(@RequestBody @Valid AuthenticationRequest authenticationRequest) {
         return ResponseEntity.ok(service.authenticate(authenticationRequest));
     }
 

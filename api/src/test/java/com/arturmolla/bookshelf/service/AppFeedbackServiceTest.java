@@ -2,9 +2,9 @@ package com.arturmolla.bookshelf.service;
 
 import com.arturmolla.bookshelf.config.exceptions.OperationNotPermittedException;
 import com.arturmolla.bookshelf.model.common.PageResponse;
-import com.arturmolla.bookshelf.model.dto.AppFeedbackDto;
 import com.arturmolla.bookshelf.model.dto.AppFeedbackRequest;
-import com.arturmolla.bookshelf.model.dto.CommentDto;
+import com.arturmolla.bookshelf.model.dto.DtoAppFeedback;
+import com.arturmolla.bookshelf.model.dto.DtoComment;
 import com.arturmolla.bookshelf.model.entity.EntityAppFeedback;
 import com.arturmolla.bookshelf.model.enums.AppFeedbackStatus;
 import com.arturmolla.bookshelf.model.user.Role;
@@ -65,7 +65,7 @@ class AppFeedbackServiceTest {
     private User regularUser;
     private User adminUser;
     private EntityAppFeedback feedback;
-    private AppFeedbackDto feedbackDto;
+    private DtoAppFeedback feedbackDto;
 
     @BeforeEach
     void setUp() {
@@ -99,7 +99,7 @@ class AppFeedbackServiceTest {
         setField(feedback, "id", 10L);
         setField(feedback, "createdBy", 1L);
 
-        feedbackDto = AppFeedbackDto.builder()
+        feedbackDto = DtoAppFeedback.builder()
                 .id(10L)
                 .title("Test Bug")
                 .description("Something is broken")
@@ -155,7 +155,7 @@ class AppFeedbackServiceTest {
             when(repositoryAppFeedback.save(feedback)).thenReturn(feedback);
             when(mapperAppFeedback.toDto(feedback, 1L)).thenReturn(feedbackDto);
 
-            AppFeedbackDto result = appFeedbackService.save(request, userAuth);
+            DtoAppFeedback result = appFeedbackService.save(request, userAuth);
 
             assertThat(result).isEqualTo(feedbackDto);
             verify(repositoryAppFeedback).save(feedback);
@@ -177,10 +177,10 @@ class AppFeedbackServiceTest {
             when(repositoryAppFeedback.findAll(any(Pageable.class))).thenReturn(page);
             when(mapperAppFeedback.toDto(eq(feedback), eq(1L))).thenReturn(feedbackDto);
 
-            PageResponse<AppFeedbackDto> result = appFeedbackService.getAll(0, 15, userAuth);
+            PageResponse<DtoAppFeedback> result = appFeedbackService.getAll(0, 15, userAuth);
 
             assertThat(result.getContent()).hasSize(1);
-            assertThat(result.getContent().get(0)).isEqualTo(feedbackDto);
+            assertThat(result.getContent().getFirst()).isEqualTo(feedbackDto);
             assertThat(result.getTotalElement()).isEqualTo(1);
         }
 
@@ -190,7 +190,7 @@ class AppFeedbackServiceTest {
             when(repositoryAppFeedback.findAll(any(Pageable.class)))
                     .thenReturn(new PageImpl<>(Collections.emptyList()));
 
-            PageResponse<AppFeedbackDto> result = appFeedbackService.getAll(0, 15, userAuth);
+            PageResponse<DtoAppFeedback> result = appFeedbackService.getAll(0, 15, userAuth);
 
             assertThat(result.getContent()).isEmpty();
             assertThat(result.getTotalElement()).isZero();
@@ -210,7 +210,7 @@ class AppFeedbackServiceTest {
             when(repositoryAppFeedback.findById(10L)).thenReturn(Optional.of(feedback));
             when(mapperAppFeedback.toDto(feedback, 1L)).thenReturn(feedbackDto);
 
-            AppFeedbackDto result = appFeedbackService.getById(10L, userAuth);
+            DtoAppFeedback result = appFeedbackService.getById(10L, userAuth);
 
             assertThat(result).isEqualTo(feedbackDto);
         }
@@ -362,7 +362,7 @@ class AppFeedbackServiceTest {
         @Test
         @DisplayName("adds comment to feedback")
         void addComment_success() {
-            CommentDto commentDto = CommentDto.builder().message("Great feedback!").build();
+            DtoComment commentDto = DtoComment.builder().message("Great feedback!").build();
             when(repositoryAppFeedback.findById(10L)).thenReturn(Optional.of(feedback));
             when(repositoryAppFeedback.save(any())).thenReturn(feedback);
             when(mapperAppFeedback.toDto(any(), eq(1L))).thenReturn(feedbackDto);
@@ -370,9 +370,9 @@ class AppFeedbackServiceTest {
             appFeedbackService.addComment(10L, commentDto, userAuth);
 
             assertThat(feedback.getComments()).hasSize(1);
-            assertThat(feedback.getComments().get(0).getMessage()).isEqualTo("Great feedback!");
-            assertThat(feedback.getComments().get(0).getAuthorId()).isEqualTo(1L);
-            assertThat(feedback.getComments().get(0).getAuthorName()).isEqualTo("John Doe");
+            assertThat(feedback.getComments().getFirst().getMessage()).isEqualTo("Great feedback!");
+            assertThat(feedback.getComments().getFirst().getAuthorId()).isEqualTo(1L);
+            assertThat(feedback.getComments().getFirst().getAuthorName()).isEqualTo("John Doe");
         }
 
         @Test
@@ -382,8 +382,8 @@ class AppFeedbackServiceTest {
             when(repositoryAppFeedback.save(any())).thenReturn(feedback);
             when(mapperAppFeedback.toDto(any(), any())).thenReturn(feedbackDto);
 
-            appFeedbackService.addComment(10L, CommentDto.builder().message("First").build(), userAuth);
-            appFeedbackService.addComment(10L, CommentDto.builder().message("Second").build(), userAuth);
+            appFeedbackService.addComment(10L, DtoComment.builder().message("First").build(), userAuth);
+            appFeedbackService.addComment(10L, DtoComment.builder().message("Second").build(), userAuth);
 
             assertThat(feedback.getComments()).hasSize(2);
         }
@@ -394,7 +394,7 @@ class AppFeedbackServiceTest {
             when(repositoryAppFeedback.findById(999L)).thenReturn(Optional.empty());
 
             assertThatThrownBy(() -> appFeedbackService.addComment(999L,
-                    CommentDto.builder().message("test").build(), userAuth))
+                    DtoComment.builder().message("test").build(), userAuth))
                     .isInstanceOf(EntityNotFoundException.class);
         }
     }
@@ -533,10 +533,10 @@ class AppFeedbackServiceTest {
             when(repositoryAppFeedback.findAllByCreatedBy(eq(1L), any(Pageable.class))).thenReturn(page);
             when(mapperAppFeedback.toDto(eq(feedback), eq(1L))).thenReturn(feedbackDto);
 
-            PageResponse<AppFeedbackDto> result = appFeedbackService.getMyFeedbacks(0, 15, userAuth);
+            PageResponse<DtoAppFeedback> result = appFeedbackService.getMyFeedbacks(0, 15, userAuth);
 
             assertThat(result.getContent()).hasSize(1);
-            assertThat(result.getContent().get(0)).isEqualTo(feedbackDto);
+            assertThat(result.getContent().getFirst()).isEqualTo(feedbackDto);
         }
 
         @Test
@@ -545,7 +545,7 @@ class AppFeedbackServiceTest {
             when(repositoryAppFeedback.findAllByCreatedBy(eq(1L), any(Pageable.class)))
                     .thenReturn(new PageImpl<>(Collections.emptyList()));
 
-            PageResponse<AppFeedbackDto> result = appFeedbackService.getMyFeedbacks(0, 15, userAuth);
+            PageResponse<DtoAppFeedback> result = appFeedbackService.getMyFeedbacks(0, 15, userAuth);
 
             assertThat(result.getContent()).isEmpty();
         }
@@ -565,7 +565,7 @@ class AppFeedbackServiceTest {
             when(repositoryAppFeedback.findAllByStatus(eq(AppFeedbackStatus.NEW), any(Pageable.class))).thenReturn(page);
             when(mapperAppFeedback.toDto(eq(feedback), eq(2L))).thenReturn(feedbackDto);
 
-            PageResponse<AppFeedbackDto> result = appFeedbackService.getAllByStatus(AppFeedbackStatus.NEW, 0, 15, adminAuth);
+            PageResponse<DtoAppFeedback> result = appFeedbackService.getAllByStatus(AppFeedbackStatus.NEW, 0, 15, adminAuth);
 
             assertThat(result.getContent()).hasSize(1);
         }
@@ -576,7 +576,7 @@ class AppFeedbackServiceTest {
             when(repositoryAppFeedback.findAllByStatus(eq(AppFeedbackStatus.CLOSED), any(Pageable.class)))
                     .thenReturn(new PageImpl<>(Collections.emptyList()));
 
-            PageResponse<AppFeedbackDto> result = appFeedbackService.getAllByStatus(AppFeedbackStatus.CLOSED, 0, 15, adminAuth);
+            PageResponse<DtoAppFeedback> result = appFeedbackService.getAllByStatus(AppFeedbackStatus.CLOSED, 0, 15, adminAuth);
 
             assertThat(result.getContent()).isEmpty();
         }

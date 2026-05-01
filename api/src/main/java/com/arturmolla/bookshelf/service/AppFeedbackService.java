@@ -2,10 +2,9 @@ package com.arturmolla.bookshelf.service;
 
 import com.arturmolla.bookshelf.config.exceptions.OperationNotPermittedException;
 import com.arturmolla.bookshelf.model.common.PageResponse;
-import com.arturmolla.bookshelf.model.dto.AppFeedbackDto;
+import com.arturmolla.bookshelf.model.dto.DtoAppFeedback;
 import com.arturmolla.bookshelf.model.dto.AppFeedbackRequest;
-import com.arturmolla.bookshelf.model.dto.CommentDto;
-import com.arturmolla.bookshelf.model.dto.PublicAppFeedbackDto;
+import com.arturmolla.bookshelf.model.dto.DtoComment;
 import com.arturmolla.bookshelf.model.entity.EntityAppFeedback;
 import com.arturmolla.bookshelf.model.entity.EntityAppFeedbackComment;
 import com.arturmolla.bookshelf.model.enums.AppFeedbackStatus;
@@ -39,18 +38,18 @@ public class AppFeedbackService {
     private final RepositoryUser repositoryUser;
     private final MapperAppFeedback mapperAppFeedback;
 
-    public AppFeedbackDto save(AppFeedbackRequest request, Authentication connectedUser) {
+    public DtoAppFeedback save(AppFeedbackRequest request, Authentication connectedUser) {
         var user = (User) connectedUser.getPrincipal();
         EntityAppFeedback feedback = mapperAppFeedback.toEntity(request);
         EntityAppFeedback saved = repositoryAppFeedback.save(feedback);
         return mapperAppFeedback.toDto(saved, user.getId());
     }
 
-    public PageResponse<AppFeedbackDto> getAll(int page, int size, Authentication connectedUser) {
+    public PageResponse<DtoAppFeedback> getAll(int page, int size, Authentication connectedUser) {
         var user = (User) connectedUser.getPrincipal();
         Pageable pageable = PageRequest.of(page, size, Sort.by("createdDate").descending());
         Page<EntityAppFeedback> feedbacks = repositoryAppFeedback.findAll(pageable);
-        List<AppFeedbackDto> content = feedbacks.stream()
+        List<DtoAppFeedback> content = feedbacks.stream()
                 .map(f -> mapperAppFeedback.toDto(f, user.getId()))
                 .toList();
         return new PageResponse<>(
@@ -64,14 +63,14 @@ public class AppFeedbackService {
         );
     }
 
-    public AppFeedbackDto getById(Long id, Authentication connectedUser) {
+    public DtoAppFeedback getById(Long id, Authentication connectedUser) {
         var user = (User) connectedUser.getPrincipal();
         EntityAppFeedback feedback = repositoryAppFeedback.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException(FEEDBACK_NOT_FOUND + id));
         return mapperAppFeedback.toDto(feedback, user.getId());
     }
 
-    public AppFeedbackDto upvote(Long id, Authentication connectedUser) {
+    public DtoAppFeedback upvote(Long id, Authentication connectedUser) {
         var user = (User) connectedUser.getPrincipal();
         EntityAppFeedback feedback = repositoryAppFeedback.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException(FEEDBACK_NOT_FOUND + id));
@@ -83,7 +82,7 @@ public class AppFeedbackService {
         return mapperAppFeedback.toDto(repositoryAppFeedback.save(feedback), user.getId());
     }
 
-    public AppFeedbackDto edit(Long id, AppFeedbackRequest request, Authentication connectedUser) {
+    public DtoAppFeedback edit(Long id, AppFeedbackRequest request, Authentication connectedUser) {
         var user = (User) connectedUser.getPrincipal();
         EntityAppFeedback feedback = repositoryAppFeedback.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException(FEEDBACK_NOT_FOUND + id));
@@ -96,7 +95,7 @@ public class AppFeedbackService {
         return mapperAppFeedback.toDto(repositoryAppFeedback.save(feedback), user.getId());
     }
 
-    public AppFeedbackDto addComment(Long id, CommentDto commentDto, Authentication connectedUser) {
+    public DtoAppFeedback addComment(Long id, DtoComment commentDto, Authentication connectedUser) {
         var user = (User) connectedUser.getPrincipal();
         EntityAppFeedback feedback = repositoryAppFeedback.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException(FEEDBACK_NOT_FOUND + id));
@@ -121,7 +120,7 @@ public class AppFeedbackService {
         repositoryAppFeedback.delete(feedback);
     }
 
-    public AppFeedbackDto changeStatus(Long id, AppFeedbackStatus status, Authentication connectedUser) {
+    public DtoAppFeedback changeStatus(Long id, AppFeedbackStatus status, Authentication connectedUser) {
         var user = (User) connectedUser.getPrincipal();
         if (!isAdmin(connectedUser)) {
             throw new OperationNotPermittedException("Only admins can change the status of a feedback.");
@@ -132,11 +131,11 @@ public class AppFeedbackService {
         return mapperAppFeedback.toDto(repositoryAppFeedback.save(feedback), user.getId());
     }
 
-    public PageResponse<AppFeedbackDto> getMyFeedbacks(int page, int size, Authentication connectedUser) {
+    public PageResponse<DtoAppFeedback> getMyFeedbacks(int page, int size, Authentication connectedUser) {
         var user = (User) connectedUser.getPrincipal();
         Pageable pageable = PageRequest.of(page, size, Sort.by("createdDate").descending());
         Page<EntityAppFeedback> feedbacks = repositoryAppFeedback.findAllByCreatedBy(user.getId(), pageable);
-        List<AppFeedbackDto> content = feedbacks.stream()
+        List<DtoAppFeedback> content = feedbacks.stream()
                 .map(f -> mapperAppFeedback.toDto(f, user.getId()))
                 .toList();
         return new PageResponse<>(
@@ -150,11 +149,11 @@ public class AppFeedbackService {
         );
     }
 
-    public PageResponse<AppFeedbackDto> getAllByStatus(AppFeedbackStatus status, int page, int size, Authentication connectedUser) {
+    public PageResponse<DtoAppFeedback> getAllByStatus(AppFeedbackStatus status, int page, int size, Authentication connectedUser) {
         var user = (User) connectedUser.getPrincipal();
         Pageable pageable = PageRequest.of(page, size, Sort.by("createdDate").descending());
         Page<EntityAppFeedback> feedbacks = repositoryAppFeedback.findAllByStatus(status, pageable);
-        List<AppFeedbackDto> content = feedbacks.stream()
+        List<DtoAppFeedback> content = feedbacks.stream()
                 .map(f -> mapperAppFeedback.toDto(f, user.getId()))
                 .toList();
         return new PageResponse<>(
@@ -168,10 +167,10 @@ public class AppFeedbackService {
         );
     }
 
-    public PageResponse<PublicAppFeedbackDto> getPublicFeedbacks(int page, int size) {
+    public PageResponse<DtoAppFeedback> getPublicFeedbacks(int page, int size) {
         Pageable pageable = PageRequest.of(page, size, Sort.by("createdDate").descending());
         Page<EntityAppFeedback> feedbacks = repositoryAppFeedback.findAll(pageable);
-        List<PublicAppFeedbackDto> content = feedbacks.stream()
+        List<DtoAppFeedback> content = feedbacks.stream()
                 .map(f -> {
                     String authorName = repositoryUser.findById(f.getCreatedBy())
                             .map(User::getFullName)
@@ -190,7 +189,7 @@ public class AppFeedbackService {
         );
     }
 
-    public PublicAppFeedbackDto getPublicFeedbackById(Long id) {
+    public DtoAppFeedback getPublicFeedbackById(Long id) {
         EntityAppFeedback feedback = repositoryAppFeedback.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException(FEEDBACK_NOT_FOUND + id));
         String authorName = repositoryUser.findById(feedback.getCreatedBy())

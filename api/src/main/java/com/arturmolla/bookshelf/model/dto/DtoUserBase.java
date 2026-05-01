@@ -6,16 +6,20 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.experimental.SuperBuilder;
 
-import java.time.LocalDate;
-
 @Getter
 @Setter
 @SuperBuilder
 @AllArgsConstructor
 @NoArgsConstructor
-public class DtoProfile extends DtoUserBase {
+public abstract class DtoUserBase {
 
-    private LocalDate dateOfBirth;
-    private boolean accountLocked;
-    private boolean enabled;
+    private Long id;
+    private String firstname;
+    private String lastname;
+    private String fullName;
+    private String email;
+    private String bio;
+    private String location;
+    private String provider;
 }
+

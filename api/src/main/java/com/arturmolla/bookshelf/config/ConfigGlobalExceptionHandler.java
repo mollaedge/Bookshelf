@@ -16,6 +16,7 @@ import org.springframework.security.authentication.LockedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -123,6 +124,16 @@ public class ConfigGlobalExceptionHandler {
                         .businessErrorCode(BusinessErrorCodes.JWT_EXPIRED.getCode())
                         .businessErrorDescription(BusinessErrorCodes.JWT_EXPIRED.getDescription())
                         .error(exp.getMessage())
+                        .build());
+    }
+
+    @ExceptionHandler(MaxUploadSizeExceededException.class)
+    public ResponseEntity<ExceptionResponse> handleException(MaxUploadSizeExceededException exp) {
+        return ResponseEntity
+                .status(HttpStatus.PAYLOAD_TOO_LARGE)
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(ExceptionResponse.builder()
+                        .error("File size exceeds the maximum allowed limit of 200MB")
                         .build());
     }
 

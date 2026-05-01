@@ -1,7 +1,7 @@
 package com.arturmolla.bookshelf.service;
 
 import com.arturmolla.bookshelf.model.dto.AuthenticationRequest;
-import com.arturmolla.bookshelf.model.dto.AuthenticationResponse;
+import com.arturmolla.bookshelf.model.dto.DtoToken;
 import com.arturmolla.bookshelf.model.dto.DtoRegistrationRequest;
 import com.arturmolla.bookshelf.model.enums.EmailTemplateName;
 import com.arturmolla.bookshelf.model.user.Token;
@@ -57,7 +57,7 @@ public class ServiceAuthentication {
         sendVerificationEmail(user);
     }
 
-    public AuthenticationResponse authenticate(AuthenticationRequest request) {
+    public DtoToken authenticate(AuthenticationRequest request) {
         var auth = authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(request.getEmail(), request.getPassword())
         );
@@ -65,7 +65,7 @@ public class ServiceAuthentication {
         var user = (User) auth.getPrincipal();
         claims.put("fullName", user.getFullName());
         var jwtToken = jwtService.generateToken(claims, user);
-        return AuthenticationResponse.builder().token(jwtToken).build();
+        return new DtoToken(jwtToken);
     }
 
     public void activateAccount(String token, String email) throws MessagingException {
