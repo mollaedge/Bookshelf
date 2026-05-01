@@ -10,6 +10,7 @@ public record DtoBookUpdateRequest(
         Boolean favourite,
         Boolean archived,
         Boolean shareable,
-        Boolean read
+        Boolean read,
+        Integer pdfPagePointer
 ) {
 }

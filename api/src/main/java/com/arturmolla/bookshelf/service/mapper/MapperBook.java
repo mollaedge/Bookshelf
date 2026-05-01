@@ -44,6 +44,7 @@ public class MapperBook {
         if (request.archived() != null) book.setArchived(request.archived());
         if (request.shareable() != null) book.setShareable(request.shareable());
         if (request.read() != null) book.setRead(request.read());
+        if (request.pdfPagePointer() != null) book.setPdfPagePointer(request.pdfPagePointer());
     }
 
     public DtoBookResponse toDtoBookResponse(EntityBook entity) {
@@ -62,6 +63,8 @@ public class MapperBook {
                 .cover(serviceFileStorage.loadFile(entity.getId()))
                 .coverUrl(entity.getCoverUrl())
                 .genre(entity.getGenre())
+                .pdfPagePointer(entity.getPdfPagePointer())
+                .hasPdf(serviceFileStorage.hasPdf(entity.getId()))
                 .build();
     }
 

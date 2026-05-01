@@ -21,5 +21,7 @@ public abstract class DtoUserBase {
     private String bio;
     private String location;
     private String provider;
+    private boolean hasProfilePic;
+    private boolean hasWallpaper;
 }
 

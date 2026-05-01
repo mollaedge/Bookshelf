@@ -173,4 +173,37 @@ public class ControllerBook {
                 .contentType(MediaType.IMAGE_JPEG)
                 .body(cover);
     }
+
+    @PostMapping(value = "/{book-id}/pdf", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<Void> uploadBookPdf(
+            @PathVariable("book-id") Long bookId,
+            @RequestPart("file") MultipartFile file,
+            Authentication connectedUser
+    ) {
+        serviceBook.uploadBookPdf(file, connectedUser, bookId);
+        return ResponseEntity.accepted().build();
+    }
+
+    @GetMapping(value = "/{book-id}/pdf", produces = MediaType.APPLICATION_PDF_VALUE)
+    public ResponseEntity<byte[]> getBookPdf(
+            @PathVariable("book-id") Long bookId,
+            Authentication connectedUser
+    ) {
+        byte[] pdf = serviceBook.getBookPdf(bookId, connectedUser);
+        if (pdf == null || pdf.length == 0) {
+            return ResponseEntity.noContent().build();
+        }
+        return ResponseEntity.ok()
+                .contentType(MediaType.APPLICATION_PDF)
+                .body(pdf);
+    }
+
+    @PatchMapping("/{book-id}/pdf/pointer")
+    public ResponseEntity<DtoBookResponse> updatePdfPagePointer(
+            @PathVariable("book-id") Long bookId,
+            @RequestParam("page") Integer page,
+            Authentication connectedUser
+    ) {
+        return ResponseEntity.ok(serviceBook.updatePdfPagePointer(bookId, page, connectedUser));
+    }
 }

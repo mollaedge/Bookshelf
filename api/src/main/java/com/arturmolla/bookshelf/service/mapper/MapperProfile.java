@@ -3,10 +3,18 @@ package com.arturmolla.bookshelf.service.mapper;
 import com.arturmolla.bookshelf.model.dto.DtoProfile;
 import com.arturmolla.bookshelf.model.dto.DtoUpdateProfileRequest;
 import com.arturmolla.bookshelf.model.user.User;
+import com.arturmolla.bookshelf.service.ServiceFileStorage;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Component;
 
 @Component
 public class MapperProfile {
+
+    private final ServiceFileStorage fileStorage;
+
+    public MapperProfile(@Lazy ServiceFileStorage fileStorage) {
+        this.fileStorage = fileStorage;
+    }
 
     public DtoProfile toDto(User user) {
         if (user == null) {
@@ -25,6 +33,8 @@ public class MapperProfile {
                 .provider(user.getProvider())
                 .accountLocked(user.isAccountLocked())
                 .enabled(user.isEnabled())
+                .hasProfilePic(fileStorage.hasProfilePic(user.getId()))
+                .hasWallpaper(fileStorage.hasWallpaper(user.getId()))
                 .build();
     }
 
@@ -62,5 +72,5 @@ public class MapperProfile {
                 .enabled(dtoProfile.isEnabled())
                 .build();
     }
-
 }
+

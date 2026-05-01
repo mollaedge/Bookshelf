@@ -247,6 +247,37 @@ public class ServiceBook {
         return serviceFileStorage.loadFile(bookId);
     }
 
+    public void uploadBookPdf(MultipartFile file, Authentication connectedUser, Long bookId) {
+        var book = repositoryBook.findById(bookId)
+                .orElseThrow(() -> new EntityNotFoundException(BOOK_NOT_FOUND + bookId));
+        var user = (User) connectedUser.getPrincipal();
+        if (!Objects.equals(book.getCreatedBy(), user.getId())) {
+            throw new OperationNotPermittedException("You can not perform this action!");
+        }
+        serviceFileStorage.savePdf(file, bookId);
+    }
+
+    public byte[] getBookPdf(Long bookId, Authentication connectedUser) {
+        var book = repositoryBook.findById(bookId)
+                .orElseThrow(() -> new EntityNotFoundException(BOOK_NOT_FOUND + bookId));
+        var user = (User) connectedUser.getPrincipal();
+        if (!Objects.equals(book.getCreatedBy(), user.getId())) {
+            throw new OperationNotPermittedException("You can not access this PDF!");
+        }
+        return serviceFileStorage.loadPdf(bookId);
+    }
+
+    public DtoBookResponse updatePdfPagePointer(Long bookId, Integer page, Authentication connectedUser) {
+        var book = repositoryBook.findById(bookId)
+                .orElseThrow(() -> new EntityNotFoundException(BOOK_NOT_FOUND + bookId));
+        var user = (User) connectedUser.getPrincipal();
+        if (!Objects.equals(book.getCreatedBy(), user.getId())) {
+            throw new OperationNotPermittedException("You can not perform this action!");
+        }
+        book.setPdfPagePointer(page);
+        return mapperBook.toDtoBookResponse(repositoryBook.save(book));
+    }
+
     public void deleteBookById(Long bookId, Authentication connectedUser) {
         var book = repositoryBook.findById(bookId)
                 .orElseThrow(() -> new EntityNotFoundException(BOOK_NOT_FOUND + bookId));
