@@ -49,27 +49,31 @@ jobs:
         run: npm run build
 
       - name: Set up SSH key
-        uses: webfactory/ssh-agent@v0.9.0
-        with:
-          ssh-private-key: ${{ secrets.SSH_KEY }}
-
-      - name: Add server to known hosts
-        run: ssh-keyscan -H "${{ secrets.SERVER_IP }}" >> ~/.ssh/known_hosts
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.SSH_KEY }}
+        run: |
+          mkdir -p ~/.ssh
+          printf '%s\n' "$SSH_PRIVATE_KEY" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          ssh-keyscan -H "${{ secrets.SERVER_IP }}" >> ~/.ssh/known_hosts
 
       - name: Copy API JAR to server
         run: |
-          scp \
+          ssh -i ~/.ssh/deploy_key \
+            ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_IP }} \
+            "mkdir -p /opt/bookshelf/api"
+          scp -i ~/.ssh/deploy_key \
             api/target/*.jar \
             ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_IP }}:/opt/bookshelf/api/bookshelf-api.jar
 
       - name: Copy Angular dist to server
         run: |
-          rsync -avz --delete \
+          rsync -avz --delete -e "ssh -i ~/.ssh/deploy_key" \
             client/dist/ \
             ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_IP }}:/var/www/bookshelf/
 
       - name: Restart API service
         run: |
-          ssh \
+          ssh -i ~/.ssh/deploy_key \
             ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_IP }} \
             "sudo systemctl restart bookshelf-api && sudo systemctl status bookshelf-api --no-pager"
