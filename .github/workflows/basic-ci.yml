@@ -7,9 +7,11 @@ on:
     branches: [ main ]
 
 jobs:
-  test-and-build:
-    name: Test and Build API
+  deploy:
+    name: Build and Deploy to Hetzner
     runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    environment: hetzner-bookshelf
 
     steps:
       - name: Checkout repository
@@ -37,22 +39,6 @@ jobs:
         env:
           JASYPT_ENCRYPTOR_PASSWORD: testpassword
 
-      - name: Upload JAR
-        uses: actions/upload-artifact@v4
-        if: success()
-        with:
-          name: bookshelf-api-jar
-          path: api/target/*.jar
-          retention-days: 5
-
-  build-client:
-    name: Build Angular Client
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
@@ -60,41 +46,13 @@ jobs:
           cache: 'npm'
           cache-dependency-path: client/package-lock.json
 
-      - name: Install dependencies
+      - name: Install client dependencies
         working-directory: client
         run: npm ci
 
       - name: Build Angular app
         working-directory: client
         run: npm run build
-
-      - name: Upload build artifacts
-        uses: actions/upload-artifact@v4
-        if: success()
-        with:
-          name: angular-client-dist
-          path: client/dist/
-          retention-days: 5
-
-  deploy:
-    name: Deploy to Hetzner
-    runs-on: ubuntu-latest
-    needs: [test-and-build, build-client]
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-    environment: hetzner-bookshelf
-
-    steps:
-      - name: Download API JAR
-        uses: actions/download-artifact@v4
-        with:
-          name: bookshelf-api-jar
-          path: artifacts/api
-
-      - name: Download Angular dist
-        uses: actions/download-artifact@v4
-        with:
-          name: angular-client-dist
-          path: artifacts/client
 
       - name: Set up SSH key
         run: |
@@ -106,13 +64,13 @@ jobs:
       - name: Copy API JAR to server
         run: |
           scp -i ~/.ssh/deploy_key \
-            artifacts/api/*.jar \
+            api/target/*.jar \
             ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_IP }}:/opt/bookshelf/api/bookshelf-api.jar
 
       - name: Copy Angular dist to server
         run: |
           rsync -avz --delete -e "ssh -i ~/.ssh/deploy_key" \
-            artifacts/client/ \
+            client/dist/ \
             ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_IP }}:/var/www/bookshelf/
 
       - name: Restart API service

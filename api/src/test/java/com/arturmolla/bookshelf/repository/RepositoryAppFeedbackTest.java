@@ -1,21 +1,24 @@
 package com.arturmolla.bookshelf.repository;
 
-import com.arturmolla.bookshelf.AbstractIntegrationTest;
+import com.arturmolla.bookshelf.TestJpaAuditingConfig;
 import com.arturmolla.bookshelf.model.entity.EntityAppFeedback;
 import com.arturmolla.bookshelf.model.enums.AppFeedbackStatus;
 import com.arturmolla.bookshelf.model.user.Role;
 import com.arturmolla.bookshelf.model.user.User;
-import jakarta.persistence.EntityManager;
-import jakarta.persistence.PersistenceContext;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
+import org.springframework.context.annotation.Import;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.test.context.TestPropertySource;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionTemplate;
 
 import java.util.List;
@@ -23,9 +26,21 @@ import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-// No @Transactional — keeping the same context key as ControllerAppFeedbackIT
-// so Spring caches and reuses the single ApplicationContext across both classes.
-class RepositoryAppFeedbackTest extends AbstractIntegrationTest {
+/**
+ * Repository slice tests for RepositoryAppFeedback.
+ * Uses @DataJpaTest with H2 in-memory database — no Docker / Testcontainers required.
+ * Each test manages its own transactions via TransactionTemplate so that cross-transaction
+ * persistence semantics (flush → reload) are preserved.
+ */
+@DataJpaTest
+@Import(TestJpaAuditingConfig.class)
+@Transactional(propagation = Propagation.NOT_SUPPORTED)
+@TestPropertySource(properties = {
+        "JASYPT_ENCRYPTOR_PASSWORD=testpassword",
+        "spring.jpa.hibernate.ddl-auto=create-drop",
+        "spring.flyway.enabled=false"
+})
+class RepositoryAppFeedbackTest {
 
     private static final Long USER_1_ID = 1L;
     private static final Long USER_2_ID = 2L;
@@ -38,8 +53,6 @@ class RepositoryAppFeedbackTest extends AbstractIntegrationTest {
     private RepositoryRole repositoryRole;
     @Autowired
     private TransactionTemplate transactionTemplate;
-    @PersistenceContext
-    private EntityManager entityManager;
 
     private User testUser;
 
@@ -216,4 +229,3 @@ class RepositoryAppFeedbackTest extends AbstractIntegrationTest {
         });
     }
 }
-
