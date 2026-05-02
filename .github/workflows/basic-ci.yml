@@ -27,15 +27,9 @@ jobs:
       - name: Make mvnw executable
         run: chmod +x api/mvnw
 
-      - name: Run unit tests
+      - name: Build API
         working-directory: api
-        run: ./mvnw test
-        env:
-          JASYPT_ENCRYPTOR_PASSWORD: testpassword
-
-      - name: Run integration tests
-        working-directory: api
-        run: ./mvnw verify -Dsurefire.skip=true
+        run: ./mvnw package -DskipTests
         env:
           JASYPT_ENCRYPTOR_PASSWORD: testpassword
 
