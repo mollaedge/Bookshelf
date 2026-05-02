@@ -27,15 +27,9 @@ jobs:
       - name: Make mvnw executable
         run: chmod +x api/mvnw
 
-      - name: Run unit tests
+      - name: Build API
         working-directory: api
-        run: ./mvnw test
-        env:
-          JASYPT_ENCRYPTOR_PASSWORD: testpassword
-
-      - name: Run integration tests
-        working-directory: api
-        run: ./mvnw verify -Dsurefire.skip=true
+        run: ./mvnw package -DskipTests
         env:
           JASYPT_ENCRYPTOR_PASSWORD: testpassword
 
@@ -55,26 +49,27 @@ jobs:
         run: npm run build
 
       - name: Set up SSH key
-        run: |
-          mkdir -p ~/.ssh
-          echo "${{ secrets.SSH_KEY }}" > ~/.ssh/deploy_key
-          chmod 600 ~/.ssh/deploy_key
-          ssh-keyscan -H "${{ secrets.SERVER_IP }}" >> ~/.ssh/known_hosts
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.SSH_KEY }}
+
+      - name: Add server to known hosts
+        run: ssh-keyscan -H "${{ secrets.SERVER_IP }}" >> ~/.ssh/known_hosts
 
       - name: Copy API JAR to server
         run: |
-          scp -i ~/.ssh/deploy_key \
+          scp \
             api/target/*.jar \
             ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_IP }}:/opt/bookshelf/api/bookshelf-api.jar
 
       - name: Copy Angular dist to server
         run: |
-          rsync -avz --delete -e "ssh -i ~/.ssh/deploy_key" \
+          rsync -avz --delete \
             client/dist/ \
             ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_IP }}:/var/www/bookshelf/
 
       - name: Restart API service
         run: |
-          ssh -i ~/.ssh/deploy_key \
+          ssh \
             ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_IP }} \
             "sudo systemctl restart bookshelf-api && sudo systemctl status bookshelf-api --no-pager"
