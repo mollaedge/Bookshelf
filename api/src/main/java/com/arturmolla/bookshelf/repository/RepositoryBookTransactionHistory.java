@@ -17,14 +17,44 @@ public interface RepositoryBookTransactionHistory extends JpaRepository<EntityBo
     @Query("""
             SELECT history
             FROM EntityBookTransactionHistory history
-            WHERE history.user.id = :userId""")
+            WHERE history.user.id = :userId
+            AND history.requestApproved = true""")
     Page<EntityBookTransactionHistory> findAllBorrowedBooks(Pageable pageable, Long userId);
 
     @Query("""
             SELECT history
             FROM EntityBookTransactionHistory history
-            WHERE history.book.owner.id = :userId""")
+            WHERE history.book.owner.id = :userId
+            AND history.returned = true
+            AND history.returnApproved = false""")
     Page<EntityBookTransactionHistory> findAllReturnedBooks(Pageable pageable, Long userId);
+
+    @Query("""
+            SELECT history
+            FROM EntityBookTransactionHistory history
+            WHERE (history.user.id = :userId OR history.book.owner.id = :userId)
+            AND history.requestApproved = false
+            AND history.returned = false
+            AND history.requested = true""")
+    Page<EntityBookTransactionHistory> findAllPendingRequests(Pageable pageable, Long userId);
+
+    @Query("""
+            SELECT history
+            FROM EntityBookTransactionHistory history
+            WHERE history.user.id = :userId
+            AND history.requestApproved = false
+            AND history.returned = false
+            AND history.requested = true""")
+    Page<EntityBookTransactionHistory> findAllRequestsByMe(Pageable pageable, Long userId);
+
+    @Query("""
+            SELECT history
+            FROM EntityBookTransactionHistory history
+            WHERE history.book.owner.id = :userId
+            AND history.requestApproved = false
+            AND history.returned = false
+            AND history.requested = true""")
+    Page<EntityBookTransactionHistory> findAllRequestsFromMe(Pageable pageable, Long userId);
 
     @Query("""
             SELECT (COUNT(*) > 0) AS isBorrowed
@@ -51,6 +81,15 @@ public interface RepositoryBookTransactionHistory extends JpaRepository<EntityBo
             AND history.returned = true
             AND history.returnApproved = false""")
     Optional<EntityBookTransactionHistory> findByBookIdAndOwnerId(Long bookId, Long userId);
+
+    @Query("""
+            SELECT history
+            FROM EntityBookTransactionHistory history
+            WHERE history.book.owner.id = :ownerId
+            AND history.book.id = :bookId
+            AND history.requestApproved = false
+            AND history.returned = false""")
+    Optional<EntityBookTransactionHistory> findPendingRequestByBookIdAndOwnerId(Long bookId, Long ownerId);
 
     @Query("""
             SELECT COUNT(h)

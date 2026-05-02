@@ -23,6 +23,7 @@ const routes: Routes = [
       { path: 'dashboard', component: DashComponent },
       { path: 'about', component: AboutComponent },
       { path: 'feedback', component: FeedbackComponent },
+      { path: 'pdf-reader', loadChildren: () => import('./dashboard/pdf-reader/pdf-reader.module').then(m => m.PdfReaderModule) },
       { 
         path: 'auth', 
         children: [
@@ -33,7 +34,7 @@ const routes: Routes = [
       },
     ]
   },
-  { path: '**', redirectTo: '' }
+  { path: '**', redirectTo: 'home' }
 ];
 
 @NgModule({

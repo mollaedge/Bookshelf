@@ -5,8 +5,7 @@ import com.arturmolla.bookshelf.model.common.PageResponse;
 import com.arturmolla.bookshelf.model.dto.DtoBookRequest;
 import com.arturmolla.bookshelf.model.dto.DtoBookResponse;
 import com.arturmolla.bookshelf.model.dto.DtoBookUpdateRequest;
-import com.arturmolla.bookshelf.model.dto.DtoBorrowedBooksResponse;
-import com.arturmolla.bookshelf.model.dto.DtoRequestedBooksResponse;
+import com.arturmolla.bookshelf.model.dto.DtoBookTransactionResponse;
 import com.arturmolla.bookshelf.model.entity.EntityBook;
 import com.arturmolla.bookshelf.model.entity.EntityBookTransactionHistory;
 import com.arturmolla.bookshelf.model.user.User;
@@ -84,7 +83,7 @@ public class ServiceBook {
         return mapPageToCustomWrapper(books);
     }
 
-    public PageResponse<DtoBorrowedBooksResponse> getAllBorrowedBooks(int page, int size, Authentication connectedUser) {
+    public PageResponse<DtoBookTransactionResponse> getAllBorrowedBooks(int page, int size, Authentication connectedUser) {
         var user = (User) connectedUser.getPrincipal();
         Pageable pageable = PageRequest.of(page, size, Sort.by("createdDate").descending());
         Page<EntityBookTransactionHistory> allBorrowedBooks = repositoryBookTransactionHistory.findAllBorrowedBooks(
@@ -93,7 +92,7 @@ public class ServiceBook {
         return mapPageToCustomWrapperHistories(allBorrowedBooks);
     }
 
-    public PageResponse<DtoBorrowedBooksResponse> getAllReturnedBooks(int page, int size, Authentication connectedUser) {
+    public PageResponse<DtoBookTransactionResponse> getAllReturnedBooks(int page, int size, Authentication connectedUser) {
         var user = (User) connectedUser.getPrincipal();
         Pageable pageable = PageRequest.of(page, size, Sort.by("createdDate").descending());
         Page<EntityBookTransactionHistory> allBorrowedBooks = repositoryBookTransactionHistory.findAllReturnedBooks(
@@ -143,6 +142,8 @@ public class ServiceBook {
         EntityBookTransactionHistory bookTransactionHistory = EntityBookTransactionHistory.builder()
                 .user(user)
                 .book(book)
+                .requested(true)
+                .requestApproved(false)
                 .returned(false)
                 .returnApproved(false)
                 .build();
@@ -156,8 +157,8 @@ public class ServiceBook {
             throw new OperationNotPermittedException("The requested book can not be borrowed (archived/non borrowable)");
         }
         var user = (User) connectedUser.getPrincipal();
-        if (!Objects.equals(book.getOwner().getId(), user.getId())) {
-            throw new OperationNotPermittedException("You own this book!");
+        if (Objects.equals(book.getOwner().getId(), user.getId())) {
+            throw new OperationNotPermittedException("You cannot return your own book!");
         }
         EntityBookTransactionHistory bookTransactionHistory = repositoryBookTransactionHistory.findByBookIdAndUserId(
                 bookId,
@@ -167,6 +168,20 @@ public class ServiceBook {
         return repositoryBookTransactionHistory.save(bookTransactionHistory).getId();
     }
 
+
+    public Long approveBorrowRequest(Long bookId, Authentication connectedUser) {
+        var book = repositoryBook.findById(bookId)
+                .orElseThrow(() -> new EntityNotFoundException(BOOK_NOT_FOUND + bookId));
+        var user = (User) connectedUser.getPrincipal();
+        if (!Objects.equals(book.getOwner().getId(), user.getId())) {
+            throw new OperationNotPermittedException("You do not own this book!");
+        }
+        EntityBookTransactionHistory bookTransactionHistory = repositoryBookTransactionHistory
+                .findPendingRequestByBookIdAndOwnerId(bookId, user.getId())
+                .orElseThrow(() -> new OperationNotPermittedException("No pending borrow request found for this book!"));
+        bookTransactionHistory.setRequestApproved(true);
+        return repositoryBookTransactionHistory.save(bookTransactionHistory).getId();
+    }
 
     public Long approveReturnBorrowedBook(Long bookId, Authentication connectedUser) {
         var book = repositoryBook.findById(bookId)
@@ -186,13 +201,31 @@ public class ServiceBook {
         return repositoryBookTransactionHistory.save(bookTransactionHistory).getId();
     }
 
-    public PageResponse<DtoRequestedBooksResponse> getAllRequestedBooks(int page, int size, Authentication connectedUser) {
+    public PageResponse<DtoBookTransactionResponse> getAllRequestedBooks(int page, int size, Authentication connectedUser) {
         var user = (User) connectedUser.getPrincipal();
         Pageable pageable = PageRequest.of(page, size, Sort.by("createdDate").descending());
-        Page<EntityBookTransactionHistory> allRequestedBooks = repositoryBookTransactionHistory.findAllReturnedBooks(
+        Page<EntityBookTransactionHistory> allRequestedBooks = repositoryBookTransactionHistory.findAllPendingRequests(
                 pageable, user.getId()
         );
-        return mapPageToCustomWrapperHistoriesRequested(allRequestedBooks);
+        return mapPageToCustomWrapperHistories(allRequestedBooks);
+    }
+
+    public PageResponse<DtoBookTransactionResponse> getAllRequestsByMe(int page, int size, Authentication connectedUser) {
+        var user = (User) connectedUser.getPrincipal();
+        Pageable pageable = PageRequest.of(page, size, Sort.by("createdDate").descending());
+        Page<EntityBookTransactionHistory> requests = repositoryBookTransactionHistory.findAllRequestsByMe(
+                pageable, user.getId()
+        );
+        return mapPageToCustomWrapperHistories(requests);
+    }
+
+    public PageResponse<DtoBookTransactionResponse> getAllRequestsFromMe(int page, int size, Authentication connectedUser) {
+        var user = (User) connectedUser.getPrincipal();
+        Pageable pageable = PageRequest.of(page, size, Sort.by("createdDate").descending());
+        Page<EntityBookTransactionHistory> requests = repositoryBookTransactionHistory.findAllRequestsFromMe(
+                pageable, user.getId()
+        );
+        return mapPageToCustomWrapperHistories(requests);
     }
 
     public void uploadBookCoverImage(MultipartFile file, Authentication connectedUser, Long bookId) {
@@ -214,6 +247,37 @@ public class ServiceBook {
         return serviceFileStorage.loadFile(bookId);
     }
 
+    public void uploadBookPdf(MultipartFile file, Authentication connectedUser, Long bookId) {
+        var book = repositoryBook.findById(bookId)
+                .orElseThrow(() -> new EntityNotFoundException(BOOK_NOT_FOUND + bookId));
+        var user = (User) connectedUser.getPrincipal();
+        if (!Objects.equals(book.getCreatedBy(), user.getId())) {
+            throw new OperationNotPermittedException("You can not perform this action!");
+        }
+        serviceFileStorage.savePdf(file, bookId);
+    }
+
+    public byte[] getBookPdf(Long bookId, Authentication connectedUser) {
+        var book = repositoryBook.findById(bookId)
+                .orElseThrow(() -> new EntityNotFoundException(BOOK_NOT_FOUND + bookId));
+        var user = (User) connectedUser.getPrincipal();
+        if (!Objects.equals(book.getCreatedBy(), user.getId())) {
+            throw new OperationNotPermittedException("You can not access this PDF!");
+        }
+        return serviceFileStorage.loadPdf(bookId);
+    }
+
+    public DtoBookResponse updatePdfPagePointer(Long bookId, Integer page, Authentication connectedUser) {
+        var book = repositoryBook.findById(bookId)
+                .orElseThrow(() -> new EntityNotFoundException(BOOK_NOT_FOUND + bookId));
+        var user = (User) connectedUser.getPrincipal();
+        if (!Objects.equals(book.getCreatedBy(), user.getId())) {
+            throw new OperationNotPermittedException("You can not perform this action!");
+        }
+        book.setPdfPagePointer(page);
+        return mapperBook.toDtoBookResponse(repositoryBook.save(book));
+    }
+
     public void deleteBookById(Long bookId, Authentication connectedUser) {
         var book = repositoryBook.findById(bookId)
                 .orElseThrow(() -> new EntityNotFoundException(BOOK_NOT_FOUND + bookId));
@@ -232,18 +296,18 @@ public class ServiceBook {
 
     // HELPER METHODS
 
-    private PageResponse<DtoBorrowedBooksResponse> mapPageToCustomWrapperHistories(Page<EntityBookTransactionHistory> allBorrowedBooks) {
-        List<DtoBorrowedBooksResponse> borrowedBooksResponses = allBorrowedBooks.stream()
-                .map(mapperBook::toDtoBorrowedBookResponse)
+    private PageResponse<DtoBookTransactionResponse> mapPageToCustomWrapperHistories(Page<EntityBookTransactionHistory> histories) {
+        List<DtoBookTransactionResponse> responses = histories.stream()
+                .map(mapperBook::toBookTransactionResponse)
                 .toList();
         return new PageResponse<>(
-                borrowedBooksResponses,
-                allBorrowedBooks.getNumber(),
-                allBorrowedBooks.getSize(),
-                allBorrowedBooks.getTotalElements(),
-                allBorrowedBooks.getTotalPages(),
-                allBorrowedBooks.isFirst(),
-                allBorrowedBooks.isLast()
+                responses,
+                histories.getNumber(),
+                histories.getSize(),
+                histories.getTotalElements(),
+                histories.getTotalPages(),
+                histories.isFirst(),
+                histories.isLast()
         );
     }
 
@@ -259,21 +323,6 @@ public class ServiceBook {
                 books.getTotalPages(),
                 books.isFirst(),
                 books.isLast()
-        );
-    }
-
-    private PageResponse<DtoRequestedBooksResponse> mapPageToCustomWrapperHistoriesRequested(Page<EntityBookTransactionHistory> allRequestedBooks) {
-        List<DtoRequestedBooksResponse> requestedBooksResponses = allRequestedBooks.stream()
-                .map(mapperBook::toDtoRequestedBookResponse)
-                .toList();
-        return new PageResponse<>(
-                requestedBooksResponses,
-                allRequestedBooks.getNumber(),
-                allRequestedBooks.getSize(),
-                allRequestedBooks.getTotalElements(),
-                allRequestedBooks.getTotalPages(),
-                allRequestedBooks.isFirst(),
-                allRequestedBooks.isLast()
         );
     }
 }

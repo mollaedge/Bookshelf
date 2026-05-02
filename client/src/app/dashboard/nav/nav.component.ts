@@ -1,9 +1,16 @@
-import { Component } from '@angular/core';
+import { Component, HostListener } from '@angular/core';
 import { Observable } from 'rxjs';
 import { Router } from '@angular/router';
 import { AuthStateService } from '../../service/auth/auth-state.service';
 import { NavigationTrackerService } from '../../service/navigation/navigation-tracker.service';
 import { trigger, transition, style, animate } from '@angular/animations';
+
+export interface NavNotification {
+  id: number;
+  message: string;
+  time: string;
+  read: boolean;
+}
 
 @Component({
   selector: 'app-nav',
@@ -28,6 +35,39 @@ export class NavComponent {
   showAuthModal = false;
   isRegisterView = false;
   showAddBookPopup = false;
+  showNotifications = false;
+  showProfileMenu = false;
+
+  notifications: NavNotification[] = [];
+
+  get unreadCount(): number {
+    return this.notifications.filter(n => !n.read).length;
+  }
+
+  toggleNotifications(): void {
+    this.showNotifications = !this.showNotifications;
+    this.showProfileMenu = false;
+  }
+
+  toggleProfileMenu(): void {
+    this.showProfileMenu = !this.showProfileMenu;
+    this.showNotifications = false;
+  }
+
+  markAllRead(): void {
+    this.notifications.forEach(n => n.read = true);
+  }
+
+  @HostListener('document:click', ['$event'])
+  onDocumentClick(event: MouseEvent): void {
+    const target = event.target as HTMLElement;
+    if (!target.closest('.notification-wrapper')) {
+      this.showNotifications = false;
+    }
+    if (!target.closest('.profile-wrapper')) {
+      this.showProfileMenu = false;
+    }
+  }
 
   constructor(
     private authService: AuthStateService,
@@ -66,4 +106,11 @@ export class NavComponent {
 
   openAddBook(): void { this.showAddBookPopup = true; }
   closeAddBook(): void { this.showAddBookPopup = false; }
+
+  getInitials(fullName: string | undefined, email: string): string {
+    if (fullName && fullName.trim()) {
+      return fullName.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
+    }
+    return email ? email[0].toUpperCase() : '?';
+  }
 }

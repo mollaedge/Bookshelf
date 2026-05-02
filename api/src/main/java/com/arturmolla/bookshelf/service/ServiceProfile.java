@@ -10,6 +10,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
 @Service
 @RequiredArgsConstructor
@@ -17,6 +18,7 @@ public class ServiceProfile {
 
     private final RepositoryProfile repositoryProfile;
     private final MapperProfile mapperProfile;
+    private final ServiceFileStorage fileStorage;
 
     public DtoProfile getUserProfile(Authentication connectedUser) {
         var user = (User) connectedUser.getPrincipal();
@@ -40,5 +42,45 @@ public class ServiceProfile {
         User user = repositoryProfile.findById(principal.getId())
                 .orElseThrow(() -> new EntityNotFoundException("User profile not found"));
         repositoryProfile.delete(user);
+    }
+
+    // -------------------------------------------------------------------------
+    // Profile picture
+    // -------------------------------------------------------------------------
+
+    @Transactional
+    public void uploadProfilePic(MultipartFile file, Authentication connectedUser) {
+        var user = (User) connectedUser.getPrincipal();
+        fileStorage.saveProfilePic(file, user.getId());
+    }
+
+    public byte[] getProfilePic(Authentication connectedUser) {
+        var user = (User) connectedUser.getPrincipal();
+        return fileStorage.loadProfilePic(user.getId());
+    }
+
+    public String getProfilePicContentType(Authentication connectedUser) {
+        var user = (User) connectedUser.getPrincipal();
+        return fileStorage.getProfilePicContentType(user.getId());
+    }
+
+    // -------------------------------------------------------------------------
+    // Wallpaper
+    // -------------------------------------------------------------------------
+
+    @Transactional
+    public void uploadWallpaper(MultipartFile file, Authentication connectedUser) {
+        var user = (User) connectedUser.getPrincipal();
+        fileStorage.saveWallpaper(file, user.getId());
+    }
+
+    public byte[] getWallpaper(Authentication connectedUser) {
+        var user = (User) connectedUser.getPrincipal();
+        return fileStorage.loadWallpaper(user.getId());
+    }
+
+    public String getWallpaperContentType(Authentication connectedUser) {
+        var user = (User) connectedUser.getPrincipal();
+        return fileStorage.getWallpaperContentType(user.getId());
     }
 }

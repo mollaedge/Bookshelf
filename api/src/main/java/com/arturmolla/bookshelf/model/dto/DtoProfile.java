@@ -1,29 +1,21 @@
 package com.arturmolla.bookshelf.model.dto;
 
 import lombok.AllArgsConstructor;
-import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import lombok.experimental.SuperBuilder;
 
 import java.time.LocalDate;
 
 @Getter
 @Setter
-@Builder
+@SuperBuilder
 @AllArgsConstructor
 @NoArgsConstructor
-public class DtoProfile {
+public class DtoProfile extends DtoUserBase {
 
-    private Long id;
-    private String firstname;
-    private String lastname;
-    private String fullName;
-    private String email;
     private LocalDate dateOfBirth;
-    private String bio;
-    private String location;
-    private String provider;
     private boolean accountLocked;
     private boolean enabled;
 }

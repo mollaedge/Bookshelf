@@ -1,10 +1,9 @@
 package com.arturmolla.bookshelf.controller;
 
 import com.arturmolla.bookshelf.model.common.PageResponse;
-import com.arturmolla.bookshelf.model.dto.AppFeedbackDto;
+import com.arturmolla.bookshelf.model.dto.DtoAppFeedback;
 import com.arturmolla.bookshelf.model.dto.AppFeedbackRequest;
-import com.arturmolla.bookshelf.model.dto.CommentDto;
-import com.arturmolla.bookshelf.model.dto.PublicAppFeedbackDto;
+import com.arturmolla.bookshelf.model.dto.DtoComment;
 import com.arturmolla.bookshelf.model.enums.AppFeedbackStatus;
 import com.arturmolla.bookshelf.service.AppFeedbackService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -35,7 +34,7 @@ public class ControllerAppFeedback {
 
     @PostMapping
     @Operation(summary = "Submit new app feedback")
-    public ResponseEntity<AppFeedbackDto> save(
+    public ResponseEntity<DtoAppFeedback> save(
             @Valid @RequestBody AppFeedbackRequest request,
             Authentication connectedUser
     ) {
@@ -44,7 +43,7 @@ public class ControllerAppFeedback {
 
     @GetMapping
     @Operation(summary = "Get all app feedbacks (paginated)")
-    public ResponseEntity<PageResponse<AppFeedbackDto>> getAll(
+    public ResponseEntity<PageResponse<DtoAppFeedback>> getAll(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "15") int size,
             Authentication connectedUser
@@ -54,7 +53,7 @@ public class ControllerAppFeedback {
 
     @GetMapping("/me")
     @Operation(summary = "Get my own feedbacks (paginated)")
-    public ResponseEntity<PageResponse<AppFeedbackDto>> getMyFeedbacks(
+    public ResponseEntity<PageResponse<DtoAppFeedback>> getMyFeedbacks(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "15") int size,
             Authentication connectedUser
@@ -64,7 +63,7 @@ public class ControllerAppFeedback {
 
     @GetMapping("/{id}")
     @Operation(summary = "Get a single feedback by ID")
-    public ResponseEntity<AppFeedbackDto> getById(
+    public ResponseEntity<DtoAppFeedback> getById(
             @PathVariable Long id,
             Authentication connectedUser
     ) {
@@ -73,7 +72,7 @@ public class ControllerAppFeedback {
 
     @PatchMapping("/{id}/upvote")
     @Operation(summary = "Toggle upvote on a feedback")
-    public ResponseEntity<AppFeedbackDto> upvote(
+    public ResponseEntity<DtoAppFeedback> upvote(
             @PathVariable Long id,
             Authentication connectedUser
     ) {
@@ -82,7 +81,7 @@ public class ControllerAppFeedback {
 
     @PutMapping("/{id}")
     @Operation(summary = "Edit a feedback (owner or admin)")
-    public ResponseEntity<AppFeedbackDto> edit(
+    public ResponseEntity<DtoAppFeedback> edit(
             @PathVariable Long id,
             @Valid @RequestBody AppFeedbackRequest request,
             Authentication connectedUser
@@ -92,9 +91,9 @@ public class ControllerAppFeedback {
 
     @PostMapping("/{id}/comments")
     @Operation(summary = "Add a comment to a feedback")
-    public ResponseEntity<AppFeedbackDto> addComment(
+    public ResponseEntity<DtoAppFeedback> addComment(
             @PathVariable Long id,
-            @RequestBody CommentDto commentDto,
+            @RequestBody DtoComment commentDto,
             Authentication connectedUser
     ) {
         return ResponseEntity.ok(appFeedbackService.addComment(id, commentDto, connectedUser));
@@ -113,7 +112,7 @@ public class ControllerAppFeedback {
     @PatchMapping("/{id}/status")
     @Secured("ROLE_ADMIN")
     @Operation(summary = "Change the status of a feedback (admin only)")
-    public ResponseEntity<AppFeedbackDto> changeStatus(
+    public ResponseEntity<DtoAppFeedback> changeStatus(
             @PathVariable Long id,
             @RequestParam AppFeedbackStatus status,
             Authentication connectedUser
@@ -124,7 +123,7 @@ public class ControllerAppFeedback {
     @GetMapping("/by-status")
     @Secured("ROLE_ADMIN")
     @Operation(summary = "Get all feedbacks filtered by status (admin only)")
-    public ResponseEntity<PageResponse<AppFeedbackDto>> getAllByStatus(
+    public ResponseEntity<PageResponse<DtoAppFeedback>> getAllByStatus(
             @RequestParam AppFeedbackStatus status,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "15") int size,
@@ -135,7 +134,7 @@ public class ControllerAppFeedback {
 
     @GetMapping("/public")
     @Operation(summary = "Get all feedbacks publicly (no auth required), with author info")
-    public ResponseEntity<PageResponse<PublicAppFeedbackDto>> getPublicFeedbacks(
+    public ResponseEntity<PageResponse<DtoAppFeedback>> getPublicFeedbacks(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "15") int size
     ) {
@@ -144,7 +143,7 @@ public class ControllerAppFeedback {
 
     @GetMapping("/public/{id}")
     @Operation(summary = "Get a single feedback publicly (no auth required), with author and comments")
-    public ResponseEntity<PublicAppFeedbackDto> getPublicFeedbackById(
+    public ResponseEntity<DtoAppFeedback> getPublicFeedbackById(
             @PathVariable Long id
     ) {
         return ResponseEntity.ok(appFeedbackService.getPublicFeedbackById(id));

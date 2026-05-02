@@ -3,8 +3,7 @@ package com.arturmolla.bookshelf.service.mapper;
 import com.arturmolla.bookshelf.model.dto.DtoBookRequest;
 import com.arturmolla.bookshelf.model.dto.DtoBookResponse;
 import com.arturmolla.bookshelf.model.dto.DtoBookUpdateRequest;
-import com.arturmolla.bookshelf.model.dto.DtoBorrowedBooksResponse;
-import com.arturmolla.bookshelf.model.dto.DtoRequestedBooksResponse;
+import com.arturmolla.bookshelf.model.dto.DtoBookTransactionResponse;
 import com.arturmolla.bookshelf.model.entity.EntityBook;
 import com.arturmolla.bookshelf.model.entity.EntityBookTransactionHistory;
 import com.arturmolla.bookshelf.service.ServiceFileStorage;
@@ -45,6 +44,7 @@ public class MapperBook {
         if (request.archived() != null) book.setArchived(request.archived());
         if (request.shareable() != null) book.setShareable(request.shareable());
         if (request.read() != null) book.setRead(request.read());
+        if (request.pdfPagePointer() != null) book.setPdfPagePointer(request.pdfPagePointer());
     }
 
     public DtoBookResponse toDtoBookResponse(EntityBook entity) {
@@ -63,11 +63,13 @@ public class MapperBook {
                 .cover(serviceFileStorage.loadFile(entity.getId()))
                 .coverUrl(entity.getCoverUrl())
                 .genre(entity.getGenre())
+                .pdfPagePointer(entity.getPdfPagePointer())
+                .hasPdf(serviceFileStorage.hasPdf(entity.getId()))
                 .build();
     }
 
-    public DtoBorrowedBooksResponse toDtoBorrowedBookResponse(EntityBookTransactionHistory history) {
-        return DtoBorrowedBooksResponse.builder()
+    public DtoBookTransactionResponse toBookTransactionResponse(EntityBookTransactionHistory history) {
+        return DtoBookTransactionResponse.builder()
                 .id(history.getBook().getId())
                 .title(history.getBook().getTitle())
                 .authorName(history.getBook().getAuthorName())
@@ -75,21 +77,14 @@ public class MapperBook {
                 .rate(history.getBook().getRate())
                 .returned(history.getReturned())
                 .returnApproved(history.getReturnApproved())
-                .build();
-    }
-
-    public DtoRequestedBooksResponse toDtoRequestedBookResponse(EntityBookTransactionHistory history) {
-        return DtoRequestedBooksResponse.builder()
-                .id(history.getBook().getId())
-                .title(history.getBook().getTitle())
-                .authorName(history.getBook().getAuthorName())
-                .isbn(history.getBook().getIsbn())
-                .rate(history.getBook().getRate())
                 .requested(history.getRequested())
                 .requestApproved(history.getRequestApproved())
                 .requesterName(history.getUser().getFullName())
+                .ownerName(history.getBook().getOwner().getFullName())
                 .cover(serviceFileStorage.loadFile(history.getBook().getId()))
                 .coverUrl(history.getBook().getCoverUrl())
+                .ownerId(history.getBook().getOwner().getId())
+                .requesterId(history.getUser().getId())
                 .build();
     }
 }

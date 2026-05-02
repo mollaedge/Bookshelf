@@ -1,10 +1,10 @@
 <div class="app-container">
   <nav class="side-nav" [class.collapsed]="isNavCollapsed">
-    <div class="nav-brand">
-      <img src="logo.png" alt="Logo" class="logo">
+    <a class="nav-brand" routerLink="/home">
+      <i class="fas fa-book"></i>
       <h1 *ngIf="!isNavCollapsed">Bookshelf</h1>
-    </div>
-    
+    </a>
+
     <button class="collapse-toggle" (click)="toggleNav()">
       <i class="fas" [class.fa-chevron-left]="!isNavCollapsed" [class.fa-chevron-right]="isNavCollapsed"></i>
     </button>
@@ -32,30 +32,79 @@
         <i class="fas fa-comment"></i>
         <span *ngIf="!isNavCollapsed">Feedback</span>
       </a>
+      <hr class="nav-section-divider">
     </div>
 
-    <div class="nav-footer">
-      @if (user$ | async; as user) {
-        <a routerLink="/profile" routerLinkActive="active" [title]="isNavCollapsed ? 'Profile' : ''">
-          <i class="fas fa-user"></i>
-          <span *ngIf="!isNavCollapsed">Profile</span>
-        </a>
-        <a (click)="logout()" style="cursor: pointer;" [title]="isNavCollapsed ? 'Logout' : ''">
-          <i class="fas fa-sign-out-alt"></i>
-          <span *ngIf="!isNavCollapsed">Logout</span>
-        </a>
-      } @else {
-        <a routerLink="/auth" routerLinkActive="active" [title]="isNavCollapsed ? 'Login/Register' : ''">
-          <i class="fas fa-sign-in-alt"></i>
-          <span *ngIf="!isNavCollapsed">Login/Register</span>
-        </a>
-      }
-    </div>
+    <div class="nav-footer"></div>
   </nav>
 
-  <main class="main-content">
-    <router-outlet></router-outlet>
-  </main>
+  <div class="content-wrapper">
+    <nav class="top-nav">
+      <div class="top-nav-right">
+        <!-- Notification Bell -->
+        <div class="notification-wrapper">
+          <button class="notification-btn" (click)="toggleNotifications()">
+            <i class="fas fa-bell"></i>
+            <span class="badge" *ngIf="unreadCount > 0">{{ unreadCount }}</span>
+          </button>
+
+          <div class="notification-dropdown" *ngIf="showNotifications">
+            <div class="dropdown-header">
+              <span>Notifications</span>
+              <button class="mark-read-btn" *ngIf="unreadCount > 0" (click)="markAllRead()">Mark all read</button>
+            </div>
+
+            <div class="dropdown-empty" *ngIf="notifications.length === 0">
+              <i class="fas fa-bell-slash"></i>
+              <p>No notifications yet</p>
+            </div>
+
+            <ul class="notification-list" *ngIf="notifications.length > 0">
+              <li *ngFor="let n of notifications" [class.unread]="!n.read" (click)="n.read = true">
+                <span class="notif-message">{{ n.message }}</span>
+                <span class="notif-time">{{ n.time }}</span>
+              </li>
+            </ul>
+          </div>
+        </div>
+
+        @if (user$ | async; as user) {
+          <div class="profile-wrapper">
+            <button class="profile-avatar-link" (click)="toggleProfileMenu()" [title]="user.fullName || user.email">
+              <div class="nav-avatar">{{ getInitials(user.fullName, user.email) }}</div>
+            </button>
+
+            <div class="profile-dropdown" *ngIf="showProfileMenu">
+              <div class="profile-dropdown-header">
+                <div class="nav-avatar nav-avatar--lg">{{ getInitials(user.fullName, user.email) }}</div>
+                <div class="profile-dropdown-info">
+                  <span class="profile-name">{{ user.fullName || 'User' }}</span>
+                  <span class="profile-email">{{ user.email }}</span>
+                </div>
+              </div>
+              <div class="profile-dropdown-divider"></div>
+              <a routerLink="/profile" class="profile-dropdown-item" (click)="showProfileMenu = false">
+                <i class="fas fa-user"></i>
+                <span>My Profile</span>
+              </a>
+              <button class="profile-dropdown-item profile-dropdown-item--danger" (click)="logout()">
+                <i class="fas fa-sign-out-alt"></i>
+                <span>Logout</span>
+              </button>
+            </div>
+          </div>
+        } @else {
+          <a routerLink="/auth" routerLinkActive="active">
+            <i class="fas fa-sign-in-alt"></i>
+            <span>Login / Register</span>
+          </a>
+        }
+      </div>
+    </nav>
+    <main class="main-content">
+      <router-outlet></router-outlet>
+    </main>
+  </div>
 </div>
 
 <app-bookpopup

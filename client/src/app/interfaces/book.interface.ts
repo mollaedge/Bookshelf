@@ -21,6 +21,8 @@ export interface RequestedBook {
   authorName: string;
   isbn: string;
   requesterName: string;
+  requesterId?: number; // ID of the user who requested the book
+  ownerId?: number; // ID of the book owner
   rate?: number;
   requested?: boolean;
   requestApproved?: boolean;

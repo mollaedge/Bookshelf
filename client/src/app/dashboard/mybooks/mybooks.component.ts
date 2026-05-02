@@ -4,6 +4,7 @@ import Swal from 'sweetalert2';
 import { PageResponse } from '../../interfaces/page.interface';
 import { BooksService } from '../../service/book/books.service';
 import { Book, RequestedBook } from '../../interfaces/book.interface';
+import { AuthStateService } from '../../service/auth/auth-state.service';
 
 @Component({
   selector: 'app-mybooks',
@@ -13,6 +14,7 @@ import { Book, RequestedBook } from '../../interfaces/book.interface';
 })
 export class MybooksComponent implements OnInit {
   activeTab: 'mybooks' | 'returned' | 'borrowed' | 'requested' = 'mybooks';
+  requestedView: 'by-me' | 'from-me' = 'by-me';
   myBooks: Book[] = [];
   returnedBooks: Book[] = [];
   borrowedBooks: Book[] = [];
@@ -31,7 +33,10 @@ export class MybooksComponent implements OnInit {
   popupMode: 'add' | 'edit' = 'add';
   selectedBook: Book | null = null;
 
-  constructor(private booksService: BooksService) {}
+  constructor(
+    private booksService: BooksService,
+    private authStateService: AuthStateService
+  ) {}
 
   ngOnInit(): void {
     this.loadData();
@@ -39,6 +44,14 @@ export class MybooksComponent implements OnInit {
 
   switchTab(tab: 'mybooks' | 'returned' | 'borrowed' | 'requested'): void {
     this.activeTab = tab;
+    this.currentPage = 0;
+    if (tab !== 'requested') this.requestedView = 'by-me';
+    this.loadData();
+  }
+
+  switchRequestedView(view: 'by-me' | 'from-me'): void {
+    if (this.requestedView === view) return;
+    this.requestedView = view;
     this.currentPage = 0;
     this.loadData();
   }
@@ -69,7 +82,9 @@ export class MybooksComponent implements OnInit {
       case 'mybooks':   return this.booksService.getMyBooks(page, this.pageSize);
       case 'returned':  return this.booksService.getReturnedBooks(page, this.pageSize);
       case 'borrowed':  return this.booksService.getBorrowedBooks(page, this.pageSize);
-      case 'requested': return this.booksService.getRequestedBooks(page, this.pageSize);
+      case 'requested': return this.requestedView === 'by-me'
+        ? this.booksService.getRequestedByMe(page, this.pageSize)
+        : this.booksService.getRequestedFromMe(page, this.pageSize);
       default:          return this.booksService.getMyBooks(page, this.pageSize);
     }
   }
@@ -177,4 +192,9 @@ export class MybooksComponent implements OnInit {
   closePopup(): void { this.showPopup = false; }
 
   onBookSaved(_book: Book): void { this.loadData(this.currentPage); }
+
+  isCurrentUserOwner(book: RequestedBook): boolean {
+    const currentUser = this.authStateService.getCurrentUser();
+    return currentUser?.id === book.ownerId;
+  }
 }

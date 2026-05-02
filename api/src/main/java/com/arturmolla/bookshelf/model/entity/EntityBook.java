@@ -29,6 +29,7 @@ public class EntityBook extends EntityBase {
     private String cover;
     private String coverUrl;
     private Integer pageBookmark;
+    private Integer pdfPagePointer;
     private Boolean favourite = Boolean.FALSE;
     private Boolean archived = Boolean.FALSE;
     private Boolean shareable = Boolean.FALSE;

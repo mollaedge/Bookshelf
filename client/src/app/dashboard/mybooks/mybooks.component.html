@@ -113,6 +113,16 @@
 
       <!-- Requested Tab -->
       <div class="tab-panel" *ngIf="activeTab === 'requested'">
+
+        <div class="requested-toggle">
+          <button class="toggle-btn" [class.active]="requestedView === 'by-me'" (click)="switchRequestedView('by-me')">
+            My Requests
+          </button>
+          <button class="toggle-btn" [class.active]="requestedView === 'from-me'" (click)="switchRequestedView('from-me')">
+            Requests for My Books
+          </button>
+        </div>
+
         <div class="books-loading" *ngIf="loading"><p>Loading...</p></div>
         <div class="books-grid" *ngIf="!loading && requestedBooks.length">
           <div class="book-card" *ngFor="let book of requestedBooks">
@@ -125,7 +135,7 @@
               <h3>{{ book.title }}</h3>
               <p class="author">{{ book.authorName }}</p>
               <p class="isbn" *ngIf="book.isbn">ISBN: {{ book.isbn }}</p>
-              <p class="requester" *ngIf="book.requesterName">Requested by: {{ book.requesterName }}</p>
+              <p class="requester" *ngIf="requestedView === 'from-me' && book.requesterName">Requested by: {{ book.requesterName }}</p>
             </div>
             <div class="book-meta">
               <span class="rate" *ngIf="book.rate">⭐ {{ book.rate }}</span>
@@ -133,12 +143,20 @@
               <span class="badge-pending" *ngIf="book.requested && !book.requestApproved">⏳ Pending</span>
             </div>
             <div class="book-actions">
-              <button class="btn-compact" (click)="approveRequest(book.id)"><span class="icon">✔️</span> Approve</button>
-              <button class="btn-compact" (click)="rejectRequest(book.id)"><span class="icon">❌</span> Reject</button>
+              <ng-container *ngIf="requestedView === 'from-me'">
+                <button class="btn-compact" (click)="approveRequest(book.id)"><span class="icon">✔️</span> Approve</button>
+                <button class="btn-compact" (click)="rejectRequest(book.id)"><span class="icon">❌</span> Reject</button>
+              </ng-container>
+              <ng-container *ngIf="requestedView === 'by-me'">
+                <button class="btn-compact" (click)="rejectRequest(book.id)"><span class="icon">❌</span> Cancel Request</button>
+              </ng-container>
             </div>
           </div>
         </div>
-        <div class="books-empty" *ngIf="!loading && !requestedBooks.length"><p>No pending requests.</p></div>
+        <div class="books-empty" *ngIf="!loading && !requestedBooks.length">
+          <p *ngIf="requestedView === 'by-me'">You haven't requested any books.</p>
+          <p *ngIf="requestedView === 'from-me'">No one has requested your books.</p>
+        </div>
         <div class="books-pagination" *ngIf="totalPages > 1 && !loading">
           <button class="pagination-btn" (click)="prevPage()" [disabled]="isFirstPage">← Previous</button>
           <div class="pagination-info"><span>Page {{ currentPage + 1 }} / {{ totalPages }}</span></div>

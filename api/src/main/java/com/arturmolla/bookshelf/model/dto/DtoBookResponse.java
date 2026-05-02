@@ -23,4 +23,6 @@ public class DtoBookResponse {
     private Boolean archived;
     private Boolean shareable;
     private Boolean read;
+    private Integer pdfPagePointer;
+    private Boolean hasPdf;
 }

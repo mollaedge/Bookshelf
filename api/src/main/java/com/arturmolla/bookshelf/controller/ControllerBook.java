@@ -4,8 +4,7 @@ import com.arturmolla.bookshelf.model.common.PageResponse;
 import com.arturmolla.bookshelf.model.dto.DtoBookRequest;
 import com.arturmolla.bookshelf.model.dto.DtoBookResponse;
 import com.arturmolla.bookshelf.model.dto.DtoBookUpdateRequest;
-import com.arturmolla.bookshelf.model.dto.DtoBorrowedBooksResponse;
-import com.arturmolla.bookshelf.model.dto.DtoRequestedBooksResponse;
+import com.arturmolla.bookshelf.model.dto.DtoBookTransactionResponse;
 import com.arturmolla.bookshelf.service.ServiceBook;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -72,17 +71,26 @@ public class ControllerBook {
         return ResponseEntity.ok(serviceBook.getAllBooksByOwner(page, size, connectedUser));
     }
 
-    @GetMapping("/requested")
-    public ResponseEntity<PageResponse<DtoRequestedBooksResponse>> getAllRequestedBooks(
+    @GetMapping("/requested/by-me")
+    public ResponseEntity<PageResponse<DtoBookTransactionResponse>> getAllRequestsByMe(
             @RequestParam(name = "page", defaultValue = "0", required = false) int page,
             @RequestParam(name = "size", defaultValue = "15", required = false) int size,
             Authentication connectedUser
     ) {
-        return ResponseEntity.ok(serviceBook.getAllRequestedBooks(page, size, connectedUser));
+        return ResponseEntity.ok(serviceBook.getAllRequestsByMe(page, size, connectedUser));
+    }
+
+    @GetMapping("/requested/from-me")
+    public ResponseEntity<PageResponse<DtoBookTransactionResponse>> getAllRequestsFromMe(
+            @RequestParam(name = "page", defaultValue = "0", required = false) int page,
+            @RequestParam(name = "size", defaultValue = "15", required = false) int size,
+            Authentication connectedUser
+    ) {
+        return ResponseEntity.ok(serviceBook.getAllRequestsFromMe(page, size, connectedUser));
     }
 
     @GetMapping("/borrowed")
-    public ResponseEntity<PageResponse<DtoBorrowedBooksResponse>> getAllBorrowedBooks(
+    public ResponseEntity<PageResponse<DtoBookTransactionResponse>> getAllBorrowedBooks(
             @RequestParam(name = "page", defaultValue = "0", required = false) int page,
             @RequestParam(name = "size", defaultValue = "15", required = false) int size,
             Authentication connectedUser
@@ -91,7 +99,7 @@ public class ControllerBook {
     }
 
     @GetMapping("/returned")
-    public ResponseEntity<PageResponse<DtoBorrowedBooksResponse>> getAllReturnedBooks(
+    public ResponseEntity<PageResponse<DtoBookTransactionResponse>> getAllReturnedBooks(
             @RequestParam(name = "page", defaultValue = "0", required = false) int page,
             @RequestParam(name = "size", defaultValue = "15", required = false) int size,
             Authentication connectedUser
@@ -105,6 +113,14 @@ public class ControllerBook {
             Authentication connectedUser
     ) {
         return ResponseEntity.ok(serviceBook.borrowBook(bookId, connectedUser));
+    }
+
+    @PatchMapping("/borrow/approve/{book-id}")
+    public ResponseEntity<Long> approveBorrowRequest(
+            @PathVariable("book-id") Long bookId,
+            Authentication connectedUser
+    ) {
+        return ResponseEntity.ok(serviceBook.approveBorrowRequest(bookId, connectedUser));
     }
 
     @PatchMapping("/borrow/return/{book-id}")
@@ -156,5 +172,38 @@ public class ControllerBook {
         return ResponseEntity.ok()
                 .contentType(MediaType.IMAGE_JPEG)
                 .body(cover);
+    }
+
+    @PostMapping(value = "/{book-id}/pdf", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<Void> uploadBookPdf(
+            @PathVariable("book-id") Long bookId,
+            @RequestPart("file") MultipartFile file,
+            Authentication connectedUser
+    ) {
+        serviceBook.uploadBookPdf(file, connectedUser, bookId);
+        return ResponseEntity.accepted().build();
+    }
+
+    @GetMapping(value = "/{book-id}/pdf", produces = MediaType.APPLICATION_PDF_VALUE)
+    public ResponseEntity<byte[]> getBookPdf(
+            @PathVariable("book-id") Long bookId,
+            Authentication connectedUser
+    ) {
+        byte[] pdf = serviceBook.getBookPdf(bookId, connectedUser);
+        if (pdf == null || pdf.length == 0) {
+            return ResponseEntity.noContent().build();
+        }
+        return ResponseEntity.ok()
+                .contentType(MediaType.APPLICATION_PDF)
+                .body(pdf);
+    }
+
+    @PatchMapping("/{book-id}/pdf/pointer")
+    public ResponseEntity<DtoBookResponse> updatePdfPagePointer(
+            @PathVariable("book-id") Long bookId,
+            @RequestParam("page") Integer page,
+            Authentication connectedUser
+    ) {
+        return ResponseEntity.ok(serviceBook.updatePdfPagePointer(bookId, page, connectedUser));
     }
 }

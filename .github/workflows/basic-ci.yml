@@ -75,3 +75,48 @@ jobs:
           name: angular-client-dist
           path: client/dist/
           retention-days: 5
+
+  deploy:
+    name: Deploy to Hetzner
+    runs-on: ubuntu-latest
+    needs: [test-and-build, build-client]
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    environment: hetzner-bookshelf
+
+    steps:
+      - name: Download API JAR
+        uses: actions/download-artifact@v4
+        with:
+          name: bookshelf-api-jar
+          path: artifacts/api
+
+      - name: Download Angular dist
+        uses: actions/download-artifact@v4
+        with:
+          name: angular-client-dist
+          path: artifacts/client
+
+      - name: Set up SSH key
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.SSH_KEY }}" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          ssh-keyscan -H "${{ secrets.SERVER_IP }}" >> ~/.ssh/known_hosts
+
+      - name: Copy API JAR to server
+        run: |
+          scp -i ~/.ssh/deploy_key \
+            artifacts/api/*.jar \
+            ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_IP }}:/opt/bookshelf/api/bookshelf-api.jar
+
+      - name: Copy Angular dist to server
+        run: |
+          rsync -avz --delete -e "ssh -i ~/.ssh/deploy_key" \
+            artifacts/client/ \
+            ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_IP }}:/var/www/bookshelf/
+
+      - name: Restart API service
+        run: |
+          ssh -i ~/.ssh/deploy_key \
+            ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_IP }} \
+            "sudo systemctl restart bookshelf-api && sudo systemctl status bookshelf-api --no-pager"

@@ -1,4 +1,4 @@
-import { Component, OnInit, AfterViewInit } from '@angular/core';
+import { Component, OnInit, AfterViewInit, OnDestroy } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 import { ViewportScroller } from '@angular/common';
 import { ProfileService } from '../../service/profile/profile.service';
@@ -37,7 +37,7 @@ const GENRE_COLORS = ['#1976D2', '#64B5F6', '#0D47A1', '#90CAF9', '#BBDEFB', '#4
   templateUrl: './profile.component.html',
   styleUrl: './profile.component.scss'
 })
-export class ProfileComponent implements OnInit, AfterViewInit {
+export class ProfileComponent implements OnInit, AfterViewInit, OnDestroy {
   user: UserProfile = {
     firstname: '',
     lastname: '',
@@ -55,6 +55,11 @@ export class ProfileComponent implements OnInit, AfterViewInit {
   profileError: string = '';
   saveError: string = '';
   dashboard: UserDashboardResponse | null = null;
+
+  profilePictureUrl: string | null = null;
+  wallpaperUrl: string | null = null;
+  uploadingPicture = false;
+  uploadingWallpaper = false;
 
   stats: { label: string; value: number | string; icon: string; color: string; suffix?: string }[] = [];
   readingActivity: ProfileReadingActivity[] = [];
@@ -105,6 +110,7 @@ export class ProfileComponent implements OnInit, AfterViewInit {
       next: (data) => {
         this.dashboard = data;
         this.mapDashboardToView(data);
+        this.refreshImageUrls();
         this.isLoading = false;
       },
       error: () => {
@@ -112,6 +118,49 @@ export class ProfileComponent implements OnInit, AfterViewInit {
         this.profileError = 'Failed to load profile. Please try again.';
       }
     });
+  }
+
+  private refreshImageUrls(): void {
+    this.profileService.getProfilePicture().subscribe({
+      next: (blob) => {
+        if (this.profilePictureUrl) URL.revokeObjectURL(this.profilePictureUrl);
+        this.profilePictureUrl = URL.createObjectURL(blob);
+      },
+      error: () => { this.profilePictureUrl = null; }
+    });
+
+    this.profileService.getWallpaper().subscribe({
+      next: (blob) => {
+        if (this.wallpaperUrl) URL.revokeObjectURL(this.wallpaperUrl);
+        this.wallpaperUrl = URL.createObjectURL(blob);
+      },
+      error: () => { this.wallpaperUrl = null; }
+    });
+  }
+
+  onProfilePictureChange(event: Event): void {
+    const file = (event.target as HTMLInputElement).files?.[0];
+    if (!file) return;
+    this.uploadingPicture = true;
+    this.profileService.uploadProfilePicture(file).subscribe({
+      next: () => { this.uploadingPicture = false; this.refreshImageUrls(); },
+      error: () => { this.uploadingPicture = false; }
+    });
+  }
+
+  onWallpaperChange(event: Event): void {
+    const file = (event.target as HTMLInputElement).files?.[0];
+    if (!file) return;
+    this.uploadingWallpaper = true;
+    this.profileService.uploadWallpaper(file).subscribe({
+      next: () => { this.uploadingWallpaper = false; this.refreshImageUrls(); },
+      error: () => { this.uploadingWallpaper = false; }
+    });
+  }
+
+  ngOnDestroy(): void {
+    if (this.profilePictureUrl) URL.revokeObjectURL(this.profilePictureUrl);
+    if (this.wallpaperUrl) URL.revokeObjectURL(this.wallpaperUrl);
   }
 
   private mapDashboardToView(data: UserDashboardResponse): void {
