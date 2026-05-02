@@ -40,9 +40,19 @@ export class BooksService {
     return this.http.get<PageResponse<RequestedBook>>(`${this.baseUrl}/requested?page=${page}&size=${size}`);
   }
 
+  // Get books I have requested from others
+  getRequestedByMe(page: number = 0, size: number = 15): Observable<PageResponse<RequestedBook>> {
+    return this.http.get<PageResponse<RequestedBook>>(`${this.baseUrl}/requested/by-me?page=${page}&size=${size}`);
+  }
+
+  // Get requests others have made for my books
+  getRequestedFromMe(page: number = 0, size: number = 15): Observable<PageResponse<RequestedBook>> {
+    return this.http.get<PageResponse<RequestedBook>>(`${this.baseUrl}/requested/from-me?page=${page}&size=${size}`);
+  }
+
   // Approve a book request
   approveRequest(bookId: number): Observable<any> {
-    return this.http.post(`${this.baseUrl}/approve-request/${bookId}`, {});
+    return this.http.patch(`${this.baseUrl}/borrow/approve/${bookId}`, {});
   }
 
   // Reject a book request

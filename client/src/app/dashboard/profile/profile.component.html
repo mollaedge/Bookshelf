@@ -20,15 +20,22 @@
   <div *ngIf="!isLoading && !profileError">
   <!-- Profile Header -->
   <div class="profile-header">
-    <div class="header-background"></div>
+    <div class="header-background" [style.background-image]="wallpaperUrl ? 'url(' + wallpaperUrl + ')' : null">
+      <label class="edit-wallpaper-btn" title="Change cover photo">
+        <i class="fas" [class.fa-spinner]="uploadingWallpaper" [class.fa-spin]="uploadingWallpaper" [class.fa-camera]="!uploadingWallpaper"></i>
+        <input type="file" accept="image/*" hidden (change)="onWallpaperChange($event)">
+      </label>
+    </div>
     <div class="header-content">
       <div class="profile-avatar">
         <div class="avatar-circle">
-          <span class="avatar-initials">{{ getInitials(user.name) }}</span>
+          <img *ngIf="profilePictureUrl" [src]="profilePictureUrl" class="avatar-img" alt="Profile picture">
+          <span class="avatar-initials" *ngIf="!profilePictureUrl">{{ getInitials(user.name) }}</span>
         </div>
-        <button class="edit-avatar-btn" *ngIf="!isEditMode">
-          <i class="fas fa-camera"></i>
-        </button>
+        <label class="edit-avatar-btn" *ngIf="!isEditMode" title="Change photo">
+          <i class="fas" [class.fa-spinner]="uploadingPicture" [class.fa-spin]="uploadingPicture" [class.fa-camera]="!uploadingPicture"></i>
+          <input type="file" accept="image/*" hidden (change)="onProfilePictureChange($event)">
+        </label>
       </div>
       
       <div class="profile-info">
