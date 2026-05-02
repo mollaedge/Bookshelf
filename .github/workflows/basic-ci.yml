@@ -68,6 +68,9 @@ jobs:
 
       - name: Copy Angular dist to server
         run: |
+          ssh -i ~/.ssh/deploy_key \
+            ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_IP }} \
+            "mkdir -p /var/www/bookshelf"
           rsync -avz --delete -e "ssh -i ~/.ssh/deploy_key" \
             client/dist/ \
             ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_IP }}:/var/www/bookshelf/
