@@ -1,0 +1,39 @@
+services:
+  db:
+    image: postgres:16
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${DB_NAME:-bookshelf}
+      POSTGRES_USER: ${DB_USER:-bookshelf}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-bookshelf}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - bookshelf-net
+
+  api:
+    image: ${API_IMAGE:-ghcr.io/placeholder/bookshelf-api:latest}
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/${DB_NAME:-bookshelf}
+      SPRING_DATASOURCE_USERNAME: ${DB_USER:-bookshelf}
+      SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD}
+      JASYPT_ENCRYPTOR_PASSWORD: ${JASYPT_ENCRYPTOR_PASSWORD}
+    ports:
+      - "8080:8080"
+    networks:
+      - bookshelf-net
+
+volumes:
+  postgres_data:
+
+networks:
+  bookshelf-net:

@@ -75,8 +75,14 @@ jobs:
             client/dist/ \
             ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_IP }}:/var/www/bookshelf/
 
-      - name: Restart API service
+      - name: Start API service
         run: |
           ssh -i ~/.ssh/deploy_key \
             ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_IP }} \
-            "sudo systemctl restart bookshelf-api && sudo systemctl status bookshelf-api --no-pager"
+            "pkill -f 'bookshelf-api.jar' || true; nohup java -jar /opt/bookshelf/api/bookshelf-api.jar > /opt/bookshelf/api/app.log 2>&1 &"
+
+      - name: Start Angular app
+        run: |
+          ssh -i ~/.ssh/deploy_key \
+            ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_IP }} \
+            "cd /var/www/bookshelf && pkill -f 'npm start' || true; nohup npm start > /var/www/bookshelf/app.log 2>&1 &"
