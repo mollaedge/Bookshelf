@@ -125,4 +125,5 @@ jobs:
 
       - name: Start Angular app
         run: |
-          ssh hetzner "cd /var/www/bookshelf && pkill -f 'npm start' || true; nohup npm start > /var/www/bookshelf/app.log 2>&1 &"
+          ssh hetzner "pkill -f 'npm start' || true"
+          ssh -f hetzner "cd /var/www/bookshelf && nohup npm start >> /var/www/bookshelf/app.log 2>&1"
