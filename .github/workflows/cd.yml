@@ -32,6 +32,18 @@ jobs:
         working-directory: client
         run: npm ci
 
+      - name: Inject production environment values
+        env:
+          GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
+          SERVER_IP: ${{ secrets.SERVER_IP }}
+          CLIENT_URL: ${{ secrets.CLIENT_URL }}
+        run: |
+          sed -i \
+            -e "s|__GOOGLE_CLIENT_ID__|${GOOGLE_CLIENT_ID}|g" \
+            -e "s|__API_URL__|http://${SERVER_IP}:8080/api/v1|g" \
+            -e "s|__REDIRECT_URI__|${CLIENT_URL}/dashboard/dash|g" \
+            client/src/environments/environment.prod.ts
+
       - name: Build Angular app
         working-directory: client
         run: npm run build
@@ -137,4 +149,4 @@ jobs:
 
       - name: Start Angular app
         run: |
-          ssh hetzner "pkill -f 'server.mjs' || true; nohup node /var/www/bookshelf/client/server/server.mjs >> /var/www/bookshelf/app.log 2>&1 < /dev/null &"
+          ssh hetzner "pkill -f 'server.mjs' || true; setsid nohup node /var/www/bookshelf/client/server/server.mjs >> /var/www/bookshelf/app.log 2>&1 < /dev/null"

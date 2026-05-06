@@ -1,9 +1,9 @@
 export const environment = {
   production: true,
-  googleClientId: 'YOUR_PRODUCTION_CLIENT_ID', // Replace with your production client ID
-  apiUrl: 'https://your-production-api.com/api/v1', // Replace with your production API URL
+  googleClientId: '__GOOGLE_CLIENT_ID__',
+  apiUrl: '__API_URL__',
   auth: {
-    redirectUri: 'https://your-production-domain.com/dashboard/dash',
+    redirectUri: '__REDIRECT_URI__',
     // Add other auth-related configuration here
   }
 };
