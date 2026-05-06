@@ -1,0 +1,128 @@
+name: CD
+
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+  deploy:
+    name: Push and Deploy to Hetzner
+    runs-on: ubuntu-latest
+    environment: hetzner-bookshelf
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # ── API: build Docker image ────────────────────────────────────────────────
+      - name: Build API Docker image
+        run: docker build -t bookshelf-api:latest ./api
+
+      # ── Client: build Angular app ─────────────────────────────────────────────
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: client/package-lock.json
+
+      - name: Install client dependencies
+        working-directory: client
+        run: npm ci
+
+      - name: Build Angular app
+        working-directory: client
+        run: npm run build
+
+      # ── SSH setup ─────────────────────────────────────────────────────────────
+      - name: Set up SSH key
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.SSH_KEY }}
+        run: |
+          mkdir -p ~/.ssh
+          printf '%s\n' "$SSH_PRIVATE_KEY" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          ssh-keyscan -H "${{ secrets.SERVER_IP }}" >> ~/.ssh/known_hosts
+          cat >> ~/.ssh/config << EOF
+          Host hetzner
+            HostName ${{ secrets.SERVER_IP }}
+            User ${{ secrets.SERVER_USER }}
+            IdentityFile ~/.ssh/deploy_key
+            StrictHostKeyChecking yes
+          EOF
+          chmod 600 ~/.ssh/config
+      # ── Ensure PostgreSQL is running on the server ──────────────────────────
+      - name: Ensure PostgreSQL container is running
+        env:
+          DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
+          DB_USERNAME: ${{ secrets.DB_USERNAME }}
+        run: |
+          ssh hetzner bash -s << EOF
+          if docker ps --filter name=my-postgres --filter status=running --format '{{.Names}}' | grep -q my-postgres; then
+            echo "PostgreSQL already running."
+          elif docker ps -a --filter name=my-postgres --format '{{.Names}}' | grep -q my-postgres; then
+            echo "Starting existing PostgreSQL container."
+            docker start my-postgres
+          else
+            echo "Creating PostgreSQL container."
+            docker run -d \
+              --name my-postgres \
+              -e POSTGRES_PASSWORD=$(printf '%q' "${DB_PASSWORD}") \
+              -e POSTGRES_USER=$(printf '%q' "${DB_USERNAME}") \
+              -e POSTGRES_DB=bookshelf \
+              -p 5433:5432 \
+              -v pgdata:/var/lib/postgresql/data \
+              postgres:16
+          fi
+          EOF
+      # ── Copy files to server ──────────────────────────────────────────────────
+      - name: Copy docker-compose.yml to server
+        run: |
+          ssh hetzner "mkdir -p /opt/bookshelf"
+          scp docker-compose.yml hetzner:/opt/bookshelf/docker-compose.yml
+
+      - name: Copy Angular dist to server
+        run: |
+          ssh hetzner "mkdir -p /var/www/bookshelf"
+          rsync -avz --delete -e ssh \
+            client/dist/ \
+            hetzner:/var/www/bookshelf/
+
+      # ── Transfer image and restart API ────────────────────────────────────────
+      - name: Stream API image to server
+        run: docker save bookshelf-api:latest | gzip | ssh hetzner 'docker load'
+
+      - name: Restart API container
+        env:
+          DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
+          DB_USERNAME: ${{ secrets.DB_USERNAME }}
+          GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
+          GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
+          JASYPT_ENCRYPTOR_PASSWORD: ${{ secrets.JASYPT_ENCRYPTOR_PASSWORD }}
+          JWT_SECRET_KEY: ${{ secrets.JWT_SECRET_KEY }}
+          MAIL_PASSWORD: ${{ secrets.MAIL_PASSWORD }}
+          MAIL_USERNAME: ${{ secrets.MAIL_USERNAME }}
+          CORS_ALLOWED_ORIGINS: ${{ secrets.CORS_ALLOWED_ORIGINS }}
+        run: |
+          ssh hetzner bash -s << EOF
+          export API_IMAGE=bookshelf-api:latest
+          export DB_HOST=host.docker.internal
+          export DB_PORT=5433
+          export DB_NAME=bookshelf
+          export DB_USERNAME=$(printf '%q' "${DB_USERNAME}")
+          export DB_PASSWORD=$(printf '%q' "${DB_PASSWORD}")
+          export GOOGLE_CLIENT_ID=$(printf '%q' "${GOOGLE_CLIENT_ID}")
+          export GOOGLE_CLIENT_SECRET=$(printf '%q' "${GOOGLE_CLIENT_SECRET}")
+          export JASYPT_ENCRYPTOR_PASSWORD=$(printf '%q' "${JASYPT_ENCRYPTOR_PASSWORD}")
+          export JWT_SECRET_KEY=$(printf '%q' "${JWT_SECRET_KEY}")
+          export MAIL_USERNAME=$(printf '%q' "${MAIL_USERNAME}")
+          export MAIL_PASSWORD=$(printf '%q' "${MAIL_PASSWORD}")
+          export CORS_ALLOWED_ORIGINS=$(printf '%q' "${CORS_ALLOWED_ORIGINS}")
+          cd /opt/bookshelf && docker compose up -d --no-deps api
+          EOF
+
+      - name: Start Angular app
+        run: |
+          ssh hetzner "cd /var/www/bookshelf && pkill -f 'npm start' || true; nohup npm start > /var/www/bookshelf/app.log 2>&1 &"
