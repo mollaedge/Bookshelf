@@ -78,6 +78,18 @@ jobs:
           fi
           EOF
       # ── Copy files to server ──────────────────────────────────────────────────
+      - name: Ensure Node.js is installed on server
+        run: |
+          ssh hetzner bash -s << 'EOF'
+          if command -v node >/dev/null 2>&1; then
+            echo "Node.js already installed: $(node --version)"
+          else
+            echo "Installing Node.js 20..."
+            curl -fsSL https://deb.nodesource.com/setup_20.x | bash -
+            apt-get install -y nodejs
+          fi
+          EOF
+
       - name: Copy docker-compose.yml to server
         run: |
           ssh hetzner "mkdir -p /opt/bookshelf"
