@@ -142,7 +142,7 @@ jobs:
           export MAIL_USERNAME=$(printf '%q' "${MAIL_USERNAME}")
           export MAIL_PASSWORD=$(printf '%q' "${MAIL_PASSWORD}")
           export CORS_ALLOWED_ORIGINS=$(printf '%q' "${CORS_ALLOWED_ORIGINS}")
-          cd /opt/bookshelf && docker compose up -d api
+          cd /opt/bookshelf && docker compose up -d --force-recreate api
           EOF
 
       - name: Start Angular app
@@ -154,27 +154,28 @@ jobs:
         run: |
           ssh hetzner bash -s << 'EOF'
           apt-get install -y nginx
-          cat > /etc/nginx/sites-available/bookshelf << 'NGINX'
+          cat > /etc/nginx/sites-available/orbilay.com << 'NGINX'
           server {
               listen 80;
               server_name _;
 
               location /api/ {
-                  proxy_pass http://localhost:8088;
+                  proxy_pass http://127.0.0.1:8088;
+                  proxy_redirect off;
                   proxy_set_header Host $host;
                   proxy_set_header X-Real-IP $remote_addr;
                   proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
               }
 
               location / {
-                  proxy_pass http://localhost:4000;
+                  proxy_pass http://127.0.0.1:4000;
                   proxy_set_header Host $host;
                   proxy_set_header X-Real-IP $remote_addr;
                   proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
               }
           }
           NGINX
-          ln -sf /etc/nginx/sites-available/bookshelf /etc/nginx/sites-enabled/bookshelf
+          ln -sf /etc/nginx/sites-available/orbilay.com /etc/nginx/sites-enabled/orbilay.com
           rm -f /etc/nginx/sites-enabled/default
           nginx -t && systemctl reload nginx
           EOF
