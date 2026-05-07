@@ -1,39 +1,19 @@
 services:
-  db:
-    image: postgres:16
-    restart: unless-stopped
-    environment:
-      POSTGRES_DB: ${DB_NAME:-bookshelf}
-      POSTGRES_USER: ${DB_USER:-bookshelf}
-      POSTGRES_PASSWORD: ${DB_PASSWORD}
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-bookshelf}"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-    networks:
-      - bookshelf-net
-
   api:
-    image: ${API_IMAGE:-ghcr.io/placeholder/bookshelf-api:latest}
+    image: ${API_IMAGE:-bookshelf-api:latest}
     restart: unless-stopped
-    depends_on:
-      db:
-        condition: service_healthy
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     environment:
-      SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/${DB_NAME:-bookshelf}
-      SPRING_DATASOURCE_USERNAME: ${DB_USER:-bookshelf}
+      SPRING_DATASOURCE_URL: jdbc:postgresql://host.docker.internal:5433/${DB_NAME:-bookshelf}
+      SPRING_DATASOURCE_USERNAME: ${DB_USERNAME}
       SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD}
       JASYPT_ENCRYPTOR_PASSWORD: ${JASYPT_ENCRYPTOR_PASSWORD}
+      JWT_SECRET_KEY: ${JWT_SECRET_KEY}
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET}
+      MAIL_USERNAME: ${MAIL_USERNAME}
+      MAIL_PASSWORD: ${MAIL_PASSWORD}
+      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS}
     ports:
-      - "8080:8080"
-    networks:
-      - bookshelf-net
-
-volumes:
-  postgres_data:
-
-networks:
-  bookshelf-net:
+      - "8088:8080"
