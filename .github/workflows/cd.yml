@@ -128,26 +128,27 @@ jobs:
           MAIL_USERNAME: ${{ secrets.MAIL_USERNAME }}
           CORS_ALLOWED_ORIGINS: ${{ secrets.CORS_ALLOWED_ORIGINS }}
         run: |
-          ssh hetzner bash -s << EOF
-          export API_IMAGE=bookshelf-api:latest
-          export DB_HOST=host.docker.internal
-          export DB_PORT=5433
-          export DB_NAME=bookshelf
-          export DB_USERNAME=$(printf '%q' "${DB_USERNAME}")
-          export DB_PASSWORD=$(printf '%q' "${DB_PASSWORD}")
-          export GOOGLE_CLIENT_ID=$(printf '%q' "${GOOGLE_CLIENT_ID}")
-          export GOOGLE_CLIENT_SECRET=$(printf '%q' "${GOOGLE_CLIENT_SECRET}")
-          export JASYPT_ENCRYPTOR_PASSWORD=$(printf '%q' "${JASYPT_ENCRYPTOR_PASSWORD}")
-          export JWT_SECRET_KEY=$(printf '%q' "${JWT_SECRET_KEY}")
-          export MAIL_USERNAME=$(printf '%q' "${MAIL_USERNAME}")
-          export MAIL_PASSWORD=$(printf '%q' "${MAIL_PASSWORD}")
-          export CORS_ALLOWED_ORIGINS=$(printf '%q' "${CORS_ALLOWED_ORIGINS}")
-          cd /opt/bookshelf && docker compose up -d --force-recreate api
-          EOF
+          ssh hetzner "mkdir -p /opt/bookshelf"
+          printf '%s\n' \
+            "API_IMAGE=bookshelf-api:latest" \
+            "DB_HOST=host.docker.internal" \
+            "DB_PORT=5433" \
+            "DB_NAME=bookshelf" \
+            "DB_USERNAME=${DB_USERNAME}" \
+            "DB_PASSWORD=${DB_PASSWORD}" \
+            "GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}" \
+            "GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET}" \
+            "JASYPT_ENCRYPTOR_PASSWORD=${JASYPT_ENCRYPTOR_PASSWORD}" \
+            "JWT_SECRET_KEY=${JWT_SECRET_KEY}" \
+            "MAIL_USERNAME=${MAIL_USERNAME}" \
+            "MAIL_PASSWORD=${MAIL_PASSWORD}" \
+            "CORS_ALLOWED_ORIGINS=${CORS_ALLOWED_ORIGINS}" \
+            | ssh hetzner "cat > /opt/bookshelf/.env"
+          ssh hetzner "cd /opt/bookshelf && docker compose up -d --force-recreate api"
 
       - name: Start Angular app
         run: |
-          ssh hetzner setsid nohup node /var/www/bookshelf/client/server/server.mjs >> /var/www/bookshelf/app.log 2>&1 < /dev/null
+          ssh hetzner "mkdir -p /var/www/bookshelf && pkill -f 'server.mjs' || true; setsid nohup node /var/www/bookshelf/client/server/server.mjs >> /var/www/bookshelf/app.log 2>&1 < /dev/null"
 
       # ── Configure nginx reverse proxy ─────────────────────────────────────────
       - name: Configure nginx
