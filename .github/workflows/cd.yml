@@ -40,7 +40,7 @@ jobs:
         run: |
           sed -i \
             -e "s|__GOOGLE_CLIENT_ID__|${GOOGLE_CLIENT_ID}|g" \
-            -e "s|__API_URL__|http://${SERVER_IP}:8080/api/v1|g" \
+            -e "s|__API_URL__|http://${SERVER_IP}:8088/api/v1|g" \
             -e "s|__REDIRECT_URI__|${CLIENT_URL}/dashboard/dash|g" \
             client/src/environments/environment.prod.ts
 
@@ -144,7 +144,7 @@ jobs:
           export MAIL_USERNAME=$(printf '%q' "${MAIL_USERNAME}")
           export MAIL_PASSWORD=$(printf '%q' "${MAIL_PASSWORD}")
           export CORS_ALLOWED_ORIGINS=$(printf '%q' "${CORS_ALLOWED_ORIGINS}")
-          cd /opt/bookshelf && docker compose up -d --no-deps api
+          cd /opt/bookshelf && docker compose up -d api
           EOF
 
       - name: Start Angular app
