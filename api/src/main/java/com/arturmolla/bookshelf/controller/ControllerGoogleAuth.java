@@ -1,6 +1,8 @@
 package com.arturmolla.bookshelf.controller;
 
+import com.arturmolla.bookshelf.model.user.Role;
 import com.arturmolla.bookshelf.model.user.User;
+import com.arturmolla.bookshelf.repository.RepositoryRole;
 import com.arturmolla.bookshelf.repository.RepositoryUser;
 import com.arturmolla.bookshelf.security.GoogleTokenVerifier;
 import com.arturmolla.bookshelf.security.JwtService;
@@ -8,13 +10,13 @@ import com.arturmolla.bookshelf.security.JwtTokenProvider;
 import lombok.AllArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 @RestController
@@ -26,7 +28,8 @@ public class ControllerGoogleAuth {
     private JwtTokenProvider jwtTokenProvider;
     private JwtService jwtService;
     private RepositoryUser userRepository;
-    private PasswordEncoder passwordEncoder;
+    private RepositoryRole repositoryRole;
+
 
     @PostMapping("/google")
     public ResponseEntity<?> authenticateUser(@RequestBody Map<String, String> googleTokenRequest) {
@@ -45,14 +48,15 @@ public class ControllerGoogleAuth {
 
         if (user == null) {
             // Register new user with Google info
+            Role userRole = repositoryRole.findByName("USER")
+                    .orElseThrow(() -> new IllegalStateException("Role USER not found/initialized"));
             user = new User();
             user.setEmail(email);
             user.setFirstname((String) googleUserInfo.get("givenName"));
             user.setLastname((String) googleUserInfo.get("familyName"));
             user.setEnabled(true);
             user.setProvider("GOOGLE");
-            // Set a random password or a constant, since Google users don't use password login
-            user.setPassword(passwordEncoder.encode("google-auth-user"));
+            user.setRoles(List.of(userRole));
             userRepository.save(user);
         }
 

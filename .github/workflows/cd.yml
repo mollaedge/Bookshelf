@@ -147,9 +147,9 @@ jobs:
 
       - name: Start Angular app
         run: |
-          ssh hetzner "pkill -f 'server.mjs' || true; setsid nohup node /var/www/bookshelf/client/server/server.mjs >> /var/www/bookshelf/app.log 2>&1 < /dev/null"
+          ssh hetzner setsid nohup node /var/www/bookshelf/client/server/server.mjs >> /var/www/bookshelf/app.log 2>&1 < /dev/null
 
-      # ── Configure nginx reverse proxy ───────────────────────────────────
+      # ── Configure nginx reverse proxy ─────────────────────────────────────────
       - name: Configure nginx
         run: |
           ssh hetzner bash -s << 'EOF'
@@ -174,6 +174,7 @@ jobs:
                   proxy_set_header Connection 'upgrade';
                   proxy_set_header Host $host;
                   proxy_cache_bypass $http_upgrade;
+                  add_header Cross-Origin-Opener-Policy unsafe-none always;
               }
           }
           NGINX
