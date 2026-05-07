@@ -4,17 +4,6 @@
     <p class="subtitle">See what the community is reading</p>
   </div>
 
-  <!-- Error Message -->
-  @if (error) {
-    <div class="error-banner">
-      <i class="fas fa-exclamation-circle"></i>
-      <span>{{ error }}</span>
-      <button (click)="error = ''" class="close-error">
-        <i class="fas fa-times"></i>
-      </button>
-    </div>
-  }
-
   <div class="home-content">
     <!-- Live Reading Section -->
     <section class="live-reading-section">

@@ -39,7 +39,7 @@ jobs:
         run: |
           sed -i \
             -e "s|__GOOGLE_CLIENT_ID__|${GOOGLE_CLIENT_ID}|g" \
-            -e "s|http://${SERVER_IP}/dashboard/dash|g" \
+            -e "s|__REDIRECT_URI__|http://${SERVER_IP}/dashboard/dash|g" \
             client/src/environments/environment.prod.ts
 
       - name: Build Angular app
