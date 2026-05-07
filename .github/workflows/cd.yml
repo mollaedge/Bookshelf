@@ -36,12 +36,10 @@ jobs:
         env:
           GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
           SERVER_IP: ${{ secrets.SERVER_IP }}
-          CLIENT_URL: ${{ secrets.CLIENT_URL }}
         run: |
           sed -i \
             -e "s|__GOOGLE_CLIENT_ID__|${GOOGLE_CLIENT_ID}|g" \
-            -e "s|__API_URL__|http://${SERVER_IP}:8088/api/v1|g" \
-            -e "s|__REDIRECT_URI__|${CLIENT_URL}/dashboard/dash|g" \
+            -e "s|http://${SERVER_IP}/dashboard/dash|g" \
             client/src/environments/environment.prod.ts
 
       - name: Build Angular app
@@ -150,3 +148,33 @@ jobs:
       - name: Start Angular app
         run: |
           ssh hetzner "pkill -f 'server.mjs' || true; setsid nohup node /var/www/bookshelf/client/server/server.mjs >> /var/www/bookshelf/app.log 2>&1 < /dev/null"
+
+      # ── Configure nginx reverse proxy ───────────────────────────────────
+      - name: Configure nginx
+        run: |
+          ssh hetzner bash -s << 'EOF'
+          apt-get install -y nginx
+          cat > /etc/nginx/sites-available/bookshelf << 'NGINX'
+          server {
+              listen 80;
+              server_name _;
+
+              location /api/ {
+                  proxy_pass http://localhost:8088;
+                  proxy_set_header Host $host;
+                  proxy_set_header X-Real-IP $remote_addr;
+                  proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+              }
+
+              location / {
+                  proxy_pass http://localhost:4000;
+                  proxy_set_header Host $host;
+                  proxy_set_header X-Real-IP $remote_addr;
+                  proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+              }
+          }
+          NGINX
+          ln -sf /etc/nginx/sites-available/bookshelf /etc/nginx/sites-enabled/bookshelf
+          rm -f /etc/nginx/sites-enabled/default
+          nginx -t && systemctl reload nginx
+          EOF
