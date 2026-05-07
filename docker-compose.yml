@@ -16,4 +16,4 @@ services:
       MAIL_PASSWORD: ${MAIL_PASSWORD}
       CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS}
     ports:
-      - "8088:8080"
+      - "8088:8088"
