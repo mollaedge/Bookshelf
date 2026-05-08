@@ -109,53 +109,6 @@
 
       </div>
     </div>
-    
-    <div class="content-card">
-      <div class="card-header-row">
-        <h2>Recently Added</h2>
-        <a routerLink="/profile" fragment="books" class="card-link">View all</a>
-      </div>
-
-      <div class="recent-loading" *ngIf="recentBooksLoading">
-        <div class="skeleton-item" *ngFor="let i of [1,2,3]"></div>
-      </div>
-
-      <div class="recent-empty" *ngIf="!recentBooksLoading && !isLoggedIn">
-        <p>Sign in to see your library</p>
-      </div>
-
-      <div class="recent-empty" *ngIf="!recentBooksLoading && isLoggedIn && recentBooks.length === 0">
-        <p>No books in your library yet</p>
-      </div>
-
-      <div class="book-list" *ngIf="!recentBooksLoading && recentBooks.length > 0">
-        <div class="book-item" *ngFor="let book of recentBooks">
-          <div class="recent-book-cover">
-            <img *ngIf="book.coverUrl" [src]="book.coverUrl" [alt]="book.title">
-            <img *ngIf="!book.coverUrl && book.cover" [src]="'data:image/jpeg;base64,' + book.cover" [alt]="book.title">
-            <div *ngIf="!book.coverUrl && !book.cover" class="recent-book-emoji">📚</div>
-          </div>
-          <div class="book-info">
-            <h4>{{ book.title }}</h4>
-            <p class="book-author">{{ book.authorName }}</p>
-            <span class="genre-badge" *ngIf="book.genre">{{ book.genre }}</span>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <div class="content-card">
-      <h2>Reading Goals</h2>
-      <div class="goals-list">
-        <div class="goal-item">
-          <div class="goal-progress">75%</div>
-          <div class="goal-info">
-            <h4>Monthly Goal</h4>
-            <p>3 of 4 books read</p>
-          </div>
-        </div>
-      </div>
-    </div>
   </div>
 
   <div class="book-sections">

@@ -8,6 +8,7 @@ import com.arturmolla.bookshelf.model.dto.DtoComment;
 import com.arturmolla.bookshelf.model.entity.EntityAppFeedback;
 import com.arturmolla.bookshelf.model.entity.EntityAppFeedbackComment;
 import com.arturmolla.bookshelf.model.enums.AppFeedbackStatus;
+import com.arturmolla.bookshelf.model.enums.NotificationType;
 import com.arturmolla.bookshelf.model.user.User;
 import com.arturmolla.bookshelf.repository.RepositoryAppFeedback;
 import com.arturmolla.bookshelf.repository.RepositoryUser;
@@ -37,6 +38,7 @@ public class AppFeedbackService {
     private final RepositoryAppFeedback repositoryAppFeedback;
     private final RepositoryUser repositoryUser;
     private final MapperAppFeedback mapperAppFeedback;
+    private final ServiceNotification serviceNotification;
 
     public DtoAppFeedback save(AppFeedbackRequest request, Authentication connectedUser) {
         var user = (User) connectedUser.getPrincipal();
@@ -78,6 +80,19 @@ public class AppFeedbackService {
             feedback.getUpvotedBy().remove(user.getId());
         } else {
             feedback.getUpvotedBy().add(user.getId());
+
+            // Notify the feedback author that someone upvoted their feedback
+            repositoryUser.findById(feedback.getCreatedBy()).ifPresent(author ->
+                    serviceNotification.notify(
+                            author,
+                            user,
+                            NotificationType.FEEDBACK_UPVOTED,
+                            user.getFullName() + " upvoted your feedback",
+                            "\"" + feedback.getTitle() + "\" received an upvote.",
+                            id,
+                            "FEEDBACK"
+                    )
+            );
         }
         return mapperAppFeedback.toDto(repositoryAppFeedback.save(feedback), user.getId());
     }
@@ -106,6 +121,20 @@ public class AppFeedbackService {
                 .createdAt(LocalDateTime.now())
                 .build();
         feedback.getComments().add(comment);
+
+        // Notify the feedback author that someone commented on their feedback
+        repositoryUser.findById(feedback.getCreatedBy()).ifPresent(author ->
+                serviceNotification.notify(
+                        author,
+                        user,
+                        NotificationType.FEEDBACK_COMMENTED,
+                        user.getFullName() + " commented on your feedback",
+                        "\"" + feedback.getTitle() + "\": " + commentDto.getMessage(),
+                        id,
+                        "FEEDBACK"
+                )
+        );
+
         return mapperAppFeedback.toDto(repositoryAppFeedback.save(feedback), user.getId());
     }
 

@@ -1,4 +1,6 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Component, OnInit, OnDestroy, AfterViewChecked, ViewChild, ElementRef, NgZone } from '@angular/core';
+import { ActivatedRoute } from '@angular/router';
+import { ViewportScroller } from '@angular/common';
 import { AuthStateService } from '../../service/auth/auth-state.service';
 import { HomePostService } from '../../service/home/home-post.service';
 import { HomePost } from '../../interfaces/post.interface';
@@ -16,7 +18,7 @@ type LiveReading = DtoStreamInfo;
   templateUrl: './home.component.html',
   styleUrl: './home.component.scss'
 })
-export class HomeComponent implements OnInit, OnDestroy {
+export class HomeComponent implements OnInit, OnDestroy, AfterViewChecked {
   user$: Observable<any>;
   userPosts: HomePost[] = [];
   liveReadings: LiveReading[] = [];
@@ -41,9 +43,10 @@ export class HomeComponent implements OnInit, OnDestroy {
   // Streaming (as host)
   isStreaming: boolean = false;
   currentStreamId: number | null = null;
-  currentHostId: number | null = null; // Host's user ID
+  currentHostId: number | null = null;
   streamWatcherCount: number = 0;
   showStartStreamModal: boolean = false;
+  streamError: string = '';
   localStream: MediaStream | null = null;
   videoElement: HTMLVideoElement | null = null;
 
@@ -52,6 +55,12 @@ export class HomeComponent implements OnInit, OnDestroy {
   watchedStreamHostId: number | null = null;
   watchedStreamHostName: string = '';
   remoteVideoElement: HTMLVideoElement | null = null;
+  remoteStream: MediaStream | null = null;
+  streamConnected: boolean = false;
+
+  @ViewChild('remoteVideoEl') remoteVideoEl?: ElementRef<HTMLVideoElement>;
+
+  highlightedPostId: number | null = null;
 
   // Subscriptions
   private subscriptions: Subscription = new Subscription();
@@ -60,7 +69,10 @@ export class HomeComponent implements OnInit, OnDestroy {
     private authState: AuthStateService,
     private homePostService: HomePostService,
     private streamService: StreamService,
-    private webrtcService: WebRTCService
+    private webrtcService: WebRTCService,
+    private ngZone: NgZone,
+    private route: ActivatedRoute,
+    private viewportScroller: ViewportScroller
   ) {
     this.user$ = this.authState.user$;
   }
@@ -68,6 +80,16 @@ export class HomeComponent implements OnInit, OnDestroy {
   ngOnInit(): void {
     this.loadUserPosts();
     this.loadLiveStreams();
+
+    // Handle postId from notification navigation
+    this.route.queryParams.subscribe(params => {
+      const postId = params['postId'] ? +params['postId'] : null;
+      if (postId) {
+        this.highlightedPostId = postId;
+        // Wait for posts to load then scroll to it
+        setTimeout(() => this.scrollToPost(postId), 800);
+      }
+    });
   }
 
   ngOnDestroy(): void {
@@ -83,6 +105,17 @@ export class HomeComponent implements OnInit, OnDestroy {
     this.subscriptions.unsubscribe();
     this.streamService.closeAllConnections();
     this.webrtcService.closeAllPeerConnections();
+  }
+
+  ngAfterViewChecked(): void {
+    // Attach the remote stream to the video element as soon as it appears in the DOM
+    if (this.remoteStream && this.remoteVideoEl?.nativeElement && !this.streamConnected) {
+      const el = this.remoteVideoEl.nativeElement;
+      el.srcObject = this.remoteStream;
+      el.play().catch(err => console.warn('Remote video autoplay blocked:', err));
+      this.remoteVideoElement = el;
+      this.streamConnected = true;
+    }
   }
 
   loadUserPosts(page: number = 0): void {
@@ -132,19 +165,56 @@ export class HomeComponent implements OnInit, OnDestroy {
 
   closeStartStreamModal(): void {
     this.showStartStreamModal = false;
+    this.streamError = '';
   }
 
   async onStreamStart(title: string): Promise<void> {
+    this.streamError = '';
+
+    // getUserMedia requires a secure context (HTTPS or localhost)
+    if (!window.isSecureContext) {
+      this.streamError = 'Live streaming requires a secure connection (HTTPS). Please access the site over HTTPS.';
+      this.showStartStreamModal = true;
+      return;
+    }
+
+    if (!navigator.mediaDevices?.getUserMedia) {
+      this.streamError = 'Your browser does not support camera/microphone access. Please use a modern browser.';
+      this.showStartStreamModal = true;
+      return;
+    }
 
     try {
-      // Request camera and microphone access
-      this.localStream = await navigator.mediaDevices.getUserMedia({
-        video: {
-          width: { ideal: 1280 },
-          height: { ideal: 720 }
-        },
-        audio: true
-      });
+      // Enumerate devices first — this alone can trigger the permission prompt in some browsers
+      const devices = await navigator.mediaDevices.enumerateDevices();
+      const hasVideo = devices.some(d => d.kind === 'videoinput');
+      const hasAudio = devices.some(d => d.kind === 'audioinput');
+
+      if (!hasAudio && !hasVideo) {
+        // No labels means permissions not yet granted — request anyway to show the prompt
+        // (enumerateDevices returns devices with empty labels before permission is granted)
+      }
+
+      let constraints: MediaStreamConstraints;
+      if (hasVideo) {
+        constraints = { video: { width: { ideal: 1280 }, height: { ideal: 720 } }, audio: hasAudio };
+      } else if (hasAudio) {
+        constraints = { video: false, audio: true };
+      } else {
+        // Devices may not be labelled yet (no permission granted) — try video+audio to trigger prompt
+        constraints = { video: true, audio: true };
+      }
+
+      try {
+        this.localStream = await navigator.mediaDevices.getUserMedia(constraints);
+      } catch (mediaErr: any) {
+        // Permission was granted but video device not found — retry audio-only
+        if ((mediaErr?.name === 'NotFoundError' || mediaErr?.name === 'DevicesNotFoundError') && constraints.video) {
+          this.localStream = await navigator.mediaDevices.getUserMedia({ video: false, audio: true });
+        } else {
+          throw mediaErr;
+        }
+      }
 
       const request: DtoStreamStartRequest = {
         title: title
@@ -193,9 +263,20 @@ export class HomeComponent implements OnInit, OnDestroy {
       });
 
       this.subscriptions.add(sub);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error accessing camera/microphone:', error);
-      this.error = 'Failed to access camera/microphone. Please grant permissions.';
+      const name = error?.name as string;
+      if (name === 'NotFoundError' || name === 'DevicesNotFoundError') {
+        this.streamError = 'No camera or microphone found. Please connect a device and try again.';
+      } else if (name === 'NotAllowedError' || name === 'PermissionDeniedError') {
+        this.streamError = 'Permission denied. Please allow camera/microphone access in your browser settings.';
+      } else if (name === 'NotReadableError' || name === 'TrackStartError') {
+        this.streamError = 'Camera or microphone is already in use by another application.';
+      } else {
+        this.streamError = 'Could not access camera/microphone. Please check your devices and try again.';
+      }
+      // Re-open the modal so the error is visible
+      this.showStartStreamModal = true;
     }
   }
 
@@ -245,7 +326,7 @@ export class HomeComponent implements OnInit, OnDestroy {
   }
 
   // WebRTC - Host side methods
-  private handleWatcherJoined(watcherId: number): void {
+  private async handleWatcherJoined(watcherId: number): Promise<void> {
     if (!this.localStream || !this.currentHostId) {
       console.error('Cannot handle watcher - missing localStream or currentHostId');
       return;
@@ -254,7 +335,7 @@ export class HomeComponent implements OnInit, OnDestroy {
     console.log('New watcher joined:', watcherId, '- Creating peer connection');
 
     // Create peer connection for the new watcher
-    const peerConnection = this.webrtcService.createPeerConnection(
+    const peerConnection = await this.webrtcService.createPeerConnection(
       watcherId,
       (candidate) => {
         console.log('Sending ICE candidate to watcher:', watcherId);
@@ -297,7 +378,7 @@ export class HomeComponent implements OnInit, OnDestroy {
   }
 
   // Watcher methods
-  joinStream(stream: LiveReading): void {
+  async joinStream(stream: LiveReading): Promise<void> {
     if (this.isWatching || this.isStreaming) {
       this.error = 'You are already in a stream';
       return;
@@ -307,17 +388,19 @@ export class HomeComponent implements OnInit, OnDestroy {
     this.watchedStreamHostName = stream.hostName;
 
     // Create peer connection for receiving host's stream
-    const peerConnection = this.webrtcService.createPeerConnection(
+    const peerConnection = await this.webrtcService.createPeerConnection(
       stream.hostId,
       (candidate) => {
         console.log('Watcher sending ICE candidate to host:', stream.hostId);
-        // Send ICE candidate to host
         this.webrtcService.sendIceCandidate(stream.hostId, stream.hostId, candidate);
       },
       (remoteStream) => {
-        console.log('Watcher received remote stream!');
-        // Display received stream
-        this.displayRemoteStream(remoteStream);
+        console.log('Watcher received remote stream!', remoteStream.getTracks());
+        // Run inside Angular zone so change detection triggers and ngAfterViewChecked fires
+        this.ngZone.run(() => {
+          this.remoteStream = remoteStream;
+          this.streamConnected = false; // will flip to true in ngAfterViewChecked once element exists
+        });
       }
     );
 
@@ -364,6 +447,8 @@ export class HomeComponent implements OnInit, OnDestroy {
       this.remoteVideoElement.srcObject = null;
       this.remoteVideoElement = null;
     }
+    this.remoteStream = null;
+    this.streamConnected = false;
 
     this.streamService.leaveStream(hostId).subscribe({
       next: () => {
@@ -412,34 +497,12 @@ export class HomeComponent implements OnInit, OnDestroy {
     }
   }
 
-  private displayRemoteStream(stream: MediaStream): void {
-    console.log('Displaying remote stream');
-    if (this.remoteVideoElement) {
-      this.remoteVideoElement.srcObject = stream;
-      this.remoteVideoElement.play().catch(error => {
-        console.error('Error playing remote video:', error);
-      });
-    } else {
-      // Try again after a short delay
-      setTimeout(() => {
-        this.remoteVideoElement = document.getElementById('remoteVideo') as HTMLVideoElement;
-        if (this.remoteVideoElement) {
-          this.remoteVideoElement.srcObject = stream;
-          this.remoteVideoElement.play().catch(error => {
-            console.error('Error playing remote video:', error);
-          });
-        }
-      }, 500);
-    }
+  private displayRemoteStream(_stream: MediaStream): void {
+    // No-op: stream is stored in this.remoteStream and attached via ngAfterViewChecked
   }
 
   private initRemoteVideoElement(): void {
-    this.remoteVideoElement = document.getElementById('remoteVideo') as HTMLVideoElement;
-    if (this.remoteVideoElement) {
-      // For now, we'll need WebRTC to actually receive video
-      // This is just the DOM element setup
-      console.log('Remote video element initialized');
-    }
+    // No-op: attachment is handled via ViewChild in ngAfterViewChecked
   }
 
   isCurrentUserStream(stream: LiveReading): boolean {
@@ -483,9 +546,22 @@ export class HomeComponent implements OnInit, OnDestroy {
     }
   }
 
+  private scrollToPost(postId: number): void {
+    const el = document.getElementById(`post-${postId}`);
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+  }
+
+  getInitials(fullName: string | undefined, email: string): string {
+    if (fullName && fullName.trim()) {
+      return fullName.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
+    }
+    return email ? email[0].toUpperCase() : '?';
+  }
+
   // Create Post Modal
   openCreatePostModal(): void {
-    this.editingPost = null;
     this.showCreatePostModal = true;
   }
 

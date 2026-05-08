@@ -96,12 +96,10 @@ export class LoginService {
             console.error('Invalid server response:', res);
             return;
           }
-          
-          // Store user info from the response
+
           this.authState.setUser({
             email: res.user?.email || '',
             token: res.token
-            // Add any other user properties from the response
           });
           console.log('Google authentication successful');
           this.router.navigate(['/dashboard/dash']);

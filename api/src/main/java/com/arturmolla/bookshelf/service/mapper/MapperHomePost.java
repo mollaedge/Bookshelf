@@ -2,8 +2,10 @@ package com.arturmolla.bookshelf.service.mapper;
 
 import com.arturmolla.bookshelf.model.dto.DtoAttachmentResponse;
 import com.arturmolla.bookshelf.model.dto.DtoHomePostResponse;
+import com.arturmolla.bookshelf.model.dto.DtoPostCommentResponse;
 import com.arturmolla.bookshelf.model.entity.EntityHomePost;
 import com.arturmolla.bookshelf.model.entity.EntityPostAttachment;
+import com.arturmolla.bookshelf.model.entity.EntityPostComment;
 import org.springframework.stereotype.Component;
 
 import java.util.Base64;
@@ -13,7 +15,20 @@ import java.util.List;
 @Component
 public class MapperHomePost {
 
-    public DtoHomePostResponse toResponse(EntityHomePost entity) {
+    /**
+     * Maps an entity to a response DTO with social counts.
+     *
+     * @param entity             the post entity
+     * @param likeCount          total number of likes
+     * @param commentCount       total number of comments
+     * @param shareCount         total number of shares
+     * @param likedByCurrentUser whether the requesting user already liked this post
+     */
+    public DtoHomePostResponse toResponse(EntityHomePost entity,
+                                          long likeCount,
+                                          long commentCount,
+                                          long shareCount,
+                                          boolean likedByCurrentUser) {
         List<DtoAttachmentResponse> attachments = entity.getAttachments() == null
                 ? Collections.emptyList()
                 : entity.getAttachments().stream()
@@ -30,11 +45,31 @@ public class MapperHomePost {
                 .createdDate(entity.getCreatedDate())
                 .lastModifiedDate(entity.getLastModifiedDate())
                 .attachments(attachments)
+                .likeCount(likeCount)
+                .commentCount(commentCount)
+                .shareCount(shareCount)
+                .likedByCurrentUser(likedByCurrentUser)
                 .build();
     }
 
-    public DtoAttachmentResponse toAttachmentResponse(EntityPostAttachment attachment) {
-        String dataUri = buildDataUri(attachment.getContentType(), attachment.getData());
+    /** Convenience overload with zeroed social counts (e.g. for internal use). */
+    public DtoHomePostResponse toResponse(EntityHomePost entity) {
+        return toResponse(entity, 0, 0, 0, false);
+    }
+
+    public DtoPostCommentResponse toCommentResponse(EntityPostComment comment) {
+        return DtoPostCommentResponse.builder()
+                .id(comment.getId())
+                .content(comment.getContent())
+                .authorId(comment.getAuthor() != null ? comment.getAuthor().getId() : null)
+                .authorName(comment.getAuthor() != null ? comment.getAuthor().getFullName() : null)
+                .authorEmail(comment.getAuthor() != null ? comment.getAuthor().getEmail() : null)
+                .createdDate(comment.getCreatedDate())
+                .lastModifiedDate(comment.getLastModifiedDate())
+                .build();
+    }
+
+    public DtoAttachmentResponse toAttachmentResponse(EntityPostAttachment attachment) {        String dataUri = buildDataUri(attachment.getContentType(), attachment.getData());
         return new DtoAttachmentResponse(
                 attachment.getId(),
                 attachment.getFileName(),

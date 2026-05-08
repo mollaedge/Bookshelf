@@ -28,6 +28,7 @@ import { HomeComponent } from './dashboard/home/home.component';
 import { CreatePostComponent } from './dashboard/home/create-post/create-post.component';
 import { StartStreamComponent } from './dashboard/home/start-stream/start-stream.component';
 import { ActivateAccountComponent } from './dashboard/auth/activate-account/activate-account.component';
+import { LandingPageComponent } from './dashboard/landing-page/landing-page.component';
 
 @NgModule({
   declarations: [
@@ -45,7 +46,8 @@ import { ActivateAccountComponent } from './dashboard/auth/activate-account/acti
     HomeComponent,
     CreatePostComponent,
     StartStreamComponent,
-    ActivateAccountComponent
+    ActivateAccountComponent,
+    LandingPageComponent
   ],
   imports: [
     BrowserModule,

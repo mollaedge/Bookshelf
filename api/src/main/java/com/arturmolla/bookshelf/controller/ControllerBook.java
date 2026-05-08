@@ -57,9 +57,10 @@ public class ControllerBook {
     public ResponseEntity<PageResponse<DtoBookResponse>> getAllBooksPaged(
             @RequestParam(name = "page", defaultValue = "0", required = false) int page,
             @RequestParam(name = "size", defaultValue = "15", required = false) int size,
+            @RequestParam(name = "query", required = false) String query,
             Authentication connectedUser
     ) {
-        return ResponseEntity.ok(serviceBook.getAllBooksPaged(page, size, connectedUser));
+        return ResponseEntity.ok(serviceBook.getAllBooksPaged(page, size, query, connectedUser));
     }
 
     @GetMapping("/owner")

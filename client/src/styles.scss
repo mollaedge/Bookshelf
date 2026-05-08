@@ -2,5 +2,29 @@
 body {
   margin: 0;
   padding: 0;
-  overflow: hidden;
+}
+
+/* ── Scrollbar ─────────────────────────────────────────────────────────────── */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(25, 118, 210, 0.25);
+  border-radius: 10px;
+  transition: background 0.2s;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(25, 118, 210, 0.5);
+}
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(25, 118, 210, 0.25) transparent;
 }

@@ -1,6 +1,8 @@
 package com.arturmolla.bookshelf.service;
 
+import com.arturmolla.bookshelf.config.WebRtcProperties;
 import com.arturmolla.bookshelf.config.exceptions.OperationNotPermittedException;
+import com.arturmolla.bookshelf.model.dto.DtoIceServer;
 import com.arturmolla.bookshelf.model.dto.DtoSignalRequest;
 import com.arturmolla.bookshelf.model.dto.DtoStreamEvent;
 import com.arturmolla.bookshelf.model.dto.DtoStreamInfo;
@@ -13,7 +15,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.scheduling.annotation.Async;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
@@ -44,10 +45,29 @@ public class ServiceStream {
     private static final long HEARTBEAT_INTERVAL_SEC = 30;
 
     private static final ScheduledExecutorService heartbeatExecutor =
-            Executors.newScheduledThreadPool(2);
+            Executors.newScheduledThreadPool(4);
 
     private final StreamRegistry registry;
     private final ObjectMapper objectMapper;
+    private final WebRtcProperties webRtcProperties;
+
+    // =========================================================================
+    // ICE SERVERS
+    // =========================================================================
+
+    /**
+     * Returns the configured ICE (STUN/TURN) servers.
+     * The front-end should call this before creating any {@code RTCPeerConnection}.
+     */
+    public List<DtoIceServer> getIceServers() {
+        return webRtcProperties.getIceServers().stream()
+                .map(s -> DtoIceServer.builder()
+                        .urls(s.getUrls())
+                        .username(s.getUsername())
+                        .credential(s.getCredential())
+                        .build())
+                .toList();
+    }
 
     // =========================================================================
     // START
@@ -56,9 +76,6 @@ public class ServiceStream {
     /**
      * Starts a new stream for the authenticated user.
      * Only one stream per user is allowed at any time.
-     *
-     * @return an {@link SseEmitter} that keeps the host's connection alive and
-     * delivers stream events to them in real time
      */
     public SseEmitter startStream(String title, Authentication auth) {
         User host = principal(auth);
@@ -76,7 +93,7 @@ public class ServiceStream {
         stream.addParticipant(host.getId(), host.getFullName(), emitter);
 
         // Notify the host that the stream is live
-        sendToOne(emitter, buildEvent(StreamEventType.STREAM_STARTED, stream, host));
+        sendToOne(emitter, buildEvent(StreamEventType.STREAM_STARTED, stream, host, null));
         return emitter;
     }
 
@@ -88,19 +105,32 @@ public class ServiceStream {
      * Joins an existing stream as a watcher.
      *
      * @param hostId the userId of the stream host (stream identifier)
-     * @return an {@link SseEmitter} that pushes events to this watcher
      */
     public SseEmitter joinStream(Long hostId, Authentication auth) {
         User watcher = principal(auth);
         LiveStream stream = findOrThrow(hostId);
 
         if (watcher.getId().equals(hostId)) {
-            // Host is reconnecting (e.g. page refresh) — replace their emitter
-            SseEmitter old = stream.getEmitter(hostId);
+            // Host is reconnecting (e.g. page refresh) — replace their emitter silently.
+            // silentRemove removes the host from the maps first so that when we call
+            // old.complete() the cleanup callback sees hasParticipant==false and returns
+            // early — preventing a spurious STREAM_STOPPED broadcast + registry.remove().
+            SseEmitter old = stream.silentRemove(hostId);
             if (old != null) old.complete();
-        } else if (stream.hasParticipant(watcher.getId())) {
-            // Watcher is already connected — return a fresh emitter replacing the old one
-            SseEmitter old = stream.getEmitter(watcher.getId());
+
+            SseEmitter emitter = createEmitter(stream, hostId);
+            stream.addParticipant(hostId, watcher.getFullName(), emitter);
+            log.info("Host SSE reconnected: hostId={}", hostId);
+
+            // Re-send STREAM_STARTED so the host UI restores its state
+            sendToOne(emitter, buildEvent(StreamEventType.STREAM_STARTED, stream, watcher, null));
+            return emitter;
+        }
+
+        if (stream.hasParticipant(watcher.getId())) {
+            // Watcher is reconnecting — silently swap the old emitter so the cleanup
+            // callback is a no-op and does NOT broadcast WATCHER_LEFT / WATCHER_JOINED.
+            SseEmitter old = stream.silentRemove(watcher.getId());
             if (old != null) old.complete();
         }
 
@@ -108,12 +138,13 @@ public class ServiceStream {
         stream.addParticipant(watcher.getId(), watcher.getFullName(), emitter);
         log.info("Watcher joined: userId={} streamId={}", watcher.getId(), hostId);
 
-        // Tell this watcher about the current stream state
-        sendToOne(emitter, buildEvent(StreamEventType.WATCHER_JOINED, stream, watcher));
+        // Tell THIS watcher about the current stream state (confirms they have joined)
+        sendToOne(emitter, buildEvent(StreamEventType.WATCHER_JOINED, stream, watcher, null));
 
-        // Notify every OTHER participant that someone joined
+        // Notify every OTHER participant (especially the HOST) that someone joined.
+        // The HOST uses actorId from this event to know which watcher to send an SDP offer to.
         broadcastExcept(stream, watcher.getId(),
-                buildEvent(StreamEventType.WATCHER_JOINED, stream, watcher));
+                buildEvent(StreamEventType.WATCHER_JOINED, stream, watcher, null));
 
         return emitter;
     }
@@ -138,7 +169,7 @@ public class ServiceStream {
         stream.removeParticipant(watcher.getId());
         log.info("Watcher left: userId={} streamId={}", watcher.getId(), hostId);
 
-        broadcastAll(stream, buildEvent(StreamEventType.WATCHER_LEFT, stream, watcher));
+        broadcastAll(stream, buildEvent(StreamEventType.WATCHER_LEFT, stream, watcher, null));
     }
 
     // =========================================================================
@@ -158,7 +189,7 @@ public class ServiceStream {
         }
 
         // Broadcast the stop event before closing emitters so FE receives it
-        broadcastAll(stream, buildEvent(StreamEventType.STREAM_STOPPED, stream, host));
+        broadcastAll(stream, buildEvent(StreamEventType.STREAM_STOPPED, stream, host, null));
         stream.closeAll();
         registry.remove(host.getId());
         log.info("Stream stopped: hostId={}", host.getId());
@@ -172,9 +203,16 @@ public class ServiceStream {
      * Relays a WebRTC signalling message (SDP offer/answer or ICE candidate)
      * from the sender to a specific target, or broadcasts to all if targetUserId is null.
      *
-     * <p>The {@code payload} inside {@link DtoSignalRequest} is forwarded verbatim
-     * so the front-end can parse it as JSON without any server-side knowledge of
-     * the WebRTC handshake format.</p>
+     * <p><strong>Ordering guarantee:</strong> sendToOne is synchronous —
+     * signals are delivered in the exact order they arrive at the server,
+     * which is critical for the WebRTC handshake (offer → answer → ICE candidates).</p>
+     *
+     * <p>Signal types the front-end should handle:</p>
+     * <ul>
+     *   <li>{@code offer}         – host sent an SDP offer; watcher must answer</li>
+     *   <li>{@code answer}        – watcher replied; host sets remote description</li>
+     *   <li>{@code ice-candidate} – ICE candidate from either peer; add to RTCPeerConnection</li>
+     * </ul>
      */
     public void signal(Long hostId, DtoSignalRequest request, Authentication auth) {
         User sender = principal(auth);
@@ -187,8 +225,10 @@ public class ServiceStream {
         DtoStreamEvent event = DtoStreamEvent.builder()
                 .type(StreamEventType.SIGNAL)
                 .streamId(hostId)
+                .streamTitle(stream.getTitle())
                 .actorId(sender.getId())
                 .actorName(sender.getFullName())
+                .targetUserId(request.targetUserId())
                 .signalType(request.signalType())
                 .payload(request.payload())
                 .watcherCount(stream.getWatcherCount())
@@ -210,18 +250,14 @@ public class ServiceStream {
     // LIST
     // =========================================================================
 
-    /**
-     * Returns metadata for all currently active streams.
-     */
+    /** Returns metadata for all currently active streams. */
     public List<DtoStreamInfo> listStreams() {
         return registry.allStreams().stream()
                 .map(this::toInfo)
                 .toList();
     }
 
-    /**
-     * Returns metadata for a single stream.
-     */
+    /** Returns metadata for a single stream. */
     public DtoStreamInfo getStreamInfo(Long hostId) {
         return toInfo(findOrThrow(hostId));
     }
@@ -243,11 +279,6 @@ public class ServiceStream {
     /**
      * Creates an {@link SseEmitter} and wires up cleanup callbacks so the participant
      * is automatically removed from the stream on timeout or connection error.
-     * <p>
-     * An {@link java.util.concurrent.atomic.AtomicBoolean} ensures the cleanup
-     * body runs at most once, even if Tomcat fires both {@code onError} and
-     * {@code onCompletion} for the same emitter (which happens when
-     * {@code closeAll()} is called from {@code stopStream}).
      */
     private SseEmitter createEmitter(LiveStream stream, Long userId) {
         SseEmitter emitter = new SseEmitter(SSE_TIMEOUT_MS);
@@ -264,22 +295,22 @@ public class ServiceStream {
         }, HEARTBEAT_INTERVAL_SEC, HEARTBEAT_INTERVAL_SEC, TimeUnit.SECONDS);
 
         Runnable cleanup = () -> {
-            // Guard: only execute once regardless of how many callbacks fire
             if (!cleaned.compareAndSet(false, true)) return;
             heartbeat.cancel(false);
             if (!stream.hasParticipant(userId)) return;
 
-            // Capture name BEFORE removing the participant
+            // Use silentRemove so we only remove from the maps without calling
+            // emitter.complete() again (the emitter is already completing/timed-out).
             String displayName = stream.getParticipantNames().getOrDefault(userId, "unknown");
-            stream.removeParticipant(userId);
+            stream.silentRemove(userId);
             log.info("SSE emitter cleaned up: userId={} streamId={}", userId, stream.getHostId());
 
             if (userId.equals(stream.getHostId())) {
-                // Host disconnected — terminate the stream for everyone
                 log.info("Host disconnected — stopping stream hostId={}", stream.getHostId());
                 DtoStreamEvent stopEvent = DtoStreamEvent.builder()
                         .type(StreamEventType.STREAM_STOPPED)
                         .streamId(stream.getHostId())
+                        .streamTitle(stream.getTitle())
                         .actorId(userId)
                         .actorName(displayName)
                         .watcherCount(0)
@@ -288,10 +319,10 @@ public class ServiceStream {
                 stream.closeAll();
                 registry.remove(stream.getHostId());
             } else {
-                // Watcher dropped — notify everyone still connected
                 DtoStreamEvent leftEvent = DtoStreamEvent.builder()
                         .type(StreamEventType.WATCHER_LEFT)
                         .streamId(stream.getHostId())
+                        .streamTitle(stream.getTitle())
                         .actorId(userId)
                         .actorName(displayName)
                         .watcherCount(stream.getWatcherCount())
@@ -307,20 +338,26 @@ public class ServiceStream {
         return emitter;
     }
 
-    private DtoStreamEvent buildEvent(StreamEventType type, LiveStream stream, User actor) {
+    private DtoStreamEvent buildEvent(StreamEventType type, LiveStream stream, User actor, Long targetUserId) {
         return DtoStreamEvent.builder()
                 .type(type)
                 .streamId(stream.getHostId())
+                .streamTitle(stream.getTitle())
                 .actorId(actor.getId())
                 .actorName(actor.getFullName())
+                .targetUserId(targetUserId)
                 .watcherCount(stream.getWatcherCount())
                 .build();
     }
 
     /**
-     * Sends an event to a single emitter; removes the participant on failure.
+     * Sends an event synchronously to a single emitter.
+     *
+     * <p><strong>MUST remain synchronous</strong> — WebRTC signalling requires
+     * strict ordering (offer → answer → ICE candidates). Making this async
+     * causes race conditions that result in failed peer connections and a
+     * blank black video screen on the watcher side.</p>
      */
-    @Async
     public void sendToOne(SseEmitter emitter, DtoStreamEvent event) {
         try {
             emitter.send(SseEmitter.event()
@@ -332,16 +369,12 @@ public class ServiceStream {
         }
     }
 
-    /**
-     * Broadcasts an event to every participant in the stream.
-     */
+    /** Broadcasts an event to every participant in the stream. */
     private void broadcastAll(LiveStream stream, DtoStreamEvent event) {
         stream.getEmitters().forEach((uid, emitter) -> sendToOne(emitter, event));
     }
 
-    /**
-     * Broadcasts an event to every participant EXCEPT the excluded userId.
-     */
+    /** Broadcasts an event to every participant EXCEPT the excluded userId. */
     private void broadcastExcept(LiveStream stream, Long excludeUserId, DtoStreamEvent event) {
         stream.getEmitters().forEach((uid, emitter) -> {
             if (!uid.equals(excludeUserId)) sendToOne(emitter, event);

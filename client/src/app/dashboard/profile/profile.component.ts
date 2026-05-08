@@ -123,16 +123,24 @@ export class ProfileComponent implements OnInit, AfterViewInit, OnDestroy {
   private refreshImageUrls(): void {
     this.profileService.getProfilePicture().subscribe({
       next: (blob) => {
-        if (this.profilePictureUrl) URL.revokeObjectURL(this.profilePictureUrl);
-        this.profilePictureUrl = URL.createObjectURL(blob);
+        if (blob && blob.size > 0 && blob.type.startsWith('image/')) {
+          if (this.profilePictureUrl) URL.revokeObjectURL(this.profilePictureUrl);
+          this.profilePictureUrl = URL.createObjectURL(blob);
+        } else {
+          this.profilePictureUrl = null;
+        }
       },
       error: () => { this.profilePictureUrl = null; }
     });
 
     this.profileService.getWallpaper().subscribe({
       next: (blob) => {
-        if (this.wallpaperUrl) URL.revokeObjectURL(this.wallpaperUrl);
-        this.wallpaperUrl = URL.createObjectURL(blob);
+        if (blob && blob.size > 0 && blob.type.startsWith('image/')) {
+          if (this.wallpaperUrl) URL.revokeObjectURL(this.wallpaperUrl);
+          this.wallpaperUrl = URL.createObjectURL(blob);
+        } else {
+          this.wallpaperUrl = null;
+        }
       },
       error: () => { this.wallpaperUrl = null; }
     });

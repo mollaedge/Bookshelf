@@ -9,16 +9,18 @@ import { RegisterComponent } from './dashboard/auth/register/register.component'
 import { ActivateAccountComponent } from './dashboard/auth/activate-account/activate-account.component';
 import { MybooksComponent } from './dashboard/mybooks/mybooks.component';
 import { AuthGuard } from './service/auth/auth-guard';
+import { NoAuthGuard } from './service/auth/no-auth-guard';
 import { ProfileComponent } from './dashboard/profile/profile.component';
 import { HomeComponent } from './dashboard/home/home.component';
+import { LandingPageComponent } from './dashboard/landing-page/landing-page.component';
 
 const routes: Routes = [
   {
     path: '',
     component: NavComponent,
     children: [
-      { path: '', redirectTo: 'home', pathMatch: 'full' },
-      { path: 'home', component: HomeComponent },
+      { path: '', component: LandingPageComponent, canActivate: [NoAuthGuard] },
+      { path: 'home', component: HomeComponent, canActivate: [AuthGuard] },
       { path: 'profile', component: ProfileComponent , canActivate: [AuthGuard]},
       { path: 'mybooks', component: MybooksComponent, canActivate: [AuthGuard]},
       { path: 'dashboard', component: DashComponent },
@@ -36,7 +38,7 @@ const routes: Routes = [
       },
     ]
   },
-  { path: '**', redirectTo: 'home' }
+  { path: '**', redirectTo: '' }
 ];
 
 @NgModule({

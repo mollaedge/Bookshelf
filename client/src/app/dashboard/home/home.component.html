@@ -1,183 +1,99 @@
 <div class="home-container">
-  <div class="home-header">
-    <h1><i class="fas fa-home"></i> Home</h1>
-    <p class="subtitle">See what the community is reading</p>
-  </div>
+  <div class="home-layout">
 
-  <div class="home-content">
-    <!-- Live Reading Section -->
-    <section class="live-reading-section">
-      <div class="section-header">
-        <h2><i class="fas fa-book-reader"></i> Live Reading</h2>
-        <div class="header-actions">
-          @if (user$ | async) {
+    <!-- ── MAIN FEED COLUMN ── -->
+    <div class="feed-column">
+
+      <!-- Facebook-style Create Post -->
+      @if (user$ | async; as user) {
+        <div class="create-post-card">
+          <div class="cp-top">
+            <div class="cp-avatar">{{ getInitials(user.fullName, user.email) }}</div>
+            <button class="cp-prompt" (click)="openCreatePostModal()">
+              What are you reading?
+            </button>
+          </div>
+          <div class="cp-divider"></div>
+          <div class="cp-actions">
+            <button class="cp-action-btn" (click)="openCreatePostModal()">
+              <i class="fas fa-image"></i>
+              <span>Photo / File</span>
+            </button>
             @if (!isStreaming) {
-              <button class="btn-start-stream" (click)="openStartStreamModal()">
+              <button class="cp-action-btn" (click)="openStartStreamModal()">
                 <i class="fas fa-broadcast-tower"></i>
-                <span>Start Streaming</span>
+                <span>Live Stream</span>
               </button>
-            } @else {
-              <div class="streaming-status">
-                <span class="live-indicator">
-                  <span class="pulse"></span>
-                  YOU'RE LIVE
-                </span>
-                <span class="watcher-badge">
-                  <i class="fas fa-eye"></i>
-                  {{ streamWatcherCount }}
-                </span>
-                <button class="btn-stop-stream" (click)="stopStream()">
-                  <i class="fas fa-stop-circle"></i>
-                  Stop
-                </button>
-              </div>
             }
-          }
+            <button class="cp-action-btn" (click)="openCreatePostModal()">
+              <i class="fas fa-pen"></i>
+              <span>Post</span>
+            </button>
+          </div>
         </div>
-      </div>
-      
-      <div class="live-reading-grid">
-        <!-- Remote Stream Video (when watching someone else's stream) -->
-        @if (isWatching && watchedStreamHostId) {
-          <div class="remote-stream-container">
-            <div class="stream-header">
-              <h3>
-                <i class="fas fa-video"></i>
-                Watching {{ watchedStreamHostName }}'s Stream
-              </h3>
-              <button class="btn-leave-stream" (click)="leaveStream()">
-                <i class="fas fa-sign-out-alt"></i>
-                Leave Stream
-              </button>
-            </div>
-            <div class="video-wrapper">
-              <video id="remoteVideo" autoplay playsinline></video>
-              <div class="stream-placeholder">
-                <i class="fas fa-video-slash"></i>
-                <p>Waiting for video stream...</p>
-                <small>WebRTC connection will be established soon</small>
-              </div>
-            </div>
-          </div>
-        }
+      }
 
-        <!-- Local Stream Video (when streaming) -->
-        @if (isStreaming) {
-          <div class="local-stream-container">
-            <div class="stream-header">
-              <h3>
-                <i class="fas fa-video"></i>
-                Your Live Stream
-              </h3>
-              <div class="stream-stats">
-                <span class="live-badge">
-                  <span class="pulse"></span>
-                  LIVE
-                </span>
-                <span class="watcher-count">
-                  <i class="fas fa-eye"></i>
-                  {{ streamWatcherCount }} watching
-                </span>
-              </div>
-            </div>
-            <div class="video-wrapper">
-              <video id="localVideo" autoplay muted playsinline></video>
+      <!-- Remote Stream (when watching) -->
+      @if (isWatching && watchedStreamHostId) {
+        <div class="remote-stream-container">
+          <div class="stream-header">
+            <h3>
+              <i class="fas fa-video"></i>
+              Watching {{ watchedStreamHostName }}'s Stream
+            </h3>
+            <button class="btn-leave-stream" (click)="leaveStream()">
+              <i class="fas fa-sign-out-alt"></i>
+              Leave Stream
+            </button>
+          </div>
+          <div class="video-wrapper">
+            <video #remoteVideoEl autoplay playsinline></video>
+            <div class="stream-placeholder" *ngIf="!streamConnected">
+              <i class="fas fa-video-slash"></i>
+              <p>Waiting for video stream...</p>
+              <small>WebRTC connection will be established soon</small>
             </div>
           </div>
-        }
+        </div>
+      }
 
-        @if (liveReadingsLoading) {
-          <div class="loading-spinner">
-            <i class="fas fa-spinner fa-spin"></i>
-            <p>Loading live sessions...</p>
-          </div>
-        } @else if (liveReadings.length === 0) {
-          <div class="empty-state">
-            <i class="fas fa-book-open"></i>
-            <p>No one is currently reading</p>
-          </div>
-        } @else {
-          @for (reading of liveReadings; track reading.streamId) {
-            <div class="live-reading-card">
-              @if (reading.bookCover) {
-                <div class="book-cover">
-                  <img [src]="reading.bookCover" [alt]="reading.bookTitle">
-                </div>
-              }
-              <div class="reading-info">
-                <div class="user-info">
-                  <i class="fas fa-user-circle"></i>
-                  <span class="username">{{ reading.hostName }}</span>
-                  <span class="time">{{ getTimeAgo(reading.startedAt) }}</span>
-                </div>
-                @if (reading.bookTitle) {
-                  <h3 class="book-title">{{ reading.bookTitle }}</h3>
-                }
-                @if (reading.currentPage && reading.totalPages) {
-                  <div class="progress-section">
-                    <div class="progress-bar">
-                      <div 
-                        class="progress-fill" 
-                        [style.width.%]="getReadingProgress(reading)">
-                      </div>
-                    </div>
-                    <span class="progress-text">
-                      {{ reading.currentPage }} / {{ reading.totalPages }} pages ({{ getReadingProgress(reading) }}%)
-                    </span>
-                  </div>
-                }
-                <div class="card-footer">
-                  <div class="watcher-count">
-                    <i class="fas fa-eye"></i>
-                    <span>{{ reading.watcherCount }} watching</span>
-                  </div>
-                  @if (!isCurrentUserStream(reading)) {
-                    @if (!isStreaming && !isWatching) {
-                      <button class="btn-join-stream" (click)="joinStream(reading)">
-                        <i class="fas fa-play-circle"></i>
-                        Join Stream
-                      </button>
-                    } @else {
-                      <span class="busy-indicator">Active in another stream</span>
-                    }
-                  } @else {
-                    <span class="own-stream-indicator">Your stream</span>
-                  }
-                </div>
-              </div>
+      <!-- Local Stream (when hosting) -->
+      @if (isStreaming) {
+        <div class="local-stream-container">
+          <div class="stream-header">
+            <h3><i class="fas fa-video"></i> Your Live Stream</h3>
+            <div class="stream-stats">
+              <span class="live-badge"><span class="pulse"></span>LIVE</span>
+              <span class="watcher-count"><i class="fas fa-eye"></i> {{ streamWatcherCount }} watching</span>
             </div>
-          }
-        }
-      </div>
-    </section>
-
-    <!-- User Posts Section -->
-    <section class="user-posts-section">
-      <div class="section-header">
-        <h2><i class="fas fa-comments"></i> Recent Activity</h2>
-        @if (user$ | async) {
-          <button class="btn-create-post" (click)="openCreatePostModal()">
-            <i class="fas fa-plus"></i>
-            <span>Create Post</span>
-          </button>
-        }
-      </div>
-
-      <div class="posts-container">
-        @if (postsLoading) {
-          <div class="loading-spinner">
-            <i class="fas fa-spinner fa-spin"></i>
-            <p>Loading posts...</p>
           </div>
-        } @else if (userPosts.length === 0) {
-          <div class="empty-state">
-            <i class="fas fa-comment-slash"></i>
-            <p>No posts yet</p>
-            <small>Be the first to share your thoughts!</small>
+          <div class="video-wrapper">
+            <video id="localVideo" autoplay muted playsinline></video>
           </div>
-        } @else {
-          @for (post of userPosts; track post.id) {
-            <div class="post-card">
+        </div>
+      }
+
+      <!-- Posts Feed -->
+      <section class="user-posts-section">
+        <div class="section-header">
+          <h2><i class="fas fa-comments"></i> Recent Activity</h2>
+        </div>
+
+        <div class="posts-container">
+          @if (postsLoading) {
+            <div class="loading-spinner">
+              <i class="fas fa-spinner fa-spin"></i>
+              <p>Loading posts...</p>
+            </div>
+          } @else if (userPosts.length === 0) {
+            <div class="empty-state">
+              <i class="fas fa-comment-slash"></i>
+              <p>No posts yet</p>
+              <small>Be the first to share your thoughts!</small>
+            </div>
+          } @else {
+            @for (post of userPosts; track post.id) {
+              <div class="post-card" [id]="'post-' + post.id" [class.post-highlight]="highlightedPostId === post.id">
               <div class="post-header">
                 <div class="user-avatar">
                   <i class="fas fa-user-circle"></i>
@@ -276,9 +192,85 @@
           </button>
         </div>
       }
-    </section>
-  </div>
-</div>
+      </section>
+    </div><!-- /feed-column -->
+
+    <!-- ── SIDEBAR COLUMN ── -->
+    <aside class="sidebar-column">
+      <div class="sidebar-card">
+        <div class="sidebar-header">
+          <h3><i class="fas fa-book-reader"></i> Live Reading</h3>
+          @if (user$ | async) {
+            @if (isStreaming) {
+              <div class="streaming-status">
+                <span class="live-indicator"><span class="pulse"></span>LIVE</span>
+                <span class="watcher-badge"><i class="fas fa-eye"></i> {{ streamWatcherCount }}</span>
+                <button class="btn-stop-stream" (click)="stopStream()" title="Stop stream">
+                  <i class="fas fa-stop-circle"></i>
+                </button>
+              </div>
+            } @else {
+              <button class="btn-start-stream-sm" (click)="openStartStreamModal()">
+                <i class="fas fa-broadcast-tower"></i>
+                Go Live
+              </button>
+            }
+          }
+        </div>
+
+        @if (liveReadingsLoading) {
+          <div class="sidebar-empty">
+            <i class="fas fa-spinner fa-spin"></i>
+            <p>Loading...</p>
+          </div>
+        } @else if (liveReadings.length === 0) {
+          <div class="sidebar-empty">
+            <i class="fas fa-book-open"></i>
+            <p>No live sessions</p>
+          </div>
+        } @else {
+          <div class="live-reading-list">
+            @for (reading of liveReadings; track reading.streamId) {
+              <div class="live-reading-item">
+                @if (reading.bookCover) {
+                  <img class="live-book-cover" [src]="reading.bookCover" [alt]="reading.bookTitle">
+                } @else {
+                  <div class="live-book-cover live-book-cover--placeholder">
+                    <i class="fas fa-book"></i>
+                  </div>
+                }
+                <div class="live-item-info">
+                  <span class="live-host">{{ reading.hostName }}</span>
+                  @if (reading.bookTitle) {
+                    <span class="live-book-title">{{ reading.bookTitle }}</span>
+                  }
+                  @if (reading.currentPage && reading.totalPages) {
+                    <div class="live-progress">
+                      <div class="live-progress-bar">
+                        <div class="live-progress-fill" [style.width.%]="getReadingProgress(reading)"></div>
+                      </div>
+                    </div>
+                  }
+                  <div class="live-meta">
+                    <span class="live-watchers"><i class="fas fa-eye"></i> {{ reading.watcherCount }}</span>
+                    @if (!isCurrentUserStream(reading)) {
+                      @if (!isStreaming && !isWatching) {
+                        <button class="btn-join-sm" (click)="joinStream(reading)">Join</button>
+                      }
+                    } @else {
+                      <span class="own-stream-indicator">Your stream</span>
+                    }
+                  </div>
+                </div>
+              </div>
+            }
+          </div>
+        }
+      </div>
+    </aside><!-- /sidebar-column -->
+
+  </div><!-- /home-layout -->
+</div><!-- /home-container -->
 
 <!-- Image Lightbox/Preview -->
 @if (showLightbox) {
@@ -312,6 +304,7 @@
 <!-- Start Stream Modal -->
 <app-start-stream
   [isOpen]="showStartStreamModal"
+  [streamError]="streamError"
   (closeModal)="closeStartStreamModal()"
   (streamStart)="onStreamStart($event)">
 </app-start-stream>

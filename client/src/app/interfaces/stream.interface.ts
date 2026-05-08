@@ -21,6 +21,12 @@ export interface DtoSignalRequest {
   payload: string;
 }
 
+export interface DtoIceServer {
+  urls: string | string[];
+  username?: string;
+  credential?: string;
+}
+
 export interface StreamEvent {
   type: 'STREAM_STARTED' | 'WATCHER_JOINED' | 'WATCHER_LEFT' | 'STREAM_STOPPED' | 'SIGNAL';
   streamId: number;

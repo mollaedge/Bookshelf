@@ -28,6 +28,8 @@ export class MybooksComponent implements OnInit {
   isLastPage = true;
   loading = false;
   error = '';
+  searchQuery = '';
+  private searchTimer: ReturnType<typeof setTimeout> | null = null;
 
   showPopup = false;
   popupMode: 'add' | 'edit' = 'add';
@@ -45,6 +47,7 @@ export class MybooksComponent implements OnInit {
   switchTab(tab: 'mybooks' | 'returned' | 'borrowed' | 'requested'): void {
     this.activeTab = tab;
     this.currentPage = 0;
+    this.searchQuery = '';
     if (tab !== 'requested') this.requestedView = 'by-me';
     this.loadData();
   }
@@ -54,6 +57,13 @@ export class MybooksComponent implements OnInit {
     this.requestedView = view;
     this.currentPage = 0;
     this.loadData();
+  }
+
+  onSearch(value: string): void {
+    this.searchQuery = value;
+    this.currentPage = 0;
+    if (this.searchTimer) clearTimeout(this.searchTimer);
+    this.searchTimer = setTimeout(() => this.loadData(), 400);
   }
 
   loadData(page: number = 0): void {
@@ -78,25 +88,32 @@ export class MybooksComponent implements OnInit {
   }
 
   private getServiceCall(page: number): Observable<PageResponse<Book | RequestedBook>> {
+    const q = this.searchQuery.trim();
     switch (this.activeTab) {
-      case 'mybooks':   return this.booksService.getMyBooks(page, this.pageSize);
-      case 'returned':  return this.booksService.getReturnedBooks(page, this.pageSize);
-      case 'borrowed':  return this.booksService.getBorrowedBooks(page, this.pageSize);
+      case 'mybooks':   return this.booksService.getMyBooks(page, this.pageSize, q);
+      case 'returned':  return this.booksService.getReturnedBooks(page, this.pageSize, q);
+      case 'borrowed':  return this.booksService.getBorrowedBooks(page, this.pageSize, q);
       case 'requested': return this.requestedView === 'by-me'
         ? this.booksService.getRequestedByMe(page, this.pageSize)
         : this.booksService.getRequestedFromMe(page, this.pageSize);
-      default:          return this.booksService.getMyBooks(page, this.pageSize);
+      default:          return this.booksService.getMyBooks(page, this.pageSize, q);
     }
   }
 
   private setTabData(content: (Book | RequestedBook)[]): void {
+    const uniqueById = <T extends { id: number }>(arr: T[]): T[] =>
+      arr.filter((item, idx, self) => self.findIndex(b => b.id === item.id) === idx);
+
     switch (this.activeTab) {
-      case 'mybooks':   this.myBooks = content as Book[]; break;
-      case 'returned':  this.returnedBooks = content as Book[]; break;
-      case 'borrowed':  this.borrowedBooks = content as Book[]; break;
-      case 'requested': this.requestedBooks = content as RequestedBook[]; break;
+      case 'mybooks':   this.myBooks = uniqueById(content as Book[]); break;
+      case 'returned':  this.returnedBooks = uniqueById(content as Book[]); break;
+      case 'borrowed':  this.borrowedBooks = uniqueById(content as Book[]); break;
+      case 'requested': this.requestedBooks = uniqueById(content as RequestedBook[]); break;
     }
   }
+
+  trackByBookId(_: number, book: Book): number { return book.id; }
+  trackByRequestedId(_: number, book: RequestedBook): number { return book.id; }
 
   nextPage(): void {
     if (!this.isLastPage) this.loadData(this.currentPage + 1);

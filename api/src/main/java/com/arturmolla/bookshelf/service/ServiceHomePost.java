@@ -5,15 +5,28 @@ import com.arturmolla.bookshelf.model.common.PageResponse;
 import com.arturmolla.bookshelf.model.dto.DtoHomePostRequest;
 import com.arturmolla.bookshelf.model.dto.DtoHomePostResponse;
 import com.arturmolla.bookshelf.model.dto.DtoHomePostUpdateRequest;
+import com.arturmolla.bookshelf.model.dto.DtoPostCommentRequest;
+import com.arturmolla.bookshelf.model.dto.DtoPostCommentResponse;
+import com.arturmolla.bookshelf.model.dto.DtoPostLikeResponse;
+import com.arturmolla.bookshelf.model.dto.DtoPostShareResponse;
 import com.arturmolla.bookshelf.model.entity.EntityHomePost;
 import com.arturmolla.bookshelf.model.entity.EntityPostAttachment;
+import com.arturmolla.bookshelf.model.entity.EntityPostComment;
+import com.arturmolla.bookshelf.model.entity.EntityPostLike;
+import com.arturmolla.bookshelf.model.entity.EntityPostShare;
+import com.arturmolla.bookshelf.model.enums.NotificationType;
 import com.arturmolla.bookshelf.model.user.User;
 import com.arturmolla.bookshelf.repository.RepositoryHomePost;
+import com.arturmolla.bookshelf.repository.RepositoryPostComment;
+import com.arturmolla.bookshelf.repository.RepositoryPostLike;
+import com.arturmolla.bookshelf.repository.RepositoryPostShare;
+import com.arturmolla.bookshelf.repository.RepositoryUser;
 import com.arturmolla.bookshelf.service.mapper.MapperHomePost;
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -41,8 +54,16 @@ public class ServiceHomePost {
     private static final long COMPRESS_THRESHOLD_BYTES = 2 * 1024 * 1024; // 2 MB
 
     private final RepositoryHomePost repositoryHomePost;
+    private final RepositoryPostLike repositoryPostLike;
+    private final RepositoryPostComment repositoryPostComment;
+    private final RepositoryPostShare repositoryPostShare;
+    private final RepositoryUser repositoryUser;
     private final MapperHomePost mapperHomePost;
     private final ServiceFileStorage serviceFileStorage;
+    private final ServiceNotification serviceNotification;
+
+    @Value("${application.frontend.url:http://localhost:4200}")
+    private String frontendUrl;
 
     // -------------------------------------------------------------------------
     // CREATE
@@ -84,18 +105,20 @@ public class ServiceHomePost {
     /**
      * Returns a single post by id.
      */
-    public DtoHomePostResponse getPostById(Long postId) {
+    public DtoHomePostResponse getPostById(Long postId, Authentication connectedUser) {
         EntityHomePost post = findPostOrThrow(postId);
-        return mapperHomePost.toResponse(post);
+        Long currentUserId = connectedUser != null ? ((User) connectedUser.getPrincipal()).getId() : null;
+        return toResponseWithCounts(post, currentUserId);
     }
 
     /**
      * Returns all posts ordered by creation date descending (newest first), paged.
      */
-    public PageResponse<DtoHomePostResponse> getAllPosts(int page, int size) {
+    public PageResponse<DtoHomePostResponse> getAllPosts(int page, int size, Authentication connectedUser) {
         Pageable pageable = PageRequest.of(page, size);
         Page<EntityHomePost> pageResult = repositoryHomePost.findAllByOrderByCreatedDateDesc(pageable);
-        return toPageResponse(pageResult);
+        Long currentUserId = connectedUser != null ? ((User) connectedUser.getPrincipal()).getId() : null;
+        return toPageResponse(pageResult, currentUserId);
     }
 
     /**
@@ -106,7 +129,7 @@ public class ServiceHomePost {
         Pageable pageable = PageRequest.of(page, size);
         Page<EntityHomePost> pageResult =
                 repositoryHomePost.findByAuthorIdOrderByCreatedDateDesc(user.getId(), pageable);
-        return toPageResponse(pageResult);
+        return toPageResponse(pageResult, user.getId());
     }
 
     // -------------------------------------------------------------------------
@@ -129,7 +152,7 @@ public class ServiceHomePost {
 
         EntityHomePost saved = repositoryHomePost.save(post);
         log.info("Post id={} updated by userId={}", postId, user.getId());
-        return mapperHomePost.toResponse(saved);
+        return toResponseWithCounts(saved, user.getId());
     }
 
     /**
@@ -149,7 +172,7 @@ public class ServiceHomePost {
 
         EntityHomePost saved = repositoryHomePost.save(post);
         log.info("Added {} attachment(s) to postId={} by userId={}", files == null ? 0 : files.size(), postId, user.getId());
-        return mapperHomePost.toResponse(saved);
+        return toResponseWithCounts(saved, user.getId());
     }
 
     /**
@@ -196,6 +219,203 @@ public class ServiceHomePost {
     }
 
     // -------------------------------------------------------------------------
+    // LIKES
+    // -------------------------------------------------------------------------
+
+    /**
+     * Toggles the like on a post for the current user.
+     * If already liked → unliked; if not liked → liked.
+     */
+    public DtoPostLikeResponse toggleLike(Long postId, Authentication connectedUser) {
+        var user = (User) connectedUser.getPrincipal();
+        EntityHomePost post = findPostOrThrow(postId);
+
+        repositoryPostLike.findByPostIdAndUserId(postId, user.getId()).ifPresentOrElse(
+                like -> {
+                    repositoryPostLike.delete(like);
+                    log.info("Post id={} unliked by userId={}", postId, user.getId());
+                },
+                () -> {
+                    EntityPostLike like = EntityPostLike.builder()
+                            .post(post)
+                            .user(user)
+                            .createdAt(LocalDateTime.now())
+                            .build();
+                    repositoryPostLike.save(like);
+                    log.info("Post id={} liked by userId={}", postId, user.getId());
+                    // Notify post author
+                    serviceNotification.notify(
+                            post.getAuthor(), user,
+                            NotificationType.POST_LIKED,
+                            user.getFullName() + " liked your post",
+                            "\"" + (post.getTitle() != null ? post.getTitle() : "your post") + "\" received a like.",
+                            postId, "POST"
+                    );
+                }
+        );
+
+        long likeCount = repositoryPostLike.countByPostId(postId);
+        boolean likedByCurrentUser = repositoryPostLike.existsByPostIdAndUserId(postId, user.getId());
+        return new DtoPostLikeResponse(likeCount, likedByCurrentUser);
+    }
+
+    /**
+     * Returns the like status for the current user on a specific post.
+     */
+    public DtoPostLikeResponse getLikeStatus(Long postId, Authentication connectedUser) {
+        findPostOrThrow(postId);
+        var user = (User) connectedUser.getPrincipal();
+        long likeCount = repositoryPostLike.countByPostId(postId);
+        boolean likedByCurrentUser = repositoryPostLike.existsByPostIdAndUserId(postId, user.getId());
+        return new DtoPostLikeResponse(likeCount, likedByCurrentUser);
+    }
+
+    // -------------------------------------------------------------------------
+    // COMMENTS
+    // -------------------------------------------------------------------------
+
+    /**
+     * Adds a comment to a post.
+     */
+    public DtoPostCommentResponse addComment(Long postId,
+                                             DtoPostCommentRequest request,
+                                             Authentication connectedUser) {
+        var user = (User) connectedUser.getPrincipal();
+        EntityHomePost post = findPostOrThrow(postId);
+
+        EntityPostComment comment = EntityPostComment.builder()
+                .post(post)
+                .author(user)
+                .content(request.content())
+                .build();
+
+        EntityPostComment saved = repositoryPostComment.save(comment);
+        log.info("Comment id={} added to postId={} by userId={}", saved.getId(), postId, user.getId());
+
+        // Notify post author
+        serviceNotification.notify(
+                post.getAuthor(), user,
+                NotificationType.POST_COMMENTED,
+                user.getFullName() + " commented on your post",
+                user.getFullName() + ": \"" + truncate(request.content(), 100) + "\"",
+                postId, "POST"
+        );
+
+        // Notify tagged users
+        if (request.taggedUserIds() != null) {
+            for (Long taggedId : request.taggedUserIds()) {
+                repositoryUser.findById(taggedId).ifPresent(tagged ->
+                        serviceNotification.notify(
+                                tagged, user,
+                                NotificationType.TAGGED,
+                                user.getFullName() + " mentioned you in a comment",
+                                "\"" + truncate(request.content(), 100) + "\"",
+                                saved.getId(), "COMMENT"
+                        )
+                );
+            }
+        }
+
+        return mapperHomePost.toCommentResponse(saved);
+    }
+
+    /**
+     * Edits a comment. Only the comment author can do this.
+     */
+    public DtoPostCommentResponse updateComment(Long postId,
+                                                Long commentId,
+                                                DtoPostCommentRequest request,
+                                                Authentication connectedUser) {
+        var user = (User) connectedUser.getPrincipal();
+        EntityPostComment comment = findCommentOrThrow(commentId);
+        assertCommentBelongsToPost(comment, postId);
+        assertCommentOwnership(comment, user);
+
+        comment.setContent(request.content());
+        EntityPostComment saved = repositoryPostComment.save(comment);
+        log.info("Comment id={} updated by userId={}", commentId, user.getId());
+        return mapperHomePost.toCommentResponse(saved);
+    }
+
+    /**
+     * Deletes a comment. The comment author or the post author can do this.
+     */
+    public void deleteComment(Long postId, Long commentId, Authentication connectedUser) {
+        var user = (User) connectedUser.getPrincipal();
+        EntityPostComment comment = findCommentOrThrow(commentId);
+        assertCommentBelongsToPost(comment, postId);
+
+        EntityHomePost post = findPostOrThrow(postId);
+        boolean isCommentAuthor = Objects.equals(comment.getCreatedBy(), user.getId());
+        boolean isPostAuthor = Objects.equals(post.getCreatedBy(), user.getId());
+
+        if (!isCommentAuthor && !isPostAuthor) {
+            throw new OperationNotPermittedException("You are not allowed to delete this comment");
+        }
+
+        repositoryPostComment.delete(comment);
+        log.info("Comment id={} deleted by userId={}", commentId, user.getId());
+    }
+
+    /**
+     * Returns all comments for a post, ordered oldest-first, paged.
+     */
+    public PageResponse<DtoPostCommentResponse> getComments(Long postId, int page, int size) {
+        findPostOrThrow(postId);
+        Pageable pageable = PageRequest.of(page, size);
+        Page<EntityPostComment> pageResult =
+                repositoryPostComment.findByPostIdOrderByCreatedDateAsc(postId, pageable);
+
+        List<DtoPostCommentResponse> content = pageResult.getContent()
+                .stream()
+                .map(mapperHomePost::toCommentResponse)
+                .toList();
+
+        return PageResponse.<DtoPostCommentResponse>builder()
+                .content(content)
+                .number(pageResult.getNumber())
+                .size(pageResult.getSize())
+                .totalElement(pageResult.getTotalElements())
+                .totalPages(pageResult.getTotalPages())
+                .first(pageResult.isFirst())
+                .last(pageResult.isLast())
+                .build();
+    }
+
+    // -------------------------------------------------------------------------
+    // SHARES
+    // -------------------------------------------------------------------------
+
+    /**
+     * Records a share event and returns the share count + a shareable URL.
+     */
+    public DtoPostShareResponse sharePost(Long postId, Authentication connectedUser) {
+        var user = (User) connectedUser.getPrincipal();
+        EntityHomePost post = findPostOrThrow(postId);
+
+        EntityPostShare share = EntityPostShare.builder()
+                .post(post)
+                .user(user)
+                .sharedAt(LocalDateTime.now())
+                .build();
+        repositoryPostShare.save(share);
+        log.info("Post id={} shared by userId={}", postId, user.getId());
+
+        // Notify post author
+        serviceNotification.notify(
+                post.getAuthor(), user,
+                NotificationType.POST_SHARED,
+                user.getFullName() + " shared your post",
+                "\"" + (post.getTitle() != null ? post.getTitle() : "your post") + "\" was shared.",
+                postId, "POST"
+        );
+
+        long shareCount = repositoryPostShare.countByPostId(postId);
+        String shareUrl = frontendUrl + "/posts/" + postId;
+        return new DtoPostShareResponse(shareCount, shareUrl);
+    }
+
+    // -------------------------------------------------------------------------
     // Private helpers
     // -------------------------------------------------------------------------
 
@@ -204,10 +424,40 @@ public class ServiceHomePost {
                 .orElseThrow(() -> new EntityNotFoundException(POST_NOT_FOUND + postId));
     }
 
+    private EntityPostComment findCommentOrThrow(Long commentId) {
+        return repositoryPostComment.findById(commentId)
+                .orElseThrow(() -> new EntityNotFoundException("Comment not found with id: " + commentId));
+    }
+
     private void assertOwnership(EntityHomePost post, User user) {
         if (!Objects.equals(post.getCreatedBy(), user.getId())) {
             throw new OperationNotPermittedException("You are not the author of this post");
         }
+    }
+
+    private void assertCommentOwnership(EntityPostComment comment, User user) {
+        if (!Objects.equals(comment.getCreatedBy(), user.getId())) {
+            throw new OperationNotPermittedException("You are not the author of this comment");
+        }
+    }
+
+    private void assertCommentBelongsToPost(EntityPostComment comment, Long postId) {
+        if (!Objects.equals(comment.getPost().getId(), postId)) {
+            throw new OperationNotPermittedException("Comment does not belong to post id: " + postId);
+        }
+    }
+
+    private static String truncate(String text, int maxLen) {
+        if (text == null) return "";
+        return text.length() <= maxLen ? text : text.substring(0, maxLen) + "…";
+    }
+
+    private DtoHomePostResponse toResponseWithCounts(EntityHomePost post, Long currentUserId) {        long likeCount = repositoryPostLike.countByPostId(post.getId());
+        long commentCount = repositoryPostComment.countByPostId(post.getId());
+        long shareCount = repositoryPostShare.countByPostId(post.getId());
+        boolean likedByCurrentUser = currentUserId != null
+                && repositoryPostLike.existsByPostIdAndUserId(post.getId(), currentUserId);
+        return mapperHomePost.toResponse(post, likeCount, commentCount, shareCount, likedByCurrentUser);
     }
 
     private List<EntityPostAttachment> buildAttachments(List<MultipartFile> files, EntityHomePost post) {
@@ -244,10 +494,10 @@ public class ServiceHomePost {
         return result;
     }
 
-    private PageResponse<DtoHomePostResponse> toPageResponse(Page<EntityHomePost> page) {
+    private PageResponse<DtoHomePostResponse> toPageResponse(Page<EntityHomePost> page, Long currentUserId) {
         List<DtoHomePostResponse> content = page.getContent()
                 .stream()
-                .map(mapperHomePost::toResponse)
+                .map(post -> toResponseWithCounts(post, currentUserId))
                 .toList();
         return PageResponse.<DtoHomePostResponse>builder()
                 .content(content)

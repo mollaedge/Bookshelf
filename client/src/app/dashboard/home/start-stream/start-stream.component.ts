@@ -10,6 +10,7 @@ import { FormsModule } from '@angular/forms';
 })
 export class StartStreamComponent {
   @Input() isOpen: boolean = false;
+  @Input() streamError: string = '';
   @Output() closeModal = new EventEmitter<void>();
   @Output() streamStart = new EventEmitter<string>();
 

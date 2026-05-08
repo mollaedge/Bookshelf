@@ -51,7 +51,9 @@
 
   <!-- Feedback Cards Grid -->
   <div class="feedback-grid" *ngIf="!loading && !error">
-    <div class="feedback-card" *ngFor="let card of sortedFeedbacks">
+    <div class="feedback-card" *ngFor="let card of sortedFeedbacks"
+         [id]="'feedback-' + card.id"
+         [class.feedback-highlight]="highlightedFeedbackId === card.id">
       <!-- Card Header -->
       <div class="card-header">
         <span

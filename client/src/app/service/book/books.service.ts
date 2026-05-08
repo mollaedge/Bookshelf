@@ -16,23 +16,27 @@ export class BooksService {
   constructor(private http: HttpClient) { }
 
   // Get all shareable books
-  getAllShareableBooks(page: number = 0, size: number = 15): Observable<PageResponse<Book>> {
-    return this.http.get<PageResponse<Book>>(`${this.baseUrl}?page=${page}&size=${size}`);
+  getAllShareableBooks(page: number = 0, size: number = 15, query: string = ''): Observable<PageResponse<Book>> {
+    const q = query ? `&query=${encodeURIComponent(query)}` : '';
+    return this.http.get<PageResponse<Book>>(`${this.baseUrl}?page=${page}&size=${size}${q}`);
   }
 
   // Get all user's books
-  getMyBooks(page: number = 0, size: number = 15): Observable<PageResponse<Book>> {
-    return this.http.get<PageResponse<Book>>(`${this.baseUrl}/owner?page=${page}&size=${size}`);
+  getMyBooks(page: number = 0, size: number = 15, query: string = ''): Observable<PageResponse<Book>> {
+    const q = query ? `&query=${encodeURIComponent(query)}` : '';
+    return this.http.get<PageResponse<Book>>(`${this.baseUrl}/owner?page=${page}&size=${size}${q}`);
   }
 
   // Get returned books
-  getReturnedBooks(page: number = 0, size: number = 15): Observable<PageResponse<Book>> {
-    return this.http.get<PageResponse<Book>>(`${this.baseUrl}/returned?page=${page}&size=${size}`);
+  getReturnedBooks(page: number = 0, size: number = 15, query: string = ''): Observable<PageResponse<Book>> {
+    const q = query ? `&query=${encodeURIComponent(query)}` : '';
+    return this.http.get<PageResponse<Book>>(`${this.baseUrl}/returned?page=${page}&size=${size}${q}`);
   }
 
   // Get borrowed books
-  getBorrowedBooks(page: number = 0, size: number = 15): Observable<PageResponse<Book>> {
-    return this.http.get<PageResponse<Book>>(`${this.baseUrl}/borrowed?page=${page}&size=${size}`);
+  getBorrowedBooks(page: number = 0, size: number = 15, query: string = ''): Observable<PageResponse<Book>> {
+    const q = query ? `&query=${encodeURIComponent(query)}` : '';
+    return this.http.get<PageResponse<Book>>(`${this.baseUrl}/borrowed?page=${page}&size=${size}${q}`);
   }
 
   // Get requested books
