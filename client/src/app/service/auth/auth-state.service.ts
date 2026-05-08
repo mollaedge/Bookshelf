@@ -6,7 +6,6 @@ export interface AuthUser {
   email: string;
   token: string;
   fullName?: string;
-  // add other user fields as needed
 }
 
 @Injectable({

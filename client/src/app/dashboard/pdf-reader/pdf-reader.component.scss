@@ -199,3 +199,26 @@
 @keyframes spin {
   to { transform: rotate(360deg); }
 }
+
+@media (max-width: 768px) {
+  .pdf-toolbar {
+    flex-wrap: wrap;
+    height: auto;
+    padding: 8px 12px;
+    gap: 8px;
+
+    .toolbar-left { flex: 1 1 100%; justify-content: flex-start; }
+    .toolbar-center { flex: 1 1 auto; justify-content: center; }
+    .toolbar-right { flex: 0 0 auto; }
+  }
+
+  .pdf-toolbar .toolbar-left .pdf-title { font-size: 0.85rem; max-width: 160px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+}
+
+@media (max-width: 480px) {
+  .pdf-toolbar { padding: 6px 8px; }
+  .pdf-toolbar .toolbar-left { min-width: 0; }
+  .pdf-toolbar .toolbar-left .pdf-title { max-width: 100px; }
+  .toolbar-btn { min-width: 30px; height: 30px; font-size: 0.75rem; }
+  .page-info { font-size: 0.8rem; }
+}

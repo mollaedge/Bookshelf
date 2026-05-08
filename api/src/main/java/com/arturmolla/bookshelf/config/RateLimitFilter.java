@@ -21,11 +21,11 @@ import java.util.concurrent.ConcurrentHashMap;
 @Component
 public class RateLimitFilter extends OncePerRequestFilter {
 
-    @Value("${rate.limit.capacity:30}")
+    @Value("${rate.limit.capacity:100}")
     private Integer capacity;
-    @Value("${rate.limit.tokens:30}")
+    @Value("${rate.limit.tokens:100}")
     private Integer tokens;
-    @Value("${rate.limit.minutes:2}")
+    @Value("${rate.limit.minutes:1}")
     private Integer minutes;
 
     private final Map<String, Bucket> buckets = new ConcurrentHashMap<>();

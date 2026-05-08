@@ -1,65 +1,65 @@
 <div class="register-container">
   <div class="register-card">
     <h2 class="register-title">Create Account</h2>
+    <p class="register-subtitle">Join thousands of readers on Bookshelf</p>
+
     <form (ngSubmit)="onRegister()" [formGroup]="registerForm">
-      <div class="form-group">
-        <label for="firstname">First Name</label>
-        <input 
-          type="text" 
-          id="firstname" 
-          formControlName="firstname" 
-          placeholder="Enter your first name"
-          class="form-control"
-          required>
-        <div *ngIf="registerForm.get('firstname')?.invalid && registerForm.get('firstname')?.touched" class="error-message">
-          <span *ngIf="registerForm.get('firstname')?.errors?.['required']">Firstname is mandatory</span>
+      <div class="name-row">
+        <div class="form-group">
+          <label for="firstname">First Name</label>
+          <input
+            type="text"
+            id="firstname"
+            formControlName="firstname"
+            placeholder="First name"
+            class="form-control">
+          <div *ngIf="registerForm.get('firstname')?.invalid && registerForm.get('firstname')?.touched" class="error-message">
+            <span *ngIf="registerForm.get('firstname')?.errors?.['required']">Required</span>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="lastname">Last Name</label>
+          <input
+            type="text"
+            id="lastname"
+            formControlName="lastname"
+            placeholder="Last name"
+            class="form-control">
+          <div *ngIf="registerForm.get('lastname')?.invalid && registerForm.get('lastname')?.touched" class="error-message">
+            <span *ngIf="registerForm.get('lastname')?.errors?.['required']">Required</span>
+          </div>
         </div>
       </div>
-      
-      <div class="form-group">
-        <label for="lastname">Last Name</label>
-        <input 
-          type="text" 
-          id="lastname" 
-          formControlName="lastname" 
-          placeholder="Enter your last name"
-          class="form-control"
-          required>
-        <div *ngIf="registerForm.get('lastname')?.invalid && registerForm.get('lastname')?.touched" class="error-message">
-          <span *ngIf="registerForm.get('lastname')?.errors?.['required']">Lastname is mandatory</span>
-        </div>
-      </div>
-      
+
       <div class="form-group">
         <label for="email">Email</label>
-        <input 
-          type="email" 
-          id="email" 
-          formControlName="email" 
-          placeholder="Enter your email"
-          class="form-control"
-          required>
+        <input
+          type="email"
+          id="email"
+          formControlName="email"
+          placeholder="you@example.com"
+          class="form-control">
         <div *ngIf="registerForm.get('email')?.invalid && registerForm.get('email')?.touched" class="error-message">
-          <span *ngIf="registerForm.get('email')?.errors?.['required']">Email is mandatory</span>
-          <span *ngIf="registerForm.get('email')?.errors?.['email']">Email is not well formatted</span>
+          <span *ngIf="registerForm.get('email')?.errors?.['required']">Email is required</span>
+          <span *ngIf="registerForm.get('email')?.errors?.['email']">Enter a valid email</span>
         </div>
       </div>
-      
+
       <div class="form-group">
         <label for="password">Password</label>
-        <input 
-          type="password" 
-          id="password" 
-          formControlName="password" 
-          placeholder="Enter your password"
-          class="form-control"
-          required>
+        <input
+          type="password"
+          id="password"
+          formControlName="password"
+          placeholder="Min. 8 characters"
+          class="form-control">
         <div *ngIf="registerForm.get('password')?.invalid && registerForm.get('password')?.touched" class="error-message">
-          <span *ngIf="registerForm.get('password')?.errors?.['required']">Password is mandatory</span>
-          <span *ngIf="registerForm.get('password')?.errors?.['minlength']">Password should be longer than 8 characters</span>
+          <span *ngIf="registerForm.get('password')?.errors?.['required']">Password is required</span>
+          <span *ngIf="registerForm.get('password')?.errors?.['minlength']">Must be at least 8 characters</span>
         </div>
       </div>
-      
+
       <div class="form-actions">
         <button type="submit" class="btn-register" [disabled]="registerForm.invalid || isLoading">
           <span *ngIf="isLoading">Creating account...</span>
@@ -69,11 +69,7 @@
     </form>
 
     <div class="google-signin">
-      <div class="divider">
-        <span>OR</span>
-      </div>
-      
-      <!-- Container for Google's rendered button -->
+      <div class="divider"><span>OR</span></div>
       <div id="google-button-container" class="full-width-button"></div>
     </div>
 

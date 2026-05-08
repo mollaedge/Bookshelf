@@ -4,6 +4,10 @@ import com.arturmolla.bookshelf.model.common.PageResponse;
 import com.arturmolla.bookshelf.model.dto.DtoHomePostRequest;
 import com.arturmolla.bookshelf.model.dto.DtoHomePostResponse;
 import com.arturmolla.bookshelf.model.dto.DtoHomePostUpdateRequest;
+import com.arturmolla.bookshelf.model.dto.DtoPostCommentRequest;
+import com.arturmolla.bookshelf.model.dto.DtoPostCommentResponse;
+import com.arturmolla.bookshelf.model.dto.DtoPostLikeResponse;
+import com.arturmolla.bookshelf.model.dto.DtoPostShareResponse;
 import com.arturmolla.bookshelf.model.entity.EntityPostAttachment;
 import com.arturmolla.bookshelf.service.ServiceHomePost;
 import io.swagger.v3.oas.annotations.Operation;
@@ -75,11 +79,12 @@ public class ControllerHome {
      * Attachments include an inline {@code dataUri} for immediate rendering.
      */
     @GetMapping("/{post-id}")
-    @Operation(summary = "Get a post by ID (attachments include inline dataUri)")
+    @Operation(summary = "Get a post by ID (includes like/comment/share counts)")
     public ResponseEntity<DtoHomePostResponse> getPostById(
-            @PathVariable("post-id") Long postId
+            @PathVariable("post-id") Long postId,
+            Authentication connectedUser
     ) {
-        return ResponseEntity.ok(serviceHomePost.getPostById(postId));
+        return ResponseEntity.ok(serviceHomePost.getPostById(postId, connectedUser));
     }
 
     /**
@@ -90,9 +95,10 @@ public class ControllerHome {
     @Operation(summary = "Get all posts ordered by date (newest first)")
     public ResponseEntity<PageResponse<DtoHomePostResponse>> getAllPosts(
             @RequestParam(name = "page", defaultValue = "0", required = false) int page,
-            @RequestParam(name = "size", defaultValue = "15", required = false) int size
+            @RequestParam(name = "size", defaultValue = "15", required = false) int size,
+            Authentication connectedUser
     ) {
-        return ResponseEntity.ok(serviceHomePost.getAllPosts(page, size));
+        return ResponseEntity.ok(serviceHomePost.getAllPosts(page, size, connectedUser));
     }
 
     /**
@@ -209,6 +215,108 @@ public class ControllerHome {
     }
 
     // =========================================================================
+    // LIKES
+    // =========================================================================
+
+    /**
+     * Toggle like on a post. Calling it again on an already-liked post removes the like.
+     */
+    @PostMapping("/{post-id}/likes")
+    @Operation(summary = "Toggle like on a post (like / unlike)")
+    public ResponseEntity<DtoPostLikeResponse> toggleLike(
+            @PathVariable("post-id") Long postId,
+            Authentication connectedUser
+    ) {
+        return ResponseEntity.ok(serviceHomePost.toggleLike(postId, connectedUser));
+    }
+
+    /**
+     * Returns current like count and whether the authenticated user liked the post.
+     */
+    @GetMapping("/{post-id}/likes")
+    @Operation(summary = "Get like status for a post")
+    public ResponseEntity<DtoPostLikeResponse> getLikeStatus(
+            @PathVariable("post-id") Long postId,
+            Authentication connectedUser
+    ) {
+        return ResponseEntity.ok(serviceHomePost.getLikeStatus(postId, connectedUser));
+    }
+
+    // =========================================================================
+    // COMMENTS
+    // =========================================================================
+
+    /**
+     * Add a comment to a post
+     */
+    @PostMapping("/{post-id}/comments")
+    @Operation(summary = "Add a comment to a post")
+    public ResponseEntity<DtoPostCommentResponse> addComment(
+            @PathVariable("post-id") Long postId,
+            @Valid @RequestBody DtoPostCommentRequest request,
+            Authentication connectedUser
+    ) {
+        return ResponseEntity.ok(serviceHomePost.addComment(postId, request, connectedUser));
+    }
+
+    /**
+     * Get paged comments for a post (oldest first)
+     */
+    @GetMapping("/{post-id}/comments")
+    @Operation(summary = "Get paged comments for a post (oldest first)")
+    public ResponseEntity<PageResponse<DtoPostCommentResponse>> getComments(
+            @PathVariable("post-id") Long postId,
+            @RequestParam(name = "page", defaultValue = "0", required = false) int page,
+            @RequestParam(name = "size", defaultValue = "20", required = false) int size
+    ) {
+        return ResponseEntity.ok(serviceHomePost.getComments(postId, page, size));
+    }
+
+    /**
+     * Edit a comment (comment author only)
+     */
+    @PutMapping("/{post-id}/comments/{comment-id}")
+    @Operation(summary = "Edit a comment (comment author only)")
+    public ResponseEntity<DtoPostCommentResponse> updateComment(
+            @PathVariable("post-id") Long postId,
+            @PathVariable("comment-id") Long commentId,
+            @Valid @RequestBody DtoPostCommentRequest request,
+            Authentication connectedUser
+    ) {
+        return ResponseEntity.ok(serviceHomePost.updateComment(postId, commentId, request, connectedUser));
+    }
+
+    /**
+     * Delete a comment (comment author or post author)
+     */
+    @DeleteMapping("/{post-id}/comments/{comment-id}")
+    @Operation(summary = "Delete a comment (comment author or post author)")
+    public ResponseEntity<Void> deleteComment(
+            @PathVariable("post-id") Long postId,
+            @PathVariable("comment-id") Long commentId,
+            Authentication connectedUser
+    ) {
+        serviceHomePost.deleteComment(postId, commentId, connectedUser);
+        return ResponseEntity.noContent().build();
+    }
+
+    // =========================================================================
+    // SHARES
+    // =========================================================================
+
+    /**
+     * Records a share event and returns the total share count + a shareable URL.
+     */
+    @PostMapping("/{post-id}/shares")
+    @Operation(summary = "Record a share and get the shareable URL")
+    public ResponseEntity<DtoPostShareResponse> sharePost(
+            @PathVariable("post-id") Long postId,
+            Authentication connectedUser
+    ) {
+        return ResponseEntity.ok(serviceHomePost.sharePost(postId, connectedUser));
+    }
+
+    // =========================================================================
     // Private helpers
     // =========================================================================
 
@@ -223,5 +331,4 @@ public class ControllerHome {
                 || mediaType.isCompatibleWith(MediaType.parseMediaType("application/pdf"));
     }
 }
-
 

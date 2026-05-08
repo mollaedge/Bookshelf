@@ -8,6 +8,7 @@ import com.arturmolla.bookshelf.model.dto.DtoBookUpdateRequest;
 import com.arturmolla.bookshelf.model.dto.DtoBookTransactionResponse;
 import com.arturmolla.bookshelf.model.entity.EntityBook;
 import com.arturmolla.bookshelf.model.entity.EntityBookTransactionHistory;
+import com.arturmolla.bookshelf.model.enums.NotificationType;
 import com.arturmolla.bookshelf.model.user.User;
 import com.arturmolla.bookshelf.repository.RepositoryBook;
 import com.arturmolla.bookshelf.repository.RepositoryBookTransactionHistory;
@@ -37,6 +38,7 @@ public class ServiceBook {
     private final RepositoryBookTransactionHistory repositoryBookTransactionHistory;
     private final ServiceFileStorage serviceFileStorage;
     private final MapperBook mapperBook;
+    private final ServiceNotification serviceNotification;
 
     public Long saveBook(DtoBookRequest request, Authentication connectedUser) {
         var user = (User) connectedUser.getPrincipal();
@@ -69,10 +71,14 @@ public class ServiceBook {
         return mapPageToCustomWrapper(books);
     }
 
-    public PageResponse<DtoBookResponse> getAllBooksPaged(int page, int size, Authentication connectedUser) {
+    public PageResponse<DtoBookResponse> getAllBooksPaged(int page, int size, String query, Authentication connectedUser) {
         var user = (User) connectedUser.getPrincipal();
         Pageable pageable = PageRequest.of(page, size, Sort.by("createdDate").descending());
-        Page<EntityBook> books = repositoryBook.findAllBooks(pageable, user.getId());
+        var spec = SpecificationBook.notOwnedBy(user.getId())
+                .and(SpecificationBook.notArchived())
+                .and(SpecificationBook.isShareable())
+                .and(SpecificationBook.matchesQuery(query));
+        Page<EntityBook> books = repositoryBook.findAll(spec, pageable);
         return mapPageToCustomWrapper(books);
     }
 
@@ -147,7 +153,18 @@ public class ServiceBook {
                 .returned(false)
                 .returnApproved(false)
                 .build();
-        return repositoryBookTransactionHistory.save(bookTransactionHistory).getId();
+        Long historyId = repositoryBookTransactionHistory.save(bookTransactionHistory).getId();
+
+        // Notify book owner about the borrow request
+        serviceNotification.notify(
+                book.getOwner(), user,
+                NotificationType.BOOK_BORROW_REQUESTED,
+                user.getFullName() + " wants to borrow your book",
+                "Borrow request for \"" + book.getTitle() + "\".",
+                bookId, "BOOK"
+        );
+
+        return historyId;
     }
 
     public Long returnBorrowedBook(Long bookId, Authentication connectedUser) {
@@ -165,9 +182,19 @@ public class ServiceBook {
                 user.getId()
         ).orElseThrow(() -> new OperationNotPermittedException("You did not borrow this book!"));
         bookTransactionHistory.setReturned(true);
-        return repositoryBookTransactionHistory.save(bookTransactionHistory).getId();
-    }
+        Long historyId = repositoryBookTransactionHistory.save(bookTransactionHistory).getId();
 
+        // Notify book owner that the book has been returned
+        serviceNotification.notify(
+                book.getOwner(), user,
+                NotificationType.BOOK_RETURNED,
+                user.getFullName() + " returned your book",
+                "\"" + book.getTitle() + "\" has been returned. Please approve.",
+                bookId, "BOOK"
+        );
+
+        return historyId;
+    }
 
     public Long approveBorrowRequest(Long bookId, Authentication connectedUser) {
         var book = repositoryBook.findById(bookId)
@@ -180,7 +207,18 @@ public class ServiceBook {
                 .findPendingRequestByBookIdAndOwnerId(bookId, user.getId())
                 .orElseThrow(() -> new OperationNotPermittedException("No pending borrow request found for this book!"));
         bookTransactionHistory.setRequestApproved(true);
-        return repositoryBookTransactionHistory.save(bookTransactionHistory).getId();
+        Long historyId = repositoryBookTransactionHistory.save(bookTransactionHistory).getId();
+
+        // Notify borrower that their request was approved
+        serviceNotification.notify(
+                bookTransactionHistory.getUser(), user,
+                NotificationType.BOOK_BORROW_APPROVED,
+                "Your borrow request was approved",
+                "You can now read \"" + book.getTitle() + "\".",
+                bookId, "BOOK"
+        );
+
+        return historyId;
     }
 
     public Long approveReturnBorrowedBook(Long bookId, Authentication connectedUser) {
@@ -198,7 +236,18 @@ public class ServiceBook {
                 user.getId()
         ).orElseThrow(() -> new OperationNotPermittedException("Book is not returned yet!"));
         bookTransactionHistory.setReturnApproved(true);
-        return repositoryBookTransactionHistory.save(bookTransactionHistory).getId();
+        Long historyId = repositoryBookTransactionHistory.save(bookTransactionHistory).getId();
+
+        // Notify borrower that return was approved
+        serviceNotification.notify(
+                bookTransactionHistory.getUser(), user,
+                NotificationType.BOOK_RETURN_APPROVED,
+                "Your book return was confirmed",
+                "The return of \"" + book.getTitle() + "\" has been confirmed.",
+                bookId, "BOOK"
+        );
+
+        return historyId;
     }
 
     public PageResponse<DtoBookTransactionResponse> getAllRequestedBooks(int page, int size, Authentication connectedUser) {

@@ -1,5 +1,6 @@
 import { Injectable } from '@angular/core';
-import { DtoSignalRequest } from '../../interfaces/stream.interface';
+import { firstValueFrom } from 'rxjs';
+import { DtoIceServer, DtoSignalRequest } from '../../interfaces/stream.interface';
 import { StreamService } from '../stream/stream.service';
 
 @Injectable({
@@ -7,25 +8,44 @@ import { StreamService } from '../stream/stream.service';
 })
 export class WebRTCService {
   private peerConnections: Map<number, RTCPeerConnection> = new Map();
-  private configuration: RTCConfiguration = {
-    iceServers: [
-      { urls: 'stun:stun.l.google.com:19302' },
-      { urls: 'stun:stun1.l.google.com:19302' },
-      { urls: 'stun:stun2.l.google.com:19302' }
-    ]
-  };
+  private pendingCandidates: Map<number, RTCIceCandidateInit[]> = new Map();
+  private iceServersCache: DtoIceServer[] | null = null;
+
+  // Fallback used only if the backend is unreachable
+  private readonly fallbackIceServers: RTCIceServer[] = [
+    { urls: 'stun:stun.l.google.com:19302' },
+    { urls: 'stun:stun1.l.google.com:19302' }
+  ];
 
   constructor(private streamService: StreamService) {}
 
   /**
+   * Fetch ICE server config from the backend (cached after first call).
+   */
+  private async getIceConfig(): Promise<RTCConfiguration> {
+    if (this.iceServersCache) {
+      return { iceServers: this.iceServersCache as RTCIceServer[] };
+    }
+    try {
+      const servers = await firstValueFrom(this.streamService.getIceServers());
+      this.iceServersCache = servers;
+      return { iceServers: servers as RTCIceServer[] };
+    } catch (err) {
+      console.warn('Could not fetch ICE servers from backend, using fallback:', err);
+      return { iceServers: this.fallbackIceServers };
+    }
+  }
+
+  /**
    * Create a peer connection for a specific user
    */
-  createPeerConnection(
+  async createPeerConnection(
     userId: number,
     onIceCandidate: (candidate: RTCIceCandidate) => void,
     onTrack?: (stream: MediaStream) => void
-  ): RTCPeerConnection {
-    const peerConnection = new RTCPeerConnection(this.configuration);
+  ): Promise<RTCPeerConnection> {
+    const config = await this.getIceConfig();
+    const peerConnection = new RTCPeerConnection(config);
 
     // Handle ICE candidates
     peerConnection.onicecandidate = (event) => {
@@ -36,12 +56,22 @@ export class WebRTCService {
     };
 
     // Handle incoming tracks (for watchers)
+    // Use a single MediaStream to accumulate all tracks (audio + video)
     if (onTrack) {
+      const remoteStream = new MediaStream();
       peerConnection.ontrack = (event) => {
-        console.log('Received remote track from user:', userId);
+        console.log('Received remote track from user:', userId, event.track.kind);
+        // Prefer event.streams[0] if available, otherwise add track directly
         if (event.streams && event.streams[0]) {
-          onTrack(event.streams[0]);
+          event.streams[0].getTracks().forEach(t => {
+            if (!remoteStream.getTracks().find(e => e.id === t.id)) {
+              remoteStream.addTrack(t);
+            }
+          });
+        } else {
+          remoteStream.addTrack(event.track);
         }
+        onTrack(remoteStream);
       };
     }
 
@@ -137,7 +167,10 @@ export class WebRTCService {
     try {
       await peerConnection.setRemoteDescription(new RTCSessionDescription(offer));
       console.log('Remote description set successfully');
-      
+
+      // Flush any ICE candidates that arrived before the offer
+      await this.flushPendingCandidates(hostId);
+
       const answer = await peerConnection.createAnswer();
       await peerConnection.setLocalDescription(answer);
 
@@ -176,13 +209,15 @@ export class WebRTCService {
     try {
       await peerConnection.setRemoteDescription(new RTCSessionDescription(answer));
       console.log('Answer from user', userId, 'processed successfully');
+      // Flush any ICE candidates queued before the answer arrived
+      await this.flushPendingCandidates(userId);
     } catch (error) {
       console.error('Error handling answer:', error);
     }
   }
 
   /**
-   * Handle received ICE candidate
+   * Handle received ICE candidate — queues it if remote description is not yet set
    */
   async handleIceCandidate(
     userId: number,
@@ -194,11 +229,41 @@ export class WebRTCService {
       return;
     }
 
+    if (!peerConnection.remoteDescription) {
+      // Remote description not set yet — buffer this candidate
+      const queue = this.pendingCandidates.get(userId) ?? [];
+      queue.push(candidate);
+      this.pendingCandidates.set(userId, queue);
+      console.log('ICE candidate queued (no remote description yet) for user:', userId);
+      return;
+    }
+
     try {
       await peerConnection.addIceCandidate(new RTCIceCandidate(candidate));
       console.log('ICE candidate added for user:', userId);
     } catch (error) {
       console.error('Error adding ICE candidate:', error);
+    }
+  }
+
+  /**
+   * Flush queued ICE candidates after remote description is set
+   */
+  private async flushPendingCandidates(userId: number): Promise<void> {
+    const queue = this.pendingCandidates.get(userId);
+    if (!queue || queue.length === 0) return;
+    this.pendingCandidates.delete(userId);
+
+    const peerConnection = this.peerConnections.get(userId);
+    if (!peerConnection) return;
+
+    console.log(`Flushing ${queue.length} queued ICE candidates for user:`, userId);
+    for (const candidate of queue) {
+      try {
+        await peerConnection.addIceCandidate(new RTCIceCandidate(candidate));
+      } catch (error) {
+        console.error('Error adding queued ICE candidate:', error);
+      }
     }
   }
 
@@ -234,6 +299,7 @@ export class WebRTCService {
       this.peerConnections.delete(userId);
       console.log('Closed peer connection with user:', userId);
     }
+    this.pendingCandidates.delete(userId);
   }
 
   /**
@@ -245,6 +311,7 @@ export class WebRTCService {
       console.log('Closed peer connection with user:', userId);
     });
     this.peerConnections.clear();
+    this.pendingCandidates.clear();
   }
 
   /**

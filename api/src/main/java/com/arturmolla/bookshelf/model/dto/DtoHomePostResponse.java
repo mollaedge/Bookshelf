@@ -15,7 +15,11 @@ public record DtoHomePostResponse(
         String authorEmail,
         LocalDateTime createdDate,
         LocalDateTime lastModifiedDate,
-        List<DtoAttachmentResponse> attachments
+        List<DtoAttachmentResponse> attachments,
+        long likeCount,
+        long commentCount,
+        long shareCount,
+        boolean likedByCurrentUser
 ) {
 }
 

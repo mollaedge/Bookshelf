@@ -917,3 +917,12 @@
     }
   }
 }
+
+@media (max-width: 480px) {
+  .profile-header .header-background { height: 120px; }
+  .profile-header .header-content .profile-avatar { margin-top: -50px; }
+  .profile-header .header-content .profile-avatar .avatar-circle { width: 90px; height: 90px; }
+  .stats-section { grid-template-columns: 1fr 1fr; gap: 0.75rem; }
+  .profile-name { font-size: 1.4rem; }
+  .content-grid .chart-card canvas { height: 180px !important; }
+}

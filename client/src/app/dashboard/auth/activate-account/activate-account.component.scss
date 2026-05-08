@@ -1,11 +1,199 @@
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
 .activate-container {
   display: flex;
   justify-content: center;
-  align-items: center;
-  min-height: 100vh;
-  background-color: #f5f5f5;
-  padding: 20px;
+  align-items: flex-start;
+  min-height: calc(100vh - 80px);
+  background: #f0f4f8;
+  padding: 40px 20px 60px;
 }
+
+.activate-card {
+  background: white;
+  border-radius: 20px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08), 0 1px 0 rgba(255,255,255,0.8) inset;
+  border: 1px solid rgba(25, 118, 210, 0.08);
+  width: 100%;
+  max-width: 440px;
+  padding: 40px 36px;
+}
+
+.activate-title {
+  text-align: center;
+  margin: 0 0 10px;
+  color: #1a1a2e;
+  font-size: 1.6rem;
+  font-weight: 700;
+}
+
+.activate-subtitle {
+  text-align: center;
+  color: #777;
+  font-size: 0.88rem;
+  margin: 0 0 32px;
+  line-height: 1.6;
+}
+
+.form-group {
+  margin-bottom: 18px;
+
+  label {
+    display: block;
+    margin-bottom: 7px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #444;
+  }
+
+  .form-control {
+    width: 100%;
+    padding: 13px 14px;
+    border: 1.5px solid #e0e0e0;
+    border-radius: 10px;
+    font-size: 1.3rem;
+    letter-spacing: 6px;
+    text-align: center;
+    font-family: inherit;
+    color: #1a1a2e;
+    background: #fafbfc;
+    transition: border-color 0.2s, box-shadow 0.2s;
+
+    &::placeholder {
+      color: #c0c0c0;
+      letter-spacing: 2px;
+      font-size: 0.95rem;
+    }
+
+    &:focus {
+      outline: none;
+      border-color: #1976D2;
+      box-shadow: 0 0 0 3px rgba(25, 118, 210, 0.1);
+      background: white;
+    }
+
+    &:disabled { background: #f5f5f5; }
+  }
+}
+
+.error-message {
+  color: #d32f2f;
+  font-size: 0.82rem;
+  margin-bottom: 16px;
+  padding: 10px 14px;
+  background: #fff5f5;
+  border: 1px solid #ffcdd2;
+  border-radius: 8px;
+}
+
+.success-message {
+  color: #2e7d32;
+  font-size: 0.82rem;
+  margin-bottom: 16px;
+  padding: 10px 14px;
+  background: #f1f8f1;
+  border: 1px solid #a5d6a7;
+  border-radius: 8px;
+}
+
+.form-actions {
+  margin-top: 24px;
+}
+
+.btn-activate {
+  width: 100%;
+  padding: 12px;
+  background: #1976D2;
+  color: white;
+  border: none;
+  border-radius: 10px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  transition: background 0.2s, box-shadow 0.2s;
+
+  &:hover:not(:disabled) {
+    background: #1565c0;
+    box-shadow: 0 4px 14px rgba(25, 118, 210, 0.35);
+  }
+
+  &:disabled {
+    background: #a0c0f8;
+    cursor: not-allowed;
+  }
+}
+
+.resend-area {
+  margin-top: 20px;
+  text-align: center;
+}
+
+.resend-timer {
+  font-size: 0.82rem;
+  color: #999;
+}
+
+.btn-resend {
+  background: none;
+  border: 1.5px solid #1976D2;
+  color: #1976D2;
+  font-size: 0.88rem;
+  font-weight: 600;
+  font-family: inherit;
+  padding: 8px 22px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s;
+
+  &:hover:not(:disabled) {
+    background: #1976D2;
+    color: white;
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+}
+
+.form-footer {
+  text-align: center;
+  margin-top: 22px;
+  font-size: 0.85rem;
+  color: #777;
+
+  a {
+    color: #1976D2;
+    font-weight: 600;
+    text-decoration: none;
+    &:hover { text-decoration: underline; }
+  }
+}
+
+.success-state {
+  text-align: center;
+  padding: 20px 0;
+}
+
+.success-icon {
+  width: 64px;
+  height: 64px;
+  background: linear-gradient(135deg, #43a047, #66bb6a);
+  color: white;
+  font-size: 28px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 20px;
+  box-shadow: 0 4px 16px rgba(67, 160, 71, 0.3);
+}
+
 
 .activate-card {
   background-color: white;
@@ -174,4 +362,11 @@
   align-items: center;
   justify-content: center;
   margin: 0 auto 20px;
+}
+
+@media (max-width: 480px) {
+  .activate-container { padding: 20px 14px 40px; }
+  .activate-card { padding: 28px 20px; }
+  .activate-title { font-size: 1.35rem; }
+  .form-group .form-control { font-size: 1.1rem; letter-spacing: 4px; }
 }

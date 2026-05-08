@@ -2,7 +2,7 @@ import { Injectable, NgZone } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable, Subject } from 'rxjs';
 import { environment } from '../../../environments/environment';
-import { DtoSignalRequest, DtoStreamInfo, DtoStreamStartRequest, StreamEvent } from '../../interfaces/stream.interface';
+import { DtoIceServer, DtoSignalRequest, DtoStreamInfo, DtoStreamStartRequest, StreamEvent } from '../../interfaces/stream.interface';
 
 
 @Injectable({
@@ -106,6 +106,13 @@ export class StreamService {
    */
   getStreamInfo(hostId: number): Observable<DtoStreamInfo> {
     return this.http.get<DtoStreamInfo>(`${this.baseUrl}/${hostId}`);
+  }
+
+  /**
+   * Fetch STUN/TURN ICE server configuration from the backend.
+   */
+  getIceServers(): Observable<DtoIceServer[]> {
+    return this.http.get<DtoIceServer[]>(`${this.baseUrl}/ice-servers`);
   }
 
   // =========================================================================

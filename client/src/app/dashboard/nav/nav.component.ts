@@ -1,105 +1,238 @@
-import { Component, HostListener } from '@angular/core';
-import { Observable } from 'rxjs';
+import { Component, HostListener, OnInit, OnDestroy } from '@angular/core';
+import { Observable, Subscription, interval } from 'rxjs';
 import { Router } from '@angular/router';
 import { AuthStateService } from '../../service/auth/auth-state.service';
 import { NavigationTrackerService } from '../../service/navigation/navigation-tracker.service';
-import { trigger, transition, style, animate } from '@angular/animations';
-
-export interface NavNotification {
-  id: number;
-  message: string;
-  time: string;
-  read: boolean;
-}
+import { ProfileService } from '../../service/profile/profile.service';
+import { NotificationService } from '../../service/notification/notification.service';
+import { DtoNotificationResponse } from '../../interfaces/notification.interface';
 
 @Component({
   selector: 'app-nav',
   templateUrl: './nav.component.html',
   styleUrls: ['./nav.component.scss'],
-  standalone: false,
-  animations: [
-    trigger('slideAnimation', [
-      transition(':enter', [
-        style({ transform: 'translateY(-2%)', opacity: 0 }),
-        animate('300ms ease-out', style({ transform: 'translateY(0)', opacity: 1 }))
-      ]),
-      transition(':leave', [
-        animate('300ms ease-in', style({ transform: 'translateY(-2%)', opacity: 0 }))
-      ])
-    ])
-  ]
+  standalone: false
 })
-export class NavComponent {
+export class NavComponent implements OnInit, OnDestroy {
   user$: Observable<any>;
-  isNavCollapsed = false;
-  showAuthModal = false;
-  isRegisterView = false;
   showAddBookPopup = false;
   showNotifications = false;
   showProfileMenu = false;
+  showNavMenu = false;
+  profilePictureUrl: string | null = null;
 
-  notifications: NavNotification[] = [];
+  notifications: DtoNotificationResponse[] = [];
+  notificationsLoading = false;
+  unreadCount = 0;
 
-  get unreadCount(): number {
-    return this.notifications.filter(n => !n.read).length;
+  private userSub!: Subscription;
+  private pollSub?: Subscription;
+
+  toggleNavMenu(): void {
+    this.showNavMenu = !this.showNavMenu;
+    this.showNotifications = false;
+    this.showProfileMenu = false;
   }
 
   toggleNotifications(): void {
     this.showNotifications = !this.showNotifications;
     this.showProfileMenu = false;
+    this.showNavMenu = false;
+    if (this.showNotifications) {
+      this.loadNotifications();
+    }
   }
 
   toggleProfileMenu(): void {
     this.showProfileMenu = !this.showProfileMenu;
     this.showNotifications = false;
+    this.showNavMenu = false;
+  }
+
+  onNotifClick(event: MouseEvent, n: DtoNotificationResponse): void {
+    event.stopPropagation(); // prevent HostListener from firing
+    // Mark as read
+    if (!n.read) {
+      this.notificationService.markAsRead(n.id).subscribe({
+        next: (updated) => {
+          const idx = this.notifications.findIndex(x => x.id === updated.id);
+          if (idx >= 0) this.notifications[idx] = updated;
+          this.unreadCount = Math.max(0, this.unreadCount - 1);
+        }
+      });
+    }
+    // Close dropdown then navigate
+    this.showNotifications = false;
+    if (n.referenceId && n.referenceType) {
+      this.navigateToRef(n);
+    }
+  }
+
+  markRead(n: DtoNotificationResponse): void {
+    this.onNotifClick(new MouseEvent('click'), n);
   }
 
   markAllRead(): void {
-    this.notifications.forEach(n => n.read = true);
+    this.notificationService.markAllAsRead().subscribe({
+      next: () => {
+        this.notifications = this.notifications.map(n => ({ ...n, read: true }));
+        this.unreadCount = 0;
+      }
+    });
+  }
+
+  deleteNotification(event: MouseEvent, n: DtoNotificationResponse): void {
+    event.stopPropagation();
+    this.notificationService.deleteNotification(n.id).subscribe({
+      next: () => {
+        this.notifications = this.notifications.filter(x => x.id !== n.id);
+        if (!n.read) this.unreadCount = Math.max(0, this.unreadCount - 1);
+      }
+    });
+  }
+
+  navigateToRef(n: DtoNotificationResponse): void {
+    if (!n.referenceId || !n.referenceType) return;
+
+    const refType = n.referenceType.toUpperCase();
+    const id = n.referenceId;
+
+    if (refType === 'POST') {
+      this.router.navigate(['/home'], { queryParams: { postId: id } });
+    } else if (refType === 'COMMENT') {
+      // Comments belong to a post — navigate to home with the post ID
+      this.router.navigate(['/home'], { queryParams: { postId: id } });
+    } else if (refType === 'FEEDBACK') {
+      this.router.navigate(['/feedback'], { queryParams: { feedbackId: id } });
+    } else if (refType === 'BOOK') {
+      this.router.navigate(['/profile'], { fragment: 'books' });
+    }
+  }
+
+  getNotifIcon(type: string): string {
+    const map: Record<string, string> = {
+      BOOK_BORROWED: 'fa-book-reader',
+      BOOK_RETURNED: 'fa-undo',
+      BOOK_REQUEST: 'fa-hand-paper',
+      REQUEST_APPROVED: 'fa-check-circle',
+      REQUEST_REJECTED: 'fa-times-circle',
+      NEW_FOLLOWER: 'fa-user-plus',
+      POST_LIKE: 'fa-heart',
+      POST_COMMENT: 'fa-comment',
+      FEEDBACK_COMMENTED: 'fa-comment-dots',
+      SYSTEM: 'fa-info-circle',
+    };
+    return map[type] ?? 'fa-bell';
+  }
+
+  /** Returns { source, summary } for display in the notification item */
+  getNotifDisplay(n: DtoNotificationResponse): { source: string; summary: string } {
+    const actor = n.actorName?.split(' ')[0] ?? 'Someone'; // first name only
+
+    const map: Record<string, { source: string; summary: string }> = {
+      FEEDBACK_COMMENTED: { source: 'Feedback',  summary: `${actor} left a comment` },
+      POST_LIKE:          { source: 'Home',       summary: `${actor} liked your post` },
+      POST_COMMENT:       { source: 'Home',       summary: `${actor} commented on your post` },
+      NEW_FOLLOWER:       { source: 'Community',  summary: `${actor} started following you` },
+      BOOK_BORROWED:      { source: 'Library',    summary: `${actor} borrowed your book` },
+      BOOK_RETURNED:      { source: 'Library',    summary: `${actor} returned your book` },
+      BOOK_REQUEST:       { source: 'Library',    summary: `${actor} requested your book` },
+      REQUEST_APPROVED:   { source: 'Library',    summary: 'Your borrow request was approved' },
+      REQUEST_REJECTED:   { source: 'Library',    summary: 'Your borrow request was declined' },
+      SYSTEM:             { source: 'System',     summary: n.message },
+    };
+
+    return map[n.type] ?? { source: 'Bookshelf', summary: n.message };
+  }
+
+  timeAgo(isoString: string): string {
+    const diff = Date.now() - new Date(isoString).getTime();
+    const m = Math.floor(diff / 60000);
+    if (m < 1) return 'Just now';
+    if (m < 60) return `${m}m ago`;
+    const h = Math.floor(m / 60);
+    if (h < 24) return `${h}h ago`;
+    return `${Math.floor(h / 24)}d ago`;
   }
 
   @HostListener('document:click', ['$event'])
   onDocumentClick(event: MouseEvent): void {
     const target = event.target as HTMLElement;
-    if (!target.closest('.notification-wrapper')) {
-      this.showNotifications = false;
-    }
-    if (!target.closest('.profile-wrapper')) {
-      this.showProfileMenu = false;
-    }
+    if (!target.closest('.notification-wrapper')) this.showNotifications = false;
+    if (!target.closest('.profile-wrapper')) this.showProfileMenu = false;
+    if (!target.closest('.nav-brand-wrapper')) this.showNavMenu = false;
   }
 
   constructor(
     private authService: AuthStateService,
     private router: Router,
-    private navigationTracker: NavigationTrackerService
+    private navigationTracker: NavigationTrackerService,
+    private profileService: ProfileService,
+    private notificationService: NotificationService
   ) {
     this.user$ = this.authService.user$;
   }
 
-  toggleNav(): void {
-    this.isNavCollapsed = !this.isNavCollapsed;
+  ngOnInit(): void {
+    this.userSub = this.authService.user$.subscribe(user => {
+      if (user) {
+        this.loadProfilePicture();
+        this.fetchUnreadCount();
+        // Poll unread count every 30 seconds
+        this.pollSub = interval(30_000).subscribe(() => this.fetchUnreadCount());
+      } else {
+        if (this.profilePictureUrl) URL.revokeObjectURL(this.profilePictureUrl);
+        this.profilePictureUrl = null;
+        this.notifications = [];
+        this.unreadCount = 0;
+        this.pollSub?.unsubscribe();
+      }
+    });
   }
 
-  openAuthModal(): void {
-    this.showAuthModal = true;
-    document.body.style.overflow = 'hidden';
+  ngOnDestroy(): void {
+    this.userSub?.unsubscribe();
+    this.pollSub?.unsubscribe();
+    if (this.profilePictureUrl) URL.revokeObjectURL(this.profilePictureUrl);
   }
 
-  closeAuthModal(): void {
-    this.showAuthModal = false;
-    document.body.style.overflow = 'auto';
+  private fetchUnreadCount(): void {
+    this.notificationService.getUnreadCount().subscribe({
+      next: (res) => { this.unreadCount = res.unreadCount; }
+    });
   }
 
-  setAuthView(isRegister: boolean): void {
-    this.isRegisterView = isRegister;
+  private loadNotifications(): void {
+    this.notificationsLoading = true;
+    this.notificationService.getMyNotifications(0, 20).subscribe({
+      next: (page) => {
+        this.notifications = page.content;
+        this.unreadCount = page.content.filter(n => !n.read).length;
+        this.notificationsLoading = false;
+      },
+      error: () => { this.notificationsLoading = false; }
+    });
+  }
+
+  private loadProfilePicture(): void {
+    this.profileService.getProfilePicture().subscribe({
+      next: (blob) => {
+        if (blob && blob.size > 0 && blob.type.startsWith('image/')) {
+          if (this.profilePictureUrl) URL.revokeObjectURL(this.profilePictureUrl);
+          this.profilePictureUrl = URL.createObjectURL(blob);
+        } else {
+          this.profilePictureUrl = null;
+        }
+      },
+      error: () => { this.profilePictureUrl = null; }
+    });
   }
 
   logout(): void {
-    // Clear the user session
+    if (this.profilePictureUrl) URL.revokeObjectURL(this.profilePictureUrl);
+    this.profilePictureUrl = null;
+    this.pollSub?.unsubscribe();
     this.authService.clearUser();
-    
-    // Navigate to the appropriate page after logout
     const redirectUrl = this.navigationTracker.getPostLogoutRedirectUrl();
     this.router.navigate([redirectUrl]);
   }
@@ -108,9 +241,8 @@ export class NavComponent {
   closeAddBook(): void { this.showAddBookPopup = false; }
 
   getInitials(fullName: string | undefined, email: string): string {
-    if (fullName && fullName.trim()) {
-      return fullName.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
-    }
+    if (fullName?.trim()) return fullName.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
     return email ? email[0].toUpperCase() : '?';
   }
 }
+

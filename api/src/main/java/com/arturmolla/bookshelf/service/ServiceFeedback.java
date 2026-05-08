@@ -5,6 +5,7 @@ import com.arturmolla.bookshelf.model.common.PageResponse;
 import com.arturmolla.bookshelf.model.dto.DtoFeedbackRequest;
 import com.arturmolla.bookshelf.model.dto.DtoFeedbackResponse;
 import com.arturmolla.bookshelf.model.entity.EntityFeedback;
+import com.arturmolla.bookshelf.model.enums.NotificationType;
 import com.arturmolla.bookshelf.model.user.User;
 import com.arturmolla.bookshelf.repository.RepositoryBook;
 import com.arturmolla.bookshelf.repository.RepositoryFeedback;
@@ -27,6 +28,7 @@ public class ServiceFeedback {
     private final RepositoryBook repositoryBook;
     private final MapperFeedback mapperFeedback;
     private final RepositoryFeedback repositoryFeedback;
+    private final ServiceNotification serviceNotification;
 
     public Long saveFeedback(DtoFeedbackRequest request, Authentication connectedUser) {
         var book = repositoryBook.findById(request.bookId())
@@ -39,7 +41,18 @@ public class ServiceFeedback {
             throw new OperationNotPermittedException("You own this book!");
         }
         var feedback = mapperFeedback.toFeedbackEntity(request);
-        return repositoryFeedback.save(feedback).getId();
+        Long feedbackId = repositoryFeedback.save(feedback).getId();
+
+        // Notify book owner about new feedback
+        serviceNotification.notify(
+                book.getOwner(), user,
+                NotificationType.FEEDBACK_RECEIVED,
+                user.getFullName() + " left feedback on your book",
+                "New rating (" + request.note() + "/5) for \"" + book.getTitle() + "\".",
+                book.getId(), "BOOK"
+        );
+
+        return feedbackId;
     }
 
     public PageResponse<DtoFeedbackResponse> findFeedbacksForBook(Long bookId, int page, int size, Authentication connectedUser) {

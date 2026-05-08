@@ -1,5 +1,6 @@
 package com.arturmolla.bookshelf.controller;
 
+import com.arturmolla.bookshelf.model.dto.DtoIceServer;
 import com.arturmolla.bookshelf.model.dto.DtoSignalRequest;
 import com.arturmolla.bookshelf.model.dto.DtoStreamInfo;
 import com.arturmolla.bookshelf.service.ServiceStream;
@@ -210,6 +211,26 @@ public class ControllerStream {
     // =========================================================================
     // DISCOVERY
     // =========================================================================
+
+    /**
+     * Returns STUN/TURN ICE server configuration.
+     * <p>
+     * The front-end <strong>must</strong> call this endpoint and pass the result
+     * as {@code iceServers} when constructing {@code new RTCPeerConnection(config)}.
+     * Without proper STUN/TURN configuration WebRTC will fail to traverse NAT and
+     * the watcher will see a blank black screen.
+     * <p>
+     * Example front-end usage:
+     * <pre>
+     * const { data: iceServers } = await axios.get('/streams/ice-servers');
+     * const pc = new RTCPeerConnection({ iceServers });
+     * </pre>
+     */
+    @GetMapping("/ice-servers")
+    @Operation(summary = "Get STUN/TURN ICE server configuration for WebRTC")
+    public ResponseEntity<List<DtoIceServer>> getIceServers() {
+        return ResponseEntity.ok(serviceStream.getIceServers());
+    }
 
     /**
      * List all currently active streams.

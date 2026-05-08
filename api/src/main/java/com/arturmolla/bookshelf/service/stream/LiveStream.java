@@ -89,6 +89,23 @@ public class LiveStream {
     }
 
     /**
+     * Removes a participant from the internal maps <strong>without</strong> completing
+     * their emitter.
+     *
+     * <p>Use this in reconnect scenarios before calling {@code emitter.complete()} on
+     * the old emitter.  Because the participant is no longer present in the maps,
+     * the old emitter's cleanup callback will see {@code hasParticipant == false}
+     * and return early — preventing spurious {@code WATCHER_LEFT} / {@code STREAM_STOPPED}
+     * broadcasts or accidental stream destruction.</p>
+     *
+     * @return the old emitter that was removed, or {@code null} if none was registered
+     */
+    public SseEmitter silentRemove(Long userId) {
+        participantNames.remove(userId);
+        return emitters.remove(userId);
+    }
+
+    /**
      * Completes all SSE emitters — called when the stream is stopped.
      */
     public void closeAll() {

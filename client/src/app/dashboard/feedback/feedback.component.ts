@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import { ActivatedRoute } from '@angular/router';
 import { AppFeedbackDto, AppFeedbackRequest, PublicFeedbackDto } from '../../interfaces/feedback.interface';
 import { FeedbackService } from '../../service/feedback/feedback.service';
 import { PageResponse } from '../../interfaces/page.interface';
@@ -46,7 +47,13 @@ export class FeedbackComponent implements OnInit {
   newComment = '';
   commentSubmitting = false;
 
-  constructor(private feedbackService: FeedbackService, private authService: AuthStateService) {}
+  highlightedFeedbackId: number | null = null;
+
+  constructor(
+    private feedbackService: FeedbackService,
+    private authService: AuthStateService,
+    private route: ActivatedRoute
+  ) {}
 
   ngOnInit(): void {
     let isInitialLoad = true;
@@ -61,6 +68,15 @@ export class FeedbackComponent implements OnInit {
       isInitialLoad = false;
     });
     this.loadFeedbacks();
+
+    // Handle feedbackId from notification navigation
+    this.route.queryParams.subscribe(params => {
+      const feedbackId = params['feedbackId'] ? +params['feedbackId'] : null;
+      if (feedbackId) {
+        this.highlightedFeedbackId = feedbackId;
+        setTimeout(() => this.scrollToFeedback(feedbackId), 800);
+      }
+    });
   }
 
   loadFeedbacks(page: number = 0): void {
@@ -287,6 +303,13 @@ export class FeedbackComponent implements OnInit {
   }
 
   // --- Helpers ---
+
+  private scrollToFeedback(feedbackId: number): void {
+    const el = document.getElementById(`feedback-${feedbackId}`);
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+  }
 
   getStatusColor(status: string): string {
     const colors: { [key: string]: string } = {

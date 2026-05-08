@@ -90,6 +90,22 @@
       }
     }
 
+    .stream-error {
+      background: #fff5f5;
+      border-left: 4px solid #e53935;
+      padding: 0.85rem 1rem;
+      border-radius: 4px;
+      margin-bottom: 1.25rem;
+      display: flex;
+      align-items: flex-start;
+      gap: 0.65rem;
+      color: #c62828;
+      font-size: 0.9rem;
+      line-height: 1.5;
+
+      i { font-size: 1rem; margin-top: 0.1rem; flex-shrink: 0; }
+    }
+
     .form-group {
       margin-bottom: 1.5rem;
 
@@ -222,4 +238,13 @@
     transform: translateY(0);
     opacity: 1;
   }
+}
+
+@media (max-width: 640px) {
+  .modal-overlay { align-items: flex-end; padding: 0; }
+  .stream-modal { border-radius: 16px 16px 0 0; max-height: 90vh; overflow-y: auto; width: 100%; padding: 1.25rem; }
+  .modal-header h2 { font-size: 1.1rem; }
+  .stream-controls { flex-direction: column; gap: 0.5rem; }
+  .stream-controls button { width: 100%; }
+  .stream-preview video { height: 200px; }
 }
