@@ -154,19 +154,71 @@
                 }
               </div>
               <div class="post-footer">
-                <button class="like-btn">
+                <button class="like-btn"
+                        [class.liked]="post.likedByCurrentUser"
+                        [disabled]="likeLoadingByPostId[post.id]"
+                        (click)="toggleLike(post)">
                   <i class="fas fa-heart"></i>
-                  <span>{{ post.likesCount || 0 }}</span>
+                  <span>{{ post.likeCount || 0 }}</span>
                 </button>
-                <button class="comment-btn">
+                <button class="comment-btn"
+                        [class.active]="expandedCommentsPostId === post.id"
+                        (click)="toggleComments(post)">
                   <i class="fas fa-comment"></i>
-                  <span>{{ post.commentsCount || 0 }}</span>
+                  <span>{{ post.commentCount || 0 }}</span>
                 </button>
                 <button class="share-btn">
                   <i class="fas fa-share"></i>
-                  <span>Share</span>
+                  <span>{{ post.shareCount || 0 }}</span>
                 </button>
               </div>
+
+              @if (expandedCommentsPostId === post.id) {
+                <div class="post-comments">
+                  @if (commentsLoadingByPostId[post.id]) {
+                    <div class="comments-loading">
+                      <i class="fas fa-spinner fa-spin"></i>
+                      <span>Loading comments...</span>
+                    </div>
+                  } @else {
+                    <div class="comments-list">
+                      @if ((commentsByPostId[post.id] || []).length > 0) {
+                        @for (comment of commentsByPostId[post.id]; track comment.id) {
+                          <div class="comment-item">
+                            <div class="comment-meta">
+                              <span class="comment-author">{{ comment.authorName }}</span>
+                              <span class="comment-time">{{ getTimeAgo(comment.createdDate) }}</span>
+                            </div>
+                            <p class="comment-content">{{ comment.content }}</p>
+                          </div>
+                        }
+                      } @else {
+                        <p class="comments-empty">No comments yet. Start the conversation.</p>
+                      }
+                    </div>
+
+                    @if (user$ | async) {
+                      <div class="add-comment">
+                        <textarea
+                          rows="2"
+                          [value]="commentDraftByPostId[post.id] || ''"
+                          (input)="updateCommentDraft(post.id, $any($event.target).value)"
+                          placeholder="Write a comment..."></textarea>
+                        <button
+                          class="submit-comment-btn"
+                          [disabled]="!((commentDraftByPostId[post.id] || '').trim()) || commentSubmittingByPostId[post.id]"
+                          (click)="submitComment(post)">
+                          @if (commentSubmittingByPostId[post.id]) {
+                            Posting...
+                          } @else {
+                            Post Comment
+                          }
+                        </button>
+                      </div>
+                    }
+                  }
+                </div>
+              }
             </div>
           }
         }

@@ -18,8 +18,33 @@ export interface HomePost {
   ownerId: number;
   authorEmail: string;
   attachments: PostAttachment[];
+  likeCount?: number;
+  commentCount?: number;
+  shareCount?: number;
+  likedByCurrentUser?: boolean;
+
+  // Backward-compatible aliases for older API payloads
   likesCount?: number;
   commentsCount?: number;
+}
+
+export interface DtoPostCommentRequest {
+  content: string;
+}
+
+export interface DtoPostCommentResponse {
+  id: number;
+  content: string;
+  authorId: number;
+  authorName: string;
+  authorEmail: string;
+  createdDate: string;
+  lastModifiedDate: string;
+}
+
+export interface DtoPostLikeResponse {
+  likeCount: number;
+  likedByCurrentUser: boolean;
 }
 
 export interface CreatePostRequest {

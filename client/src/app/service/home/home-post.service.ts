@@ -3,7 +3,14 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import { PageResponse } from '../../interfaces/page.interface';
-import { HomePost, CreatePostRequest, UpdatePostRequest} from '../../interfaces/post.interface';
+import {
+  HomePost,
+  CreatePostRequest,
+  UpdatePostRequest,
+  DtoPostCommentRequest,
+  DtoPostCommentResponse,
+  DtoPostLikeResponse
+} from '../../interfaces/post.interface';
 
 @Injectable({
   providedIn: 'root'
@@ -126,5 +133,41 @@ export class HomePostService {
    */
   deleteAttachment(postId: number, attachmentId: number): Observable<void> {
     return this.http.delete<void>(`${this.baseUrl}/${postId}/attachments/${attachmentId}`);
+  }
+
+  // =========================================================================
+  // LIKES & COMMENTS
+  // =========================================================================
+
+  /**
+   * Toggle like on a post (like/unlike).
+   */
+  toggleLike(postId: number): Observable<DtoPostLikeResponse> {
+    return this.http.post<DtoPostLikeResponse>(`${this.baseUrl}/${postId}/likes`, {});
+  }
+
+  /**
+   * Get current like status for a post.
+   */
+  getLikeStatus(postId: number): Observable<DtoPostLikeResponse> {
+    return this.http.get<DtoPostLikeResponse>(`${this.baseUrl}/${postId}/likes`);
+  }
+
+  /**
+   * Add a comment to a post.
+   */
+  addComment(postId: number, request: DtoPostCommentRequest): Observable<DtoPostCommentResponse> {
+    return this.http.post<DtoPostCommentResponse>(`${this.baseUrl}/${postId}/comments`, request);
+  }
+
+  /**
+   * Get paged comments for a post.
+   */
+  getComments(postId: number, page: number = 0, size: number = 20): Observable<PageResponse<DtoPostCommentResponse>> {
+    const params = new HttpParams()
+      .set('page', page.toString())
+      .set('size', size.toString());
+
+    return this.http.get<PageResponse<DtoPostCommentResponse>>(`${this.baseUrl}/${postId}/comments`, { params });
   }
 }

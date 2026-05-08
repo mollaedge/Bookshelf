@@ -313,6 +313,119 @@
       i { font-size: 1rem; }
       &:hover { background: #f0f2f5; color: #1877f2; }
       &.like-btn:hover { color: #e53935; }
+      &:disabled { opacity: 0.6; cursor: not-allowed; }
+    }
+
+    .like-btn.liked { color: #e53935; }
+    .comment-btn.active { color: #1976D2; }
+  }
+
+  .post-comments {
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px solid #eef0f3;
+
+    .comments-loading {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: #6c757d;
+      font-size: 0.85rem;
+      padding: 8px 0;
+    }
+
+    .comments-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      max-height: 220px;
+      overflow-y: auto;
+      padding-right: 4px;
+    }
+
+    .comment-item {
+      background: #f7f9fb;
+      border: 1px solid #e8edf3;
+      border-radius: 10px;
+      padding: 8px 10px;
+
+      .comment-meta {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+        margin-bottom: 4px;
+      }
+
+      .comment-author {
+        font-size: 0.78rem;
+        font-weight: 700;
+        color: #2c3e50;
+      }
+
+      .comment-time {
+        font-size: 0.72rem;
+        color: #8b95a1;
+      }
+
+      .comment-content {
+        margin: 0;
+        font-size: 0.84rem;
+        line-height: 1.35;
+        color: #2f3d4a;
+      }
+    }
+
+    .comments-empty {
+      margin: 8px 0;
+      color: #8b95a1;
+      font-size: 0.84rem;
+      text-align: center;
+    }
+
+    .add-comment {
+      margin-top: 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      width: 100%;
+      min-width: 0;
+
+      textarea {
+        display: block;
+        width: 100%;
+        max-width: 100%;
+        box-sizing: border-box;
+        border: 1px solid #d7dee7;
+        border-radius: 10px;
+        padding: 8px 10px;
+        resize: vertical;
+        min-height: 72px;
+        overflow-x: hidden;
+        font-family: inherit;
+        font-size: 0.85rem;
+
+        &:focus {
+          outline: none;
+          border-color: #1976D2;
+          box-shadow: 0 0 0 3px rgba(25, 118, 210, 0.12);
+        }
+      }
+
+      .submit-comment-btn {
+        align-self: flex-end;
+        border: none;
+        border-radius: 8px;
+        background: #1976D2;
+        color: #fff;
+        padding: 7px 12px;
+        font-size: 0.8rem;
+        font-weight: 600;
+        cursor: pointer;
+
+        &:hover:not(:disabled) { background: #1565c0; }
+        &:disabled { opacity: 0.6; cursor: not-allowed; }
+      }
     }
   }
 }
