@@ -3,6 +3,27 @@
 
     <!-- Vertical Sidebar -->
     <aside class="library-sidebar">
+      <!-- Search Bar -->
+      <div class="sidebar-search">
+        <i class="fas fa-search"></i>
+        <input
+          type="text"
+          class="search-input"
+          placeholder="Search books..."
+          [value]="searchQuery"
+          (input)="onSearch($any($event.target).value)">
+        <button class="search-clear" *ngIf="searchQuery" (click)="onSearch('')" title="Clear">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+
+      <button class="btn-add-book" (click)="openAdd()">
+        <i class="fas fa-plus"></i>
+        <span>Add Book</span>
+      </button>
+
+      <div class="sidebar-divider"></div>
+
       <button class="lib-tab" [class.active]="activeTab === 'mybooks'" (click)="switchTab('mybooks')">
         <i class="fas fa-book"></i>
         <span>My Books</span>
@@ -29,13 +50,6 @@
         <button class="lib-subtab" [class.active]="requestedView === 'by-me'" (click)="switchRequestedView('by-me')">My Requests</button>
         <button class="lib-subtab" [class.active]="requestedView === 'from-me'" (click)="switchRequestedView('from-me')">For My Books</button>
       </div>
-
-      <div class="sidebar-divider"></div>
-
-      <button class="btn-add-book" (click)="openAdd()">
-        <i class="fas fa-plus"></i>
-        <span>Add Book</span>
-      </button>
     </aside>
 
     <!-- Content -->
@@ -47,7 +61,7 @@
         <div class="books-error" *ngIf="error"><p>{{ error }}</p></div>
         <div class="books-grid" *ngIf="!loading && !error && myBooks.length">
           <app-book
-            *ngFor="let book of myBooks"
+            *ngFor="let book of myBooks; trackBy: trackByBookId"
             [book]="book"
             (editBook)="openEdit($event)"
             (deleteBook)="deleteBook($event)"
@@ -68,7 +82,7 @@
       <div class="tab-panel" *ngIf="activeTab === 'returned'">
         <div class="books-loading" *ngIf="loading"><p>Loading...</p></div>
         <div class="books-grid" *ngIf="!loading && returnedBooks.length">
-          <div class="book-card" *ngFor="let book of returnedBooks" (click)="openEdit(book)">
+          <div class="book-card" *ngFor="let book of returnedBooks; trackBy: trackByBookId" (click)="openEdit(book)">
             <div class="book-image">
               <img *ngIf="book.coverUrl" [src]="book.coverUrl" [alt]="book.title">
               <img *ngIf="!book.coverUrl && book.cover" [src]="'data:image/jpeg;base64,' + book.cover" [alt]="book.title">
@@ -94,7 +108,7 @@
       <div class="tab-panel" *ngIf="activeTab === 'borrowed'">
         <div class="books-loading" *ngIf="loading"><p>Loading...</p></div>
         <div class="books-grid" *ngIf="!loading && borrowedBooks.length">
-          <div class="book-card" *ngFor="let book of borrowedBooks">
+          <div class="book-card" *ngFor="let book of borrowedBooks; trackBy: trackByBookId">
             <div class="book-image">
               <img *ngIf="book.coverUrl" [src]="book.coverUrl" [alt]="book.title">
               <img *ngIf="!book.coverUrl && book.cover" [src]="'data:image/jpeg;base64,' + book.cover" [alt]="book.title">
@@ -128,7 +142,7 @@
       <div class="tab-panel" *ngIf="activeTab === 'requested'">
         <div class="books-loading" *ngIf="loading"><p>Loading...</p></div>
         <div class="books-grid" *ngIf="!loading && requestedBooks.length">
-          <div class="book-card" *ngFor="let book of requestedBooks">
+          <div class="book-card" *ngFor="let book of requestedBooks; trackBy: trackByRequestedId">
             <div class="book-image">
               <img *ngIf="book.coverUrl" [src]="book.coverUrl" [alt]="book.title">
               <img *ngIf="!book.coverUrl && book.cover" [src]="'data:image/jpeg;base64,' + book.cover" [alt]="book.title">
@@ -168,154 +182,6 @@
       </div>
 
     </div>
-
-<app-bookpopup
-  [isOpen]="showPopup"
-  [mode]="popupMode"
-  [book]="selectedBook"
-  (closePopup)="closePopup()"
-  (bookSaved)="onBookSaved($event)">
-</app-bookpopup>
-
-    <div class="tabs-content">
-
-      <!-- My Books Tab -->
-      <div class="tab-panel" *ngIf="activeTab === 'mybooks'">
-        <div class="books-loading" *ngIf="loading"><p>Loading...</p></div>
-        <div class="books-error" *ngIf="error"><p>{{ error }}</p></div>
-        <div class="books-grid" *ngIf="!loading && !error && myBooks.length">
-          <app-book
-            *ngFor="let book of myBooks"
-            [book]="book"
-            (editBook)="openEdit($event)"
-            (deleteBook)="deleteBook($event)"
-            (archiveBook)="archiveBook($event)">
-          </app-book>
-        </div>
-        <div class="books-empty" *ngIf="!loading && !error && !myBooks.length">
-          <p>You don't have any books yet.</p>
-        </div>
-        <div class="books-pagination" *ngIf="totalPages > 1 && !loading">
-          <button class="pagination-btn" (click)="prevPage()" [disabled]="isFirstPage">← Previous</button>
-          <div class="pagination-info"><span>Page {{ currentPage + 1 }} / {{ totalPages }}</span></div>
-          <button class="pagination-btn" (click)="nextPage()" [disabled]="isLastPage">Next →</button>
-        </div>
-      </div>
-
-      <!-- Returned Tab -->
-      <div class="tab-panel" *ngIf="activeTab === 'returned'">
-        <div class="books-loading" *ngIf="loading"><p>Loading...</p></div>
-        <div class="books-grid" *ngIf="!loading && returnedBooks.length">
-          <div class="book-card" *ngFor="let book of returnedBooks" (click)="openEdit(book)">
-            <div class="book-image">
-              <img *ngIf="book.coverUrl" [src]="book.coverUrl" [alt]="book.title">
-              <img *ngIf="!book.coverUrl && book.cover" [src]="'data:image/jpeg;base64,' + book.cover" [alt]="book.title">
-              <div *ngIf="!book.coverUrl && !book.cover" class="book-cover-emoji">📚</div>
-            </div>
-            <div class="book-details">
-              <h3>{{ book.title }}</h3>
-              <p class="author">{{ book.authorName }}</p>
-            </div>
-            <div class="book-meta"></div>
-            <div class="book-actions"></div>
-          </div>
-        </div>
-        <div class="books-empty" *ngIf="!loading && !returnedBooks.length"><p>No returned books.</p></div>
-        <div class="books-pagination" *ngIf="totalPages > 1 && !loading">
-          <button class="pagination-btn" (click)="prevPage()" [disabled]="isFirstPage">← Previous</button>
-          <div class="pagination-info"><span>Page {{ currentPage + 1 }} / {{ totalPages }}</span></div>
-          <button class="pagination-btn" (click)="nextPage()" [disabled]="isLastPage">Next →</button>
-        </div>
-      </div>
-
-      <!-- Borrowed Tab -->
-      <div class="tab-panel" *ngIf="activeTab === 'borrowed'">
-        <div class="books-loading" *ngIf="loading"><p>Loading...</p></div>
-        <div class="books-grid" *ngIf="!loading && borrowedBooks.length">
-          <div class="book-card" *ngFor="let book of borrowedBooks">
-            <div class="book-image">
-              <img *ngIf="book.coverUrl" [src]="book.coverUrl" [alt]="book.title">
-              <img *ngIf="!book.coverUrl && book.cover" [src]="'data:image/jpeg;base64,' + book.cover" [alt]="book.title">
-              <div *ngIf="!book.coverUrl && !book.cover" class="book-cover-emoji">📚</div>
-            </div>
-            <div class="book-details">
-              <h3>{{ book.title }}</h3>
-              <p class="author">{{ book.authorName }}</p>
-              <p class="isbn" *ngIf="book.isbn">ISBN: {{ book.isbn }}</p>
-            </div>
-            <div class="book-meta">
-              <span class="rate" *ngIf="book.rate">⭐ {{ book.rate }}</span>
-              <span class="badge-borrowed">📖 Borrowed</span>
-            </div>
-            <div class="book-actions">
-              <button class="btn-return" (click)="returnBook(book.id)">
-                <span class="icon">📤</span> Return Book
-              </button>
-            </div>
-          </div>
-        </div>
-        <div class="books-empty" *ngIf="!loading && !borrowedBooks.length"><p>No currently borrowed books.</p></div>
-        <div class="books-pagination" *ngIf="totalPages > 1 && !loading">
-          <button class="pagination-btn" (click)="prevPage()" [disabled]="isFirstPage">← Previous</button>
-          <div class="pagination-info"><span>Page {{ currentPage + 1 }} / {{ totalPages }}</span></div>
-          <button class="pagination-btn" (click)="nextPage()" [disabled]="isLastPage">Next →</button>
-        </div>
-      </div>
-
-      <!-- Requested Tab -->
-      <div class="tab-panel" *ngIf="activeTab === 'requested'">
-
-        <div class="requested-toggle">
-          <button class="toggle-btn" [class.active]="requestedView === 'by-me'" (click)="switchRequestedView('by-me')">
-            My Requests
-          </button>
-          <button class="toggle-btn" [class.active]="requestedView === 'from-me'" (click)="switchRequestedView('from-me')">
-            Requests for My Books
-          </button>
-        </div>
-
-        <div class="books-loading" *ngIf="loading"><p>Loading...</p></div>
-        <div class="books-grid" *ngIf="!loading && requestedBooks.length">
-          <div class="book-card" *ngFor="let book of requestedBooks">
-            <div class="book-image">
-              <img *ngIf="book.coverUrl" [src]="book.coverUrl" [alt]="book.title">
-              <img *ngIf="!book.coverUrl && book.cover" [src]="'data:image/jpeg;base64,' + book.cover" [alt]="book.title">
-              <div *ngIf="!book.coverUrl && !book.cover" class="book-cover-emoji">📚</div>
-            </div>
-            <div class="book-details">
-              <h3>{{ book.title }}</h3>
-              <p class="author">{{ book.authorName }}</p>
-              <p class="isbn" *ngIf="book.isbn">ISBN: {{ book.isbn }}</p>
-              <p class="requester" *ngIf="requestedView === 'from-me' && book.requesterName">Requested by: {{ book.requesterName }}</p>
-            </div>
-            <div class="book-meta">
-              <span class="rate" *ngIf="book.rate">⭐ {{ book.rate }}</span>
-              <span class="badge-approved" *ngIf="book.requestApproved">✅ Approved</span>
-              <span class="badge-pending" *ngIf="book.requested && !book.requestApproved">⏳ Pending</span>
-            </div>
-            <div class="book-actions">
-              <ng-container *ngIf="requestedView === 'from-me'">
-                <button class="btn-compact" (click)="approveRequest(book.id)"><span class="icon">✔️</span> Approve</button>
-                <button class="btn-compact" (click)="rejectRequest(book.id)"><span class="icon">❌</span> Reject</button>
-              </ng-container>
-              <ng-container *ngIf="requestedView === 'by-me'">
-                <button class="btn-compact" (click)="rejectRequest(book.id)"><span class="icon">❌</span> Cancel Request</button>
-              </ng-container>
-            </div>
-          </div>
-        </div>
-        <div class="books-empty" *ngIf="!loading && !requestedBooks.length">
-          <p *ngIf="requestedView === 'by-me'">You haven't requested any books.</p>
-          <p *ngIf="requestedView === 'from-me'">No one has requested your books.</p>
-        </div>
-        <div class="books-pagination" *ngIf="totalPages > 1 && !loading">
-          <button class="pagination-btn" (click)="prevPage()" [disabled]="isFirstPage">← Previous</button>
-          <div class="pagination-info"><span>Page {{ currentPage + 1 }} / {{ totalPages }}</span></div>
-          <button class="pagination-btn" (click)="nextPage()" [disabled]="isLastPage">Next →</button>
-        </div>
-      </div>
-
-
 
 <app-bookpopup
   [isOpen]="showPopup"

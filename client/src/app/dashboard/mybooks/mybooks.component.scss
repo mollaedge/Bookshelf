@@ -123,8 +123,55 @@
   margin: 0.5rem 0;
 }
 
-// Add Book at bottom of sidebar
+// ── Search bar ────────────────────────────────────────────────────────────────
+.sidebar-search {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(255, 255, 255, 0.7);
+  border: 1px solid rgba(25, 118, 210, 0.2);
+  border-radius: 10px;
+  padding: 7px 10px;
+  transition: border-color 0.2s, box-shadow 0.2s;
+
+  &:focus-within {
+    border-color: #1976D2;
+    box-shadow: 0 0 0 3px rgba(25, 118, 210, 0.12);
+  }
+
+  i.fa-search { color: #999; font-size: 0.78rem; flex-shrink: 0; }
+
+  .search-input {
+    flex: 1;
+    border: none;
+    background: transparent;
+    outline: none;
+    font-size: 0.85rem;
+    font-family: inherit;
+    color: #333;
+    min-width: 0;
+
+    &::placeholder { color: #aaa; }
+  }
+
+  .search-clear {
+    border: none;
+    background: transparent;
+    color: #bbb;
+    cursor: pointer;
+    padding: 0;
+    line-height: 1;
+    font-size: 0.75rem;
+    flex-shrink: 0;
+    transition: color 0.15s;
+
+    &:hover { color: #666; }
+  }
+}
+
+// Add Book — gap from search
 .btn-add-book {
+  margin-top: 6px;
   display: flex;
   align-items: center;
   justify-content: center;
