@@ -6,6 +6,7 @@ import { AboutComponent } from './dashboard/about/about.component';
 import { FeedbackComponent } from './dashboard/feedback/feedback.component';
 import { LoginComponent } from './dashboard/auth/login/login.component';
 import { RegisterComponent } from './dashboard/auth/register/register.component';
+import { ActivateAccountComponent } from './dashboard/auth/activate-account/activate-account.component';
 import { MybooksComponent } from './dashboard/mybooks/mybooks.component';
 import { AuthGuard } from './service/auth/auth-guard';
 import { ProfileComponent } from './dashboard/profile/profile.component';
@@ -29,7 +30,8 @@ const routes: Routes = [
         children: [
           { path: '', redirectTo: 'login', pathMatch: 'full' },
           { path: 'login', component: LoginComponent },
-          { path: 'register', component: RegisterComponent }
+          { path: 'register', component: RegisterComponent },
+          { path: 'activate-account', component: ActivateAccountComponent }
         ] 
       },
     ]

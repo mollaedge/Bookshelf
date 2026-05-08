@@ -17,3 +17,16 @@ services:
       JASYPT_ENCRYPTOR_PASSWORD: ${JASYPT_ENCRYPTOR_PASSWORD}
     ports:
       - "8088:8088"
+
+  mail-dev:
+    container_name: bookshelf-mail-dev
+    image: maildev/maildev:latest
+    restart: unless-stopped
+    ports:
+      - "1025:1025"
+      - "1080:1080"
+    environment:
+      - MAILDEV_WEB_USER=${MAIL_USERNAME}
+      - MAILDEV_WEB_PASS=${MAIL_PASSWORD}
+      - MAILDEV_SMTP_PORT=1025
+      - MAILDEV_WEB_PORT=1080

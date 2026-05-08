@@ -125,8 +125,7 @@ export class RegisterComponent implements OnInit {
       this.loginService.register(registerRequest).subscribe({
         next: () => {
           console.log('Registration successful');
-          // After successful registration, navigate to login page
-          this.router.navigate(['/dashboard/auth/login']);
+          this.router.navigate(['/auth/activate-account'], { queryParams: { email: registerRequest.email } });
         },
         error: (error) => {
           console.error('Registration failed:', error);

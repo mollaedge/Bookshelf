@@ -23,6 +23,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
+import jakarta.servlet.http.HttpServletResponse;
 import java.util.List;
 
 /**
@@ -104,8 +105,11 @@ public class ControllerStream {
             @NotBlank(message = "Stream title must not be blank")
             @Size(max = 120, message = "Title must be at most 120 characters")
             String title,
-            Authentication connectedUser
+            Authentication connectedUser,
+            HttpServletResponse response
     ) {
+        response.setHeader("X-Accel-Buffering", "no");
+        response.setHeader("Cache-Control", "no-cache");
         return serviceStream.startStream(title, connectedUser);
     }
 
@@ -142,8 +146,11 @@ public class ControllerStream {
     @Operation(summary = "Join a live stream as a watcher")
     public SseEmitter joinStream(
             @PathVariable("host-id") Long hostId,
-            Authentication connectedUser
+            Authentication connectedUser,
+            HttpServletResponse response
     ) {
+        response.setHeader("X-Accel-Buffering", "no");
+        response.setHeader("Cache-Control", "no-cache");
         return serviceStream.joinStream(hostId, connectedUser);
     }
 

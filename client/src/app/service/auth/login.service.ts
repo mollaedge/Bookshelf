@@ -65,6 +65,18 @@ export class LoginService {
     );
   }
 
+  activateAccount(token: string, email: string): Observable<void> {
+    return this.http.get<void>(`${this.baseUrl}/auth/activate-account`, {
+      params: { token, email }
+    });
+  }
+
+  resendActivationToken(email: string): Observable<void> {
+    return this.http.post<void>(`${this.baseUrl}/auth/resend-activation`, null, {
+      params: { email }
+    });
+  }
+
   handleGoogleCredential(response: any) {
     if (!response || !response.credential) {
       console.error('Invalid Google Sign-In response');

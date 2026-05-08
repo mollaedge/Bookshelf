@@ -39,4 +39,12 @@ public class ControllerAuth {
     public void confirm(@RequestParam String token, @RequestParam String email) throws MessagingException {
         service.activateAccount(token, email);
     }
+
+    @RateLimit(capacity = 3, refillTokens = 3, refillDurationMinutes = 5)
+    @PostMapping("/resend-activation")
+    @ResponseStatus(HttpStatus.ACCEPTED)
+    public ResponseEntity<?> resendActivation(@RequestParam String email) throws MessagingException {
+        service.resendActivationToken(email);
+        return ResponseEntity.accepted().build();
+    }
 }

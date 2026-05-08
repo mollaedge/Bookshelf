@@ -1,8 +1,8 @@
 package com.arturmolla.bookshelf.service;
 
 import com.arturmolla.bookshelf.model.dto.AuthenticationRequest;
-import com.arturmolla.bookshelf.model.dto.DtoToken;
 import com.arturmolla.bookshelf.model.dto.DtoRegistrationRequest;
+import com.arturmolla.bookshelf.model.dto.DtoToken;
 import com.arturmolla.bookshelf.model.enums.EmailTemplateName;
 import com.arturmolla.bookshelf.model.user.Token;
 import com.arturmolla.bookshelf.model.user.User;
@@ -85,6 +85,16 @@ public class ServiceAuthentication {
         repositoryToken.save(savedToken);
     }
 
+    public void resendActivationToken(String email) throws MessagingException {
+        User user = repositoryUser.findByEmail(email)
+                .orElseThrow(() -> new UsernameNotFoundException("User not found!"));
+        if (user.isEnabled()) {
+            throw new RuntimeException("Account is already activated");
+        }
+        repositoryToken.deleteAll(repositoryToken.findAllByUser(user));
+        sendVerificationEmail(user);
+    }
+
     private void sendWelcomeEmail(User user) throws MessagingException {
         serviceEmail.sendWelcomeEmail(user.getEmail(), user.getFullName(), EmailTemplateName.WELCOME_MESSAGE,
                 loginUrl, "Account activated!");
@@ -101,7 +111,7 @@ public class ServiceAuthentication {
         var token = Token.builder()
                 .token(generatedToken)
                 .createdAt(LocalDateTime.now())
-                .expiresAt(LocalDateTime.now().plusMinutes(15))
+                .expiresAt(LocalDateTime.now().plusMinutes(2))
                 .user(user)
                 .build();
         repositoryToken.save(token);
