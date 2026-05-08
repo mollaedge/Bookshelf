@@ -112,22 +112,6 @@
   gap: 4px;
 }
 
-.nav-link-subtle {
-  padding: 7px 12px;
-  color: #555;
-  text-decoration: none;
-  font-size: 0.9rem;
-  font-weight: 500;
-  border-radius: 10px;
-  transition: background 0.2s, color 0.2s;
-  white-space: nowrap;
-
-  &:hover {
-    background: rgba(25, 118, 210, 0.1);
-    color: #1976D2;
-  }
-}
-
 .btn-login {
   display: flex;
   align-items: center;
@@ -562,8 +546,6 @@
     right: -50px;
     width: min(calc(100vw - 20px), 300px);
   }
-
-  .auth-links .nav-link-subtle { display: none; }
 
   .btn-login { padding: 7px 14px; font-size: 0.82rem; }
 }

@@ -3,7 +3,11 @@ import { ActivatedRoute } from '@angular/router';
 import { ViewportScroller } from '@angular/common';
 import { AuthStateService } from '../../service/auth/auth-state.service';
 import { HomePostService } from '../../service/home/home-post.service';
-import { HomePost } from '../../interfaces/post.interface';
+import {
+  HomePost,
+  DtoPostCommentRequest,
+  DtoPostCommentResponse
+} from '../../interfaces/post.interface';
 import { StreamService } from '../../service/stream/stream.service';
 import { WebRTCService } from '../../service/webrtc/webrtc.service';
 import { Observable, Subscription } from 'rxjs';
@@ -61,6 +65,13 @@ export class HomeComponent implements OnInit, OnDestroy, AfterViewChecked {
   @ViewChild('remoteVideoEl') remoteVideoEl?: ElementRef<HTMLVideoElement>;
 
   highlightedPostId: number | null = null;
+
+  expandedCommentsPostId: number | null = null;
+  commentsByPostId: Record<number, DtoPostCommentResponse[]> = {};
+  commentsLoadingByPostId: Record<number, boolean> = {};
+  commentDraftByPostId: Record<number, string> = {};
+  commentSubmittingByPostId: Record<number, boolean> = {};
+  likeLoadingByPostId: Record<number, boolean> = {};
 
   // Subscriptions
   private subscriptions: Subscription = new Subscription();
@@ -124,7 +135,13 @@ export class HomeComponent implements OnInit, OnDestroy, AfterViewChecked {
     
     this.homePostService.getAllPosts(page, this.pageSize).subscribe({
       next: (response) => {
-        this.userPosts = response.content;
+        this.userPosts = response.content.map(post => ({
+          ...post,
+          likeCount: post.likeCount ?? post.likesCount ?? 0,
+          commentCount: post.commentCount ?? post.commentsCount ?? 0,
+          shareCount: post.shareCount ?? 0,
+          likedByCurrentUser: post.likedByCurrentUser ?? false
+        }));
         this.currentPage = response.number;
         this.totalPages = response.totalPages;
         this.isLastPage = response.last;
@@ -633,5 +650,83 @@ export class HomeComponent implements OnInit, OnDestroy, AfterViewChecked {
     link.href = dataUri;
     link.download = fileName;
     link.click();
+  }
+
+  toggleLike(post: HomePost): void {
+    if (this.likeLoadingByPostId[post.id]) return;
+
+    this.likeLoadingByPostId[post.id] = true;
+    this.homePostService.toggleLike(post.id).subscribe({
+      next: (res) => {
+        post.likeCount = res.likeCount;
+        post.likedByCurrentUser = res.likedByCurrentUser;
+        this.likeLoadingByPostId[post.id] = false;
+      },
+      error: (error: HttpErrorResponse) => {
+        console.error('Error toggling like:', error);
+        this.likeLoadingByPostId[post.id] = false;
+      }
+    });
+  }
+
+  toggleComments(post: HomePost): void {
+    if (this.expandedCommentsPostId === post.id) {
+      this.expandedCommentsPostId = null;
+      return;
+    }
+
+    this.expandedCommentsPostId = post.id;
+    if (!this.commentsByPostId[post.id]) {
+      this.loadComments(post);
+    }
+  }
+
+  updateCommentDraft(postId: number, value: string): void {
+    this.commentDraftByPostId[postId] = value;
+  }
+
+  submitComment(post: HomePost): void {
+    const content = (this.commentDraftByPostId[post.id] || '').trim();
+    if (!content || this.commentSubmittingByPostId[post.id]) return;
+
+    this.commentSubmittingByPostId[post.id] = true;
+    const request: DtoPostCommentRequest = { content };
+
+    this.homePostService.addComment(post.id, request).subscribe({
+      next: (comment) => {
+        const existing = this.commentsByPostId[post.id] ?? [];
+        this.commentsByPostId[post.id] = [...existing, comment];
+        post.commentCount = (post.commentCount ?? 0) + 1;
+        this.commentDraftByPostId[post.id] = '';
+        this.commentSubmittingByPostId[post.id] = false;
+      },
+      error: (error: HttpErrorResponse) => {
+        console.error('Error adding comment:', error);
+        this.commentSubmittingByPostId[post.id] = false;
+      }
+    });
+  }
+
+  private loadComments(post: HomePost): void {
+    const postId = post.id;
+    this.commentsLoadingByPostId[postId] = true;
+    this.homePostService.getComments(postId, 0, 20).subscribe({
+      next: (response) => {
+        this.commentsByPostId[postId] = response.content;
+        post.commentCount = this.getPageTotal(response, response.content.length);
+        this.commentsLoadingByPostId[postId] = false;
+      },
+      error: (error: HttpErrorResponse) => {
+        console.error('Error loading comments:', error);
+        this.commentsByPostId[postId] = [];
+        this.commentsLoadingByPostId[postId] = false;
+      }
+    });
+  }
+
+  private getPageTotal<T>(response: any, fallback: number): number {
+    if (typeof response?.totalElement === 'number') return response.totalElement;
+    if (typeof response?.totalElements === 'number') return response.totalElements;
+    return fallback;
   }
 }
