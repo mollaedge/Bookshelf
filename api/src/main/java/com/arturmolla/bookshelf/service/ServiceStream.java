@@ -21,7 +21,11 @@ import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 import java.io.IOException;
 import java.util.List;
 import java.util.Objects;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 @Slf4j
 @Service
@@ -32,6 +36,15 @@ public class ServiceStream {
      * SSE timeout: 6 hours. The client must reconnect if the stream runs longer.
      */
     private static final long SSE_TIMEOUT_MS = TimeUnit.HOURS.toMillis(6);
+
+    /**
+     * Heartbeat interval: 30 seconds. Keeps the SSE connection alive through
+     * Cloudflare (100s timeout) and Nginx proxies that buffer idle connections.
+     */
+    private static final long HEARTBEAT_INTERVAL_SEC = 30;
+
+    private static final ScheduledExecutorService heartbeatExecutor =
+            Executors.newScheduledThreadPool(2);
 
     private final StreamRegistry registry;
     private final ObjectMapper objectMapper;
@@ -238,11 +251,22 @@ public class ServiceStream {
      */
     private SseEmitter createEmitter(LiveStream stream, Long userId) {
         SseEmitter emitter = new SseEmitter(SSE_TIMEOUT_MS);
-        java.util.concurrent.atomic.AtomicBoolean cleaned = new java.util.concurrent.atomic.AtomicBoolean(false);
+        AtomicBoolean cleaned = new AtomicBoolean(false);
+
+        // Heartbeat: send a comment every 30 s to prevent Cloudflare/Nginx from
+        // closing the idle SSE connection with 502/504.
+        ScheduledFuture<?> heartbeat = heartbeatExecutor.scheduleAtFixedRate(() -> {
+            try {
+                emitter.send(SseEmitter.event().name("heartbeat").data(""));
+            } catch (IOException e) {
+                // The error/completion callbacks will handle cleanup
+            }
+        }, HEARTBEAT_INTERVAL_SEC, HEARTBEAT_INTERVAL_SEC, TimeUnit.SECONDS);
 
         Runnable cleanup = () -> {
             // Guard: only execute once regardless of how many callbacks fire
             if (!cleaned.compareAndSet(false, true)) return;
+            heartbeat.cancel(false);
             if (!stream.hasParticipant(userId)) return;
 
             // Capture name BEFORE removing the participant

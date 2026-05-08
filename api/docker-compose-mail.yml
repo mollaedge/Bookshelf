@@ -1,0 +1,34 @@
+# ──────────────────────────────────────────────────────────────────────────────
+# Standalone mail server for local development.
+#
+# Starts MailDev — a lightweight fake SMTP server with a browser inbox.
+#
+# Usage:
+#   docker compose -f docker-compose-mail.yml up -d
+#
+# Ports:
+#   1025  → SMTP  (what Spring Boot connects to)
+#   1080  → Web UI (http://localhost:1080 to read sent emails in the browser)
+#
+# Spring Boot (application-dev.yml) must point to:
+#   spring.mail.host=localhost
+#   spring.mail.port=1025
+#   spring.mail.properties.mail.smtp.auth=false
+#   spring.mail.properties.mail.smtp.starttls.enable=false
+# ──────────────────────────────────────────────────────────────────────────────
+services:
+  mail-dev:
+    container_name: bookshelf-mail-dev
+    image: maildev/maildev:latest
+    restart: unless-stopped
+    ports:
+      - "1025:1025"   # SMTP — Spring Boot connects here
+      - "1080:1080"   # Web inbox — open in browser
+    environment:
+      # Disable the login screen on the web UI (open access for local dev)
+      - MAILDEV_WEB_USER=${MAIL_USERNAME}
+      - MAILDEV_WEB_PASS=${MAIL_PASSWORD}
+      # Disable incoming SMTP auth so Spring Boot can connect without credentials
+      - MAILDEV_SMTP_PORT=1025
+      - MAILDEV_WEB_PORT=1080
+

@@ -141,7 +141,7 @@ jobs:
             echo "CORS_ALLOWED_ORIGINS=${CORS_ALLOWED_ORIGINS}"
             echo "JASYPT_ENCRYPTOR_PASSWORD=${JASYPT_ENCRYPTOR_PASSWORD}"
           } | ssh hetzner "cat > /opt/bookshelf/.env"
-          ssh hetzner "cd /opt/bookshelf && docker compose up -d api"
+          ssh hetzner "cd /opt/bookshelf && docker compose up -d api mail-dev"
 
       - name: Start Angular app
         run: |
