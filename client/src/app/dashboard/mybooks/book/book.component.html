@@ -14,20 +14,30 @@
 
   <!-- Book Cover -->
   <div class="book-cover">
-    <img *ngIf="book.coverUrl" [src]="book.coverUrl" [alt]="book.title">
-    <img *ngIf="!book.coverUrl && book.cover" [src]="'data:image/jpeg;base64,' + book.cover" [alt]="book.title">
-    <div *ngIf="!book.coverUrl && !book.cover" class="book-cover-placeholder">
-      <i class="fas fa-book-open"></i>
-    </div>
-    
+    @if (book.coverUrl) {
+      <img [src]="book.coverUrl" [alt]="book.title">
+    }
+    @if (!book.coverUrl && book.cover) {
+      <img [src]="'data:image/jpeg;base64,' + book.cover" [alt]="book.title">
+    }
+    @if (!book.coverUrl && !book.cover) {
+      <div class="book-cover-placeholder">
+        <i class="fas fa-book-open"></i>
+      </div>
+    }
+
     <!-- Status Badges on Cover -->
     <div class="cover-badges">
-      <span class="badge badge-favourite" *ngIf="book.favourite" title="Favourite">
-        <i class="fas fa-heart"></i>
-      </span>
-      <span class="badge badge-read" *ngIf="book.read" title="Read">
-        <i class="fas fa-check-circle"></i>
-      </span>
+      @if (book.favourite) {
+        <span class="badge badge-favourite" title="Favourite">
+          <i class="fas fa-heart"></i>
+        </span>
+      }
+      @if (book.read) {
+        <span class="badge badge-read" title="Read">
+          <i class="fas fa-check-circle"></i>
+        </span>
+      }
     </div>
   </div>
 
@@ -38,28 +48,38 @@
       <i class="fas fa-user-edit"></i>
       {{ book.authorName }}
     </p>
-    
+
     <div class="book-metadata">
-      <span class="metadata-item" *ngIf="book.genre">
-        <i class="fas fa-tag"></i>
-        {{ book.genre }}
-      </span>
-      <span class="metadata-item" *ngIf="book.rate">
-        <i class="fas fa-star"></i>
-        {{ book.rate }}
-      </span>
+      @if (book.genre) {
+        <span class="metadata-item">
+          <i class="fas fa-tag"></i>
+          {{ book.genre }}
+        </span>
+      }
+      @if (book.rate) {
+        <span class="metadata-item">
+          <i class="fas fa-star"></i>
+          {{ book.rate }}
+        </span>
+      }
     </div>
 
-    <p class="book-synopsis" *ngIf="book.synopsis">{{ book.synopsis }}</p>
-    
+    @if (book.synopsis) {
+      <p class="book-synopsis">{{ book.synopsis }}</p>
+    }
+
     <!-- Bottom Badges -->
     <div class="status-badges">
-      <span class="badge-pill badge-archived" *ngIf="book.archived">
-        <i class="fas fa-archive"></i> Archived
-      </span>
-      <span class="badge-pill badge-shareable" *ngIf="book.shareable">
-        <i class="fas fa-share-alt"></i> Shareable
-      </span>
+      @if (book.archived) {
+        <span class="badge-pill badge-archived">
+          <i class="fas fa-archive"></i> Archived
+        </span>
+      }
+      @if (book.shareable) {
+        <span class="badge-pill badge-shareable">
+          <i class="fas fa-share-alt"></i> Shareable
+        </span>
+      }
     </div>
   </div>
 </div>

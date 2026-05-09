@@ -1,6 +1,7 @@
 .dashboard {
-  padding: 24px;
-  background-color: #f8f9fa;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 24px 16px;
   min-height: 100%;
 
   .dashboard-header {
@@ -674,10 +675,91 @@
     padding: 3rem;
     color: #999;
   }
+
+  .confirm-modal-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.45);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 2000;
+    padding: 1rem;
+  }
+
+  .confirm-modal {
+    width: min(460px, 100%);
+    background: #fff;
+    border-radius: 12px;
+    padding: 1.25rem;
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.2);
+
+    h3 {
+      margin: 0 0 0.75rem;
+      font-size: 1.1rem;
+      color: #2c3e50;
+    }
+
+    p {
+      margin: 0 0 1.25rem;
+      color: #555;
+      line-height: 1.4;
+    }
+  }
+
+  .confirm-modal-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.75rem;
+  }
+
+  .confirm-modal-message {
+    margin: 0 0 1rem;
+    padding: 0.7rem 0.85rem;
+    border-radius: 8px;
+    font-size: 0.92rem;
+
+    &.success {
+      background: #e8f7ee;
+      border: 1px solid #b6e6c6;
+      color: #1f7a3f;
+    }
+
+    &.error {
+      background: #feeeee;
+      border: 1px solid #f6c7c7;
+      color: #b23232;
+    }
+  }
+
+  .btn-cancel-request,
+  .btn-confirm-request {
+    border: none;
+    border-radius: 6px;
+    padding: 0.55rem 0.95rem;
+    font-weight: 600;
+    cursor: pointer;
+  }
+
+  .btn-cancel-request {
+    background: #f1f3f5;
+    color: #333;
+  }
+
+  .btn-confirm-request {
+    background: #667eea;
+    color: #fff;
+  }
+
+  .btn-cancel-request:disabled,
+  .btn-confirm-request:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
 }
 
 @media (max-width: 768px) {
-  .dashboard { padding: 16px; }
+  .dashboard { padding: 16px 12px; }
   .stats-grid { grid-template-columns: repeat(2, 1fr); gap: 12px; }
   .stat-card { padding: 16px; gap: 12px; }
   .content-grid { grid-template-columns: 1fr; }
@@ -686,6 +768,7 @@
 }
 
 @media (max-width: 480px) {
+  .dashboard { padding: 12px 10px; }
   .stats-grid { grid-template-columns: 1fr 1fr; }
   .dashboard-header h1 { font-size: 22px; }
   .content-card { padding: 14px; }

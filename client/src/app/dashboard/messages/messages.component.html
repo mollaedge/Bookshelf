@@ -1,0 +1,124 @@
+<div class="messages-page">
+  <div class="messages-layout">
+    <aside class="conversations-panel">
+      <div class="panel-header">
+        <h3>Chats</h3>
+      </div>
+
+      @if (conversationsLoading) {
+        <div class="panel-state">
+          <i class="fas fa-spinner fa-spin"></i>
+          <p>Loading conversations...</p>
+        </div>
+      } @else if (conversations.length === 0) {
+        <div class="panel-state panel-state--empty">
+          <i class="fas fa-comment-slash"></i>
+          <p>No chats yet</p>
+          <a routerLink="/friends">Find friends</a>
+        </div>
+      } @else {
+        <ul class="conversation-list">
+          @for (conv of conversations; track trackByConversationId($index, conv)) {
+            <li
+              class="conversation-item"
+              [class.active]="isActiveConversation(conv.friendId)"
+              (click)="openConversation(conv)">
+              <div class="conversation-avatar">
+                <i class="fas fa-user-circle"></i>
+              </div>
+              <div class="conversation-body">
+                <p class="conversation-name">{{ conv.friendName }}</p>
+                <p class="conversation-preview">{{ conv.lastMessagePreview || 'No messages yet' }}</p>
+              </div>
+              @if (conv.unreadCount > 0) {
+                <span class="conversation-unread">{{ conv.unreadCount > 99 ? '99+' : conv.unreadCount }}</span>
+              }
+            </li>
+          }
+        </ul>
+      }
+    </aside>
+
+    <section class="chat-panel">
+      @if (!friendId) {
+        <div class="messages-empty">
+          <i class="fas fa-comments"></i>
+          <p>Select a conversation to start messaging</p>
+        </div>
+      } @else {
+        <div class="chat-header">
+          <i class="fas fa-user-circle"></i>
+          <span>{{ friendName || 'Chat' }}</span>
+        </div>
+
+        <div class="messages-wrapper">
+          <div class="messages-container">
+            @if (messagesLoading && currentPage === 0) {
+              <div class="messages-loading">
+                <i class="fas fa-spinner fa-spin"></i>
+                <p>Loading messages...</p>
+              </div>
+            }
+
+            @if (!messagesLoading && currentPage < totalPages - 1) {
+              <button class="load-older-btn" (click)="loadOlderMessages()" [disabled]="messagesLoading">
+                <i class="fas fa-arrow-up"></i>
+                Load older messages
+              </button>
+            }
+
+            @if (messages.length === 0 && !messagesLoading) {
+              <div class="no-messages">
+                <i class="fas fa-comments"></i>
+                <p>No messages yet. Say hello!</p>
+              </div>
+            }
+
+            @for (msg of messages; track msg.id) {
+              <div class="message-item" [class.own]="msg.senderId !== friendId">
+                <div class="message-bubble">
+                  <p class="message-content">{{ msg.content }}</p>
+                  <div class="message-meta">
+                    <span class="message-time">{{ timeAgo(msg.createdAt.toString()) }}</span>
+                    @if (msg.read) {
+                      <i class="fas fa-check-double message-read-icon"></i>
+                    }
+                  </div>
+                </div>
+                @if (msg.senderId !== friendId) {
+                  <button class="message-delete-btn" (click)="deleteMessage(msg.id)" title="Delete">
+                    <i class="fas fa-trash-alt"></i>
+                  </button>
+                }
+              </div>
+            }
+          </div>
+
+          <div class="message-input-area">
+            <input
+              type="text"
+              class="message-input"
+              placeholder="Type a message..."
+              [(ngModel)]="messageText"
+              (keyup.enter)="sendMessage()"
+              [disabled]="sendingMessage"
+            />
+            <button
+              class="send-btn"
+              (click)="sendMessage()"
+              [disabled]="!messageText.trim() || sendingMessage"
+              title="Send message"
+            >
+              @if (sendingMessage) {
+                <i class="fas fa-spinner fa-spin"></i>
+              }
+              @if (!sendingMessage) {
+                <i class="fas fa-paper-plane"></i>
+              }
+            </button>
+          </div>
+        </div>
+      }
+    </section>
+  </div>
+</div>

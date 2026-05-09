@@ -1,13 +1,12 @@
 <div class="activate-container">
   <div class="activate-card">
 
-    <ng-container *ngIf="!isActivated">
+    @if (!isActivated) {
       <h2 class="activate-title">Verify Your Account</h2>
       <p class="activate-subtitle">
         We sent a verification code to <strong>{{ email }}</strong>.<br>
         Enter the code below to activate your account.
       </p>
-
       <div class="form-group">
         <label for="code">Verification Code</label>
         <input
@@ -18,48 +17,56 @@
           class="form-control"
           autocomplete="one-time-code"
           [disabled]="isLoading">
-      </div>
-
-      <div *ngIf="errorMessage" class="error-message">{{ errorMessage }}</div>
-      <div *ngIf="successMessage" class="success-message">{{ successMessage }}</div>
-
-      <div class="form-actions">
-        <button
-          class="btn-activate"
-          (click)="onActivate()"
-          [disabled]="!code.trim() || isLoading">
-          <span *ngIf="isLoading">Verifying...</span>
-          <span *ngIf="!isLoading">Activate Account</span>
-        </button>
-      </div>
-
-      <div class="resend-area">
-        <ng-container *ngIf="!canResend">
-          <span class="resend-timer">Resend code in <strong>{{ formattedCountdown }}</strong></span>
-        </ng-container>
-        <ng-container *ngIf="canResend">
+        </div>
+        @if (errorMessage) {
+          <div class="error-message">{{ errorMessage }}</div>
+        }
+        @if (successMessage) {
+          <div class="success-message">{{ successMessage }}</div>
+        }
+        <div class="form-actions">
           <button
-            class="btn-resend"
-            (click)="onResend()"
-            [disabled]="isResending">
-            <span *ngIf="isResending">Sending...</span>
-            <span *ngIf="!isResending">Resend Code</span>
+            class="btn-activate"
+            (click)="onActivate()"
+            [disabled]="!code.trim() || isLoading">
+            @if (isLoading) {
+              <span>Verifying...</span>
+            }
+            @if (!isLoading) {
+              <span>Activate Account</span>
+            }
           </button>
-        </ng-container>
-      </div>
+        </div>
+        <div class="resend-area">
+          @if (!canResend) {
+            <span class="resend-timer">Resend code in <strong>{{ formattedCountdown }}</strong></span>
+          }
+          @if (canResend) {
+            <button
+              class="btn-resend"
+              (click)="onResend()"
+              [disabled]="isResending">
+              @if (isResending) {
+                <span>Sending...</span>
+              }
+              @if (!isResending) {
+                <span>Resend Code</span>
+              }
+            </button>
+          }
+        </div>
+        <div class="form-footer">
+          <p>Wrong account? <a routerLink="/auth/register">Register again</a>.</p>
+        </div>
+      }
 
-      <div class="form-footer">
-        <p>Wrong account? <a routerLink="/auth/register">Register again</a>.</p>
-      </div>
-    </ng-container>
+      @if (isActivated) {
+        <div class="success-state">
+          <div class="success-icon">✓</div>
+          <h2 class="activate-title">Account Activated!</h2>
+          <p class="activate-subtitle">Your account is ready. Redirecting you to login...</p>
+        </div>
+      }
 
-    <ng-container *ngIf="isActivated">
-      <div class="success-state">
-        <div class="success-icon">✓</div>
-        <h2 class="activate-title">Account Activated!</h2>
-        <p class="activate-subtitle">Your account is ready. Redirecting you to login...</p>
-      </div>
-    </ng-container>
-
+    </div>
   </div>
-</div>

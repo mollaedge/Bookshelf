@@ -29,6 +29,8 @@ import { CreatePostComponent } from './dashboard/home/create-post/create-post.co
 import { StartStreamComponent } from './dashboard/home/start-stream/start-stream.component';
 import { ActivateAccountComponent } from './dashboard/auth/activate-account/activate-account.component';
 import { LandingPageComponent } from './dashboard/landing-page/landing-page.component';
+import { FriendsComponent } from './dashboard/friends/friends.component';
+import { MessagesComponent } from './dashboard/messages/messages.component';
 
 @NgModule({
   declarations: [
@@ -47,7 +49,9 @@ import { LandingPageComponent } from './dashboard/landing-page/landing-page.comp
     CreatePostComponent,
     StartStreamComponent,
     ActivateAccountComponent,
-    LandingPageComponent
+    LandingPageComponent,
+    FriendsComponent,
+    MessagesComponent
   ],
   imports: [
     BrowserModule,

@@ -5,7 +5,7 @@ import { PageResponse } from '../../interfaces/page.interface';
 import { ProfileService } from '../../service/profile/profile.service';
 import { AuthStateService } from '../../service/auth/auth-state.service';
 import { UserDashboardResponse } from '../../interfaces/user.interface';
-import { HttpErrorResponse } from '@angular/common/http';
+import { getApiErrorMessage } from '../../service/error/api-error.util';
 
 @Component({
   selector: 'app-dash',
@@ -18,6 +18,11 @@ export class DashComponent implements OnInit {
   totalBooks: number = 0;
   loading: boolean = false;
   error: string = '';
+  requestModalOpen: boolean = false;
+  selectedRequestBook: Book | null = null;
+  requestSubmitting: boolean = false;
+  requestStatusMessage: string = '';
+  requestStatusType: 'success' | 'error' | '' = '';
 
   userDashboard: UserDashboardResponse | null = null;
   dashboardLoading: boolean = false;
@@ -103,26 +108,48 @@ export class DashComponent implements OnInit {
       },
       error: (err) => {
         this.loading = false;
-        if (err instanceof HttpErrorResponse && err.status === 0) {
-          this.error = 'Service is temporarily unavailable. Please try again later.';
-        } else {
-          this.error = 'Failed to load books. Please try again.';
-        }
+        this.error = getApiErrorMessage(err, 'Failed to load books. Please try again.');
       }
     });
+  }
+
+  openRequestModal(book: Book): void {
+    this.selectedRequestBook = book;
+    this.requestModalOpen = true;
+    this.requestStatusMessage = '';
+    this.requestStatusType = '';
+  }
+
+  closeRequestModal(): void {
+    if (this.requestSubmitting) {
+      return;
+    }
+    this.requestModalOpen = false;
+    this.selectedRequestBook = null;
+    this.requestStatusMessage = '';
+    this.requestStatusType = '';
+  }
+
+  confirmRequestBook(): void {
+    if (!this.selectedRequestBook || this.requestSubmitting) {
+      return;
+    }
+
+    this.requestSubmitting = true;
+    this.requestBook(this.selectedRequestBook.id);
   }
 
   requestBook(bookId: number): void {
     this.booksService.requestBook(bookId).subscribe({
       next: () => {
-        alert('Book requested successfully!');
+        this.requestSubmitting = false;
+        this.requestStatusType = 'success';
+        this.requestStatusMessage = 'Book requested successfully.';
       },
       error: (err) => {
-        if (err instanceof HttpErrorResponse && err.status === 0) {
-          alert('Service is temporarily unavailable. Please try again later.');
-        } else {
-          alert('Failed to request book. Please try again.');
-        }
+        this.requestSubmitting = false;
+        this.requestStatusType = 'error';
+        this.requestStatusMessage = getApiErrorMessage(err, 'Failed to request book. Please try again.');
       }
     });
   }

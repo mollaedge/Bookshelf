@@ -1,7 +1,11 @@
 <div class="dashboard">
   <div class="dashboard-header">
-    <p class="subtitle" *ngIf="!userDashboard">Welcome back, let's explore your activity</p>
-    <p class="subtitle" *ngIf="userDashboard">Welcome back, {{ userDashboard.fullName }} — here's your activity</p>
+    @if (!userDashboard) {
+      <p class="subtitle">Welcome back, let's explore your activity</p>
+    }
+    @if (userDashboard) {
+      <p class="subtitle">Welcome back, {{ userDashboard.fullName }} — here's your activity</p>
+    }
   </div>
 
   <div class="stats-grid">
@@ -11,8 +15,12 @@
       </div>
       <div class="stat-info">
         <h3>Books Owned</h3>
-        <p class="stat-number" *ngIf="!dashboardLoading">{{ userDashboard?.stats?.booksOwned ?? '-' }}</p>
-        <p class="stat-number loading-placeholder" *ngIf="dashboardLoading">...</p>
+        @if (!dashboardLoading) {
+          <p class="stat-number">{{ userDashboard?.stats?.booksOwned ?? '-' }}</p>
+        }
+        @if (dashboardLoading) {
+          <p class="stat-number loading-placeholder">...</p>
+        }
       </div>
     </div>
     <div class="stat-card">
@@ -21,8 +29,12 @@
       </div>
       <div class="stat-info">
         <h3>Borrowed</h3>
-        <p class="stat-number" *ngIf="!dashboardLoading">{{ userDashboard?.stats?.currentlyBorrowed ?? '-' }}</p>
-        <p class="stat-number loading-placeholder" *ngIf="dashboardLoading">...</p>
+        @if (!dashboardLoading) {
+          <p class="stat-number">{{ userDashboard?.stats?.currentlyBorrowed ?? '-' }}</p>
+        }
+        @if (dashboardLoading) {
+          <p class="stat-number loading-placeholder">...</p>
+        }
       </div>
     </div>
     <div class="stat-card">
@@ -31,8 +43,12 @@
       </div>
       <div class="stat-info">
         <h3>Books Read</h3>
-        <p class="stat-number" *ngIf="!dashboardLoading">{{ userDashboard?.stats?.booksRead ?? '-' }}</p>
-        <p class="stat-number loading-placeholder" *ngIf="dashboardLoading">...</p>
+        @if (!dashboardLoading) {
+          <p class="stat-number">{{ userDashboard?.stats?.booksRead ?? '-' }}</p>
+        }
+        @if (dashboardLoading) {
+          <p class="stat-number loading-placeholder">...</p>
+        }
       </div>
     </div>
     <div class="stat-card">
@@ -41,8 +57,12 @@
       </div>
       <div class="stat-info">
         <h3>Pending Requests</h3>
-        <p class="stat-number" *ngIf="!dashboardLoading">{{ userDashboard?.stats?.pendingRequests ?? '-' }}</p>
-        <p class="stat-number loading-placeholder" *ngIf="dashboardLoading">...</p>
+        @if (!dashboardLoading) {
+          <p class="stat-number">{{ userDashboard?.stats?.pendingRequests ?? '-' }}</p>
+        }
+        @if (dashboardLoading) {
+          <p class="stat-number loading-placeholder">...</p>
+        }
       </div>
     </div>
   </div>
@@ -52,63 +72,66 @@
       <h2>Reading Progress</h2>
       <div class="card-content">
 
-        <div class="progress-placeholder" *ngIf="!isLoggedIn">
-          <i class="fas fa-book-open"></i>
-          <p>Sign in to see your reading progress</p>
-        </div>
+        @if (!isLoggedIn) {
+          <div class="progress-placeholder">
+            <i class="fas fa-book-open"></i>
+            <p>Sign in to see your reading progress</p>
+          </div>
+        }
 
-        <div class="progress-loading" *ngIf="isLoggedIn && dashboardLoading">
-          <p>Loading...</p>
-        </div>
+        @if (isLoggedIn && dashboardLoading) {
+          <div class="progress-loading">
+            <p>Loading...</p>
+          </div>
+        }
 
-        <div class="progress-breakdown" *ngIf="userDashboard && !dashboardLoading">
-          <p class="progress-summary">
-            You've read <strong>{{ userDashboard.stats.booksRead }}</strong> books
-            across a library of <strong>{{ userDashboard.stats.booksOwned }}</strong>
-          </p>
-
-          <div class="progress-row">
-            <div class="progress-label">
-              <span class="label-name">Books Owned</span>
-              <span class="label-value">{{ userDashboard.stats.booksOwned }}</span>
-            </div>
-            <div class="progress-track">
-              <div class="progress-fill owned"
+        @if (userDashboard && !dashboardLoading) {
+          <div class="progress-breakdown">
+            <p class="progress-summary">
+              You've read <strong>{{ userDashboard.stats.booksRead }}</strong> books
+              across a library of <strong>{{ userDashboard.stats.booksOwned }}</strong>
+            </p>
+            <div class="progress-row">
+              <div class="progress-label">
+                <span class="label-name">Books Owned</span>
+                <span class="label-value">{{ userDashboard.stats.booksOwned }}</span>
+              </div>
+              <div class="progress-track">
+                <div class="progress-fill owned"
                 [style.width.%]="readBarWidth(userDashboard.stats.booksOwned)"></div>
+              </div>
             </div>
-          </div>
-
-          <div class="progress-row">
-            <div class="progress-label">
-              <span class="label-name">Books Read</span>
-              <span class="label-value">{{ userDashboard.stats.booksRead }}</span>
-            </div>
-            <div class="progress-track">
-              <div class="progress-fill read"
+            <div class="progress-row">
+              <div class="progress-label">
+                <span class="label-name">Books Read</span>
+                <span class="label-value">{{ userDashboard.stats.booksRead }}</span>
+              </div>
+              <div class="progress-track">
+                <div class="progress-fill read"
                 [style.width.%]="readBarWidth(userDashboard.stats.booksRead)"></div>
+              </div>
             </div>
-          </div>
-
-          <div class="progress-row">
-            <div class="progress-label">
-              <span class="label-name">Currently Borrowed</span>
-              <span class="label-value">{{ userDashboard.stats.currentlyBorrowed }}</span>
-            </div>
-            <div class="progress-track">
-              <div class="progress-fill borrowed"
+            <div class="progress-row">
+              <div class="progress-label">
+                <span class="label-name">Currently Borrowed</span>
+                <span class="label-value">{{ userDashboard.stats.currentlyBorrowed }}</span>
+              </div>
+              <div class="progress-track">
+                <div class="progress-fill borrowed"
                 [style.width.%]="readBarWidth(userDashboard.stats.currentlyBorrowed)"></div>
+              </div>
+            </div>
+            <div class="progress-legend">
+              <span class="legend-dot owned"></span><span>Owned</span>
+              <span class="legend-dot read"></span><span>Read</span>
+              <span class="legend-dot borrowed"></span><span>Borrowed</span>
             </div>
           </div>
-
-          <div class="progress-legend">
-            <span class="legend-dot owned"></span><span>Owned</span>
-            <span class="legend-dot read"></span><span>Read</span>
-            <span class="legend-dot borrowed"></span><span>Borrowed</span>
-          </div>
-        </div>
+        }
 
       </div>
     </div>
+
   </div>
 
   <div class="book-sections">
@@ -116,61 +139,85 @@
       <h2>Recommended for you</h2>
       <span class="book-count">{{ recommendedBooks.length }} books</span>
     </div>
-    
-    <div class="loading" *ngIf="loading">
-      <p>Loading books...</p>
-    </div>
-    
-    <div class="error" *ngIf="error">
-      <p>{{ error }}</p>
-    </div>
-    
-    <div class="books-table-container" *ngIf="!loading && !error && recommendedBooks.length">
-      <table class="books-table">
-        <thead>
-          <tr>
-            <th>Cover</th>
-            <th>Title</th>
-            <th>Author</th>
-            <th>Genre</th>
-            <th>ISBN</th>
-            <th>Action</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr *ngFor="let book of recommendedBooks">
-            <td>
-              <div class="table-book-cover">
-                <img *ngIf="book.coverUrl" [src]="book.coverUrl" [alt]="book.title">
-                <img *ngIf="!book.coverUrl && book.cover" [src]="'data:image/jpeg;base64,' + book.cover" [alt]="book.title">
-                <div *ngIf="!book.coverUrl && !book.cover" class="table-book-emoji">📚</div>
-              </div>
-            </td>
-            <td>
-              <div class="book-title-cell">
-                <strong>{{ book.title }}</strong>
-              </div>
-            </td>
-            <td>{{ book.authorName }}</td>
-            <td>
-              <span class="genre-badge" *ngIf="book.genre">{{ book.genre }}</span>
-              <span class="no-genre" *ngIf="!book.genre">-</span>
-            </td>
-            <td>
-              <span class="isbn-text" *ngIf="book.isbn">{{ book.isbn }}</span>
-              <span class="no-isbn" *ngIf="!book.isbn">-</span>
-            </td>
-            <td>
-              <button class="btn-request" (click)="requestBook(book.id)">Request</button>
-            </td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
-    
-    <div class="empty-state" *ngIf="!loading && !error && !recommendedBooks.length">
-      <p>No books available.</p>
-    </div>
+
+    @if (loading) {
+      <div class="loading">
+        <p>Loading books...</p>
+      </div>
+    }
+
+    @if (error) {
+      <div class="error">
+        <p>{{ error }}</p>
+      </div>
+    }
+
+    @if (!loading && !error && recommendedBooks.length) {
+      <div class="books-table-container">
+        <table class="books-table">
+          <thead>
+            <tr>
+              <th>Cover</th>
+              <th>Title</th>
+              <th>Author</th>
+              <th>Genre</th>
+              <th>ISBN</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (book of recommendedBooks; track book) {
+              <tr>
+                <td>
+                  <div class="table-book-cover">
+                    @if (book.coverUrl) {
+                      <img [src]="book.coverUrl" [alt]="book.title">
+                    }
+                    @if (!book.coverUrl && book.cover) {
+                      <img [src]="'data:image/jpeg;base64,' + book.cover" [alt]="book.title">
+                    }
+                    @if (!book.coverUrl && !book.cover) {
+                      <div class="table-book-emoji">📚</div>
+                    }
+                  </div>
+                </td>
+                <td>
+                  <div class="book-title-cell">
+                    <strong>{{ book.title }}</strong>
+                  </div>
+                </td>
+                <td>{{ book.authorName }}</td>
+                <td>
+                  @if (book.genre) {
+                    <span class="genre-badge">{{ book.genre }}</span>
+                  }
+                  @if (!book.genre) {
+                    <span class="no-genre">-</span>
+                  }
+                </td>
+                <td>
+                  @if (book.isbn) {
+                    <span class="isbn-text">{{ book.isbn }}</span>
+                  }
+                  @if (!book.isbn) {
+                    <span class="no-isbn">-</span>
+                  }
+                </td>
+                <td>
+                  <button class="btn-request" (click)="openRequestModal(book)">Request</button>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+
+    @if (!loading && !error && !recommendedBooks.length) {
+      <div class="empty-state">
+        <p>No books available.</p>
+      </div>
+    }
 
     <div class="section-header">
       <h2>Categories</h2>
@@ -200,4 +247,44 @@
       </div>
     </div>
   </div>
+
+  @if (requestModalOpen && selectedRequestBook) {
+    <div class="confirm-modal-backdrop" (click)="closeRequestModal()">
+      <div class="confirm-modal" (click)="$event.stopPropagation()">
+        @if (requestStatusType === 'success') {
+          <h3>Request Sent</h3>
+        } @else {
+          <h3>Confirm Book Request</h3>
+        }
+
+        @if (requestStatusType !== 'success') {
+          <p>
+            Do you want to request <strong>{{ selectedRequestBook.title }}</strong>
+            by {{ selectedRequestBook.authorName }}?
+          </p>
+        }
+
+        @if (requestStatusMessage) {
+          <div class="confirm-modal-message" [class.success]="requestStatusType === 'success'" [class.error]="requestStatusType === 'error'">
+            {{ requestStatusMessage }}
+          </div>
+        }
+
+        <div class="confirm-modal-actions">
+          @if (requestStatusType === 'success') {
+            <button class="btn-confirm-request" (click)="closeRequestModal()">Done</button>
+          } @else {
+            <button class="btn-cancel-request" (click)="closeRequestModal()" [disabled]="requestSubmitting">Cancel</button>
+            <button class="btn-confirm-request" (click)="confirmRequestBook()" [disabled]="requestSubmitting">
+              @if (!requestSubmitting) {
+                Confirm Request
+              } @else {
+                Requesting...
+              }
+            </button>
+          }
+        </div>
+      </div>
+    </div>
+  }
 </div>

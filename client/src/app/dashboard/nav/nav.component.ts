@@ -1,11 +1,12 @@
 import { Component, HostListener, OnInit, OnDestroy } from '@angular/core';
 import { Observable, Subscription, interval } from 'rxjs';
 import { Router } from '@angular/router';
-import { AuthStateService } from '../../service/auth/auth-state.service';
-import { NavigationTrackerService } from '../../service/navigation/navigation-tracker.service';
+import { AuthStateService, AuthUser } from '../../service/auth/auth-state.service';
 import { ProfileService } from '../../service/profile/profile.service';
 import { NotificationService } from '../../service/notification/notification.service';
+import { MessageService } from '../../service/message/message.service';
 import { DtoNotificationResponse } from '../../interfaces/notification.interface';
+import { DtoConversationResponse } from '../../interfaces/message.interface';
 
 @Component({
   selector: 'app-nav',
@@ -15,8 +16,10 @@ import { DtoNotificationResponse } from '../../interfaces/notification.interface
 })
 export class NavComponent implements OnInit, OnDestroy {
   user$: Observable<any>;
+  currentUser: AuthUser | null = null;
   showAddBookPopup = false;
   showNotifications = false;
+  showMessages = false;
   showProfileMenu = false;
   showNavMenu = false;
   profilePictureUrl: string | null = null;
@@ -25,8 +28,13 @@ export class NavComponent implements OnInit, OnDestroy {
   notificationsLoading = false;
   unreadCount = 0;
 
+  conversations: DtoConversationResponse[] = [];
+  conversationsLoading = false;
+  totalUnreadMessages = 0;
+
   private userSub!: Subscription;
   private pollSub?: Subscription;
+  private messageSubs: Subscription[] = [];
 
   toggleNavMenu(): void {
     this.showNavMenu = !this.showNavMenu;
@@ -36,6 +44,7 @@ export class NavComponent implements OnInit, OnDestroy {
 
   toggleNotifications(): void {
     this.showNotifications = !this.showNotifications;
+    this.showMessages = false;
     this.showProfileMenu = false;
     this.showNavMenu = false;
     if (this.showNotifications) {
@@ -43,9 +52,20 @@ export class NavComponent implements OnInit, OnDestroy {
     }
   }
 
+  toggleMessages(): void {
+    this.showMessages = !this.showMessages;
+    this.showNotifications = false;
+    this.showProfileMenu = false;
+    this.showNavMenu = false;
+    if (this.showMessages) {
+      this.loadConversations();
+    }
+  }
+
   toggleProfileMenu(): void {
     this.showProfileMenu = !this.showProfileMenu;
     this.showNotifications = false;
+    this.showMessages = false;
     this.showNavMenu = false;
   }
 
@@ -159,6 +179,7 @@ export class NavComponent implements OnInit, OnDestroy {
   onDocumentClick(event: MouseEvent): void {
     const target = event.target as HTMLElement;
     if (!target.closest('.notification-wrapper')) this.showNotifications = false;
+    if (!target.closest('.message-wrapper')) this.showMessages = false;
     if (!target.closest('.profile-wrapper')) this.showProfileMenu = false;
     if (!target.closest('.nav-brand-wrapper')) this.showNavMenu = false;
   }
@@ -166,18 +187,29 @@ export class NavComponent implements OnInit, OnDestroy {
   constructor(
     private authService: AuthStateService,
     private router: Router,
-    private navigationTracker: NavigationTrackerService,
     private profileService: ProfileService,
-    private notificationService: NotificationService
+    private notificationService: NotificationService,
+    private messageService: MessageService
   ) {
     this.user$ = this.authService.user$;
   }
 
   ngOnInit(): void {
     this.userSub = this.authService.user$.subscribe(user => {
+      this.currentUser = user;
       if (user) {
         this.loadProfilePicture();
         this.fetchUnreadCount();
+        // Connect to SSE for real-time messaging
+        this.messageService.connectSSE();
+        // Subscribe to incoming messages and read events
+        const msgSub = this.messageService.message$.subscribe((msg) => {
+          this.refreshConversations();
+        });
+        const readSub = this.messageService.messageRead$.subscribe((msg) => {
+          this.refreshConversations();
+        });
+        this.messageSubs.push(msgSub, readSub);
         // Poll unread count every 30 seconds
         this.pollSub = interval(30_000).subscribe(() => this.fetchUnreadCount());
       } else {
@@ -185,7 +217,12 @@ export class NavComponent implements OnInit, OnDestroy {
         this.profilePictureUrl = null;
         this.notifications = [];
         this.unreadCount = 0;
+        this.conversations = [];
+        this.totalUnreadMessages = 0;
         this.pollSub?.unsubscribe();
+        this.messageSubs.forEach(s => s.unsubscribe());
+        this.messageSubs = [];
+        this.messageService.disconnectSSE();
       }
     });
   }
@@ -193,6 +230,8 @@ export class NavComponent implements OnInit, OnDestroy {
   ngOnDestroy(): void {
     this.userSub?.unsubscribe();
     this.pollSub?.unsubscribe();
+    this.messageSubs.forEach(s => s.unsubscribe());
+    this.messageService.disconnectSSE();
     if (this.profilePictureUrl) URL.revokeObjectURL(this.profilePictureUrl);
   }
 
@@ -214,6 +253,24 @@ export class NavComponent implements OnInit, OnDestroy {
     });
   }
 
+  private loadConversations(): void {
+    this.conversationsLoading = true;
+    this.messageService.getConversations(0, 10).subscribe({
+      next: (page) => {
+        this.conversations = page.content;
+        this.totalUnreadMessages = page.content.reduce((sum, c) => sum + c.unreadCount, 0);
+        this.conversationsLoading = false;
+      },
+      error: () => { this.conversationsLoading = false; }
+    });
+  }
+
+  private refreshConversations(): void {
+    if (this.showMessages) {
+      this.loadConversations();
+    }
+  }
+
   private loadProfilePicture(): void {
     this.profileService.getProfilePicture().subscribe({
       next: (blob) => {
@@ -232,9 +289,10 @@ export class NavComponent implements OnInit, OnDestroy {
     if (this.profilePictureUrl) URL.revokeObjectURL(this.profilePictureUrl);
     this.profilePictureUrl = null;
     this.pollSub?.unsubscribe();
+    this.messageSubs.forEach(s => s.unsubscribe());
+    this.messageService.disconnectSSE();
     this.authService.clearUser();
-    const redirectUrl = this.navigationTracker.getPostLogoutRedirectUrl();
-    this.router.navigate([redirectUrl]);
+    this.router.navigate(['/auth/login']);
   }
 
   openAddBook(): void { this.showAddBookPopup = true; }

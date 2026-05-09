@@ -967,15 +967,22 @@
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
   }
+
+  .home-container {
+    padding: 16px 12px;
+  }
 }
 
 @media (max-width: 600px) {
-  .home-container { padding: 12px 10px; }
   .cp-action-btn span { display: none; }
   .post-card { padding: 12px; }
   .lightbox-content { padding: 0.5rem; }
   .lightbox-image-container .lightbox-image { max-height: calc(95vh - 100px); }
   .lightbox-footer { flex-direction: column; gap: 8px; }
+}
+
+@media (max-width: 480px) {
+  .home-container { padding: 12px 10px; }
 }
 
 @media (max-width: 400px) {

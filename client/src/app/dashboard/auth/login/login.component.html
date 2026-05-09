@@ -3,9 +3,11 @@
     <h2 class="login-title">Welcome Back</h2>
     <p class="login-subtitle">Sign in to your Bookshelf account</p>
 
-    <div class="error-message" *ngIf="errorMessage">
-      {{ errorMessage }}
-    </div>
+    @if (errorMessage) {
+      <div class="error-message">
+        {{ errorMessage }}
+      </div>
+    }
 
     <form (ngSubmit)="onSignIn()" [formGroup]="loginForm">
       <div class="form-group">
@@ -16,33 +18,37 @@
           formControlName="email"
           placeholder="you@example.com"
           class="form-control">
-      </div>
+        </div>
 
-      <div class="form-group">
-        <label for="password">Password</label>
-        <input
-          type="password"
-          id="password"
-          formControlName="password"
-          placeholder="Your password"
-          class="form-control">
-      </div>
+        <div class="form-group">
+          <label for="password">Password</label>
+          <input
+            type="password"
+            id="password"
+            formControlName="password"
+            placeholder="Your password"
+            class="form-control">
+          </div>
 
-      <div class="form-actions">
-        <button type="submit" class="btn-login" [disabled]="loginForm.invalid || isLoading">
-          <span *ngIf="isLoading">Signing in...</span>
-          <span *ngIf="!isLoading">Log In</span>
-        </button>
-      </div>
-    </form>
+          <div class="form-actions">
+            <button type="submit" class="btn-login" [disabled]="loginForm.invalid || isLoading">
+              @if (isLoading) {
+                <span>Signing in...</span>
+              }
+              @if (!isLoading) {
+                <span>Log In</span>
+              }
+            </button>
+          </div>
+        </form>
 
-    <div class="google-signin">
-      <div class="divider"><span>OR</span></div>
-      <div id="google-button-container"></div>
+        <div class="google-signin">
+          <div class="divider"><span>OR</span></div>
+          <div id="google-button-container"></div>
+        </div>
+
+        <div class="form-footer">
+          <p>Don't have an account? <a routerLink="/auth/register">Register</a></p>
+        </div>
+      </div>
     </div>
-
-    <div class="form-footer">
-      <p>Don't have an account? <a routerLink="/auth/register">Register</a></p>
-    </div>
-  </div>
-</div>

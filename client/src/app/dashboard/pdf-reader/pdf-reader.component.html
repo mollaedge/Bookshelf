@@ -19,49 +19,55 @@
           [(ngModel)]="currentPage"
           [min]="1"
           (change)="onPageInput($event)"
-        />
+          />
+        </div>
+        <button class="toolbar-btn" (click)="nextPage()" title="Next page">
+          <i class="fas fa-chevron-right"></i>
+        </button>
       </div>
-      <button class="toolbar-btn" (click)="nextPage()" title="Next page">
-        <i class="fas fa-chevron-right"></i>
-      </button>
+
+      <div class="toolbar-right">
+        <button class="toolbar-btn" (click)="zoomOut()" [disabled]="zoom <= 40" title="Zoom out">
+          <i class="fas fa-search-minus"></i>
+        </button>
+        <button class="toolbar-btn zoom-label" (click)="resetZoom()" title="Reset zoom">
+          {{ zoom }}%
+        </button>
+        <button class="toolbar-btn" (click)="zoomIn()" [disabled]="zoom >= 300" title="Zoom in">
+          <i class="fas fa-search-plus"></i>
+        </button>
+      </div>
     </div>
 
-    <div class="toolbar-right">
-      <button class="toolbar-btn" (click)="zoomOut()" [disabled]="zoom <= 40" title="Zoom out">
-        <i class="fas fa-search-minus"></i>
-      </button>
-      <button class="toolbar-btn zoom-label" (click)="resetZoom()" title="Reset zoom">
-        {{ zoom }}%
-      </button>
-      <button class="toolbar-btn" (click)="zoomIn()" [disabled]="zoom >= 300" title="Zoom in">
-        <i class="fas fa-search-plus"></i>
-      </button>
+    <!-- Body -->
+    <div class="pdf-body">
+
+      @if (loadError) {
+        <div class="error-state">
+          <i class="fas fa-exclamation-triangle"></i>
+          <p>Failed to load PDF. Please check the URL and try again.</p>
+        </div>
+      }
+
+      @if (!pdfSrc) {
+        <div class="empty-state">
+          <i class="fas fa-file-pdf"></i>
+          <p>No PDF source provided.</p>
+          <span>Pass <code>?src=&lt;url&gt;</code> and optionally <code>&page=&lt;n&gt;</code> as query params.</span>
+        </div>
+      }
+
+      <!-- iframe PDF viewer -->
+      @if (pdfSrc && !loadError && isBrowser) {
+        <div class="viewer-container">
+          <iframe
+            [src]="safeUrl"
+            class="pdf-iframe"
+            allowfullscreen
+          ></iframe>
+        </div>
+      }
+
     </div>
+
   </div>
-
-  <!-- Body -->
-  <div class="pdf-body">
-
-    <div class="error-state" *ngIf="loadError">
-      <i class="fas fa-exclamation-triangle"></i>
-      <p>Failed to load PDF. Please check the URL and try again.</p>
-    </div>
-
-    <div class="empty-state" *ngIf="!pdfSrc">
-      <i class="fas fa-file-pdf"></i>
-      <p>No PDF source provided.</p>
-      <span>Pass <code>?src=&lt;url&gt;</code> and optionally <code>&page=&lt;n&gt;</code> as query params.</span>
-    </div>
-
-    <!-- iframe PDF viewer -->
-    <div class="viewer-container" *ngIf="pdfSrc && !loadError && isBrowser">
-      <iframe
-        [src]="safeUrl"
-        class="pdf-iframe"
-        allowfullscreen
-      ></iframe>
-    </div>
-
-  </div>
-
-</div>

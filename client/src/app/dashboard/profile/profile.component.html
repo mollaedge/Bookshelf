@@ -1,275 +1,308 @@
 <div class="profile-container">
   <!-- Loading Indicator -->
-  <div class="loading-container" *ngIf="isLoading">
-    <div class="spinner"></div>
-    <p>Loading profile...</p>
-  </div>
+  @if (isLoading) {
+    <div class="loading-container">
+      <div class="spinner"></div>
+      <p>Loading profile...</p>
+    </div>
+  }
 
   <!-- Profile Load Error -->
-  <div class="error-banner" *ngIf="!isLoading && profileError">
-    <p>{{ profileError }}</p>
-    <button (click)="loadProfile()">Retry</button>
-  </div>
+  @if (!isLoading && profileError) {
+    <div class="error-banner">
+      <p>{{ profileError }}</p>
+      <button (click)="loadProfile()">Retry</button>
+    </div>
+  }
 
   <!-- Save Error -->
-  <div class="error-banner" *ngIf="saveError && !isLoading">
-    <p>{{ saveError }}</p>
-  </div>
+  @if (saveError && !isLoading) {
+    <div class="error-banner">
+      <p>{{ saveError }}</p>
+    </div>
+  }
 
   <!-- Profile Content -->
-  <div *ngIf="!isLoading && !profileError">
-  <!-- Profile Header -->
-  <div class="profile-header">
-    <div class="header-background" [style.background-image]="wallpaperUrl ? 'url(' + wallpaperUrl + ')' : null">
-      <label class="edit-wallpaper-btn" title="Change cover photo">
-        <i class="fas" [class.fa-spinner]="uploadingWallpaper" [class.fa-spin]="uploadingWallpaper" [class.fa-camera]="!uploadingWallpaper"></i>
-        <input type="file" accept="image/*" hidden (change)="onWallpaperChange($event)">
-      </label>
-    </div>
-    <div class="header-content">
-      <div class="profile-avatar">
-        <div class="avatar-circle">
-          <img *ngIf="profilePictureUrl" [src]="profilePictureUrl" class="avatar-img" alt="Profile picture">
-          <span class="avatar-initials" *ngIf="!profilePictureUrl">{{ getInitials(user.name) }}</span>
+  @if (!isLoading && !profileError) {
+    <div>
+      <!-- Profile Header -->
+      <div class="profile-header">
+        <div class="header-background" [style.background-image]="wallpaperUrl ? 'url(' + wallpaperUrl + ')' : null">
+          <label class="edit-wallpaper-btn" title="Change cover photo">
+            <i class="fas" [class.fa-spinner]="uploadingWallpaper" [class.fa-spin]="uploadingWallpaper" [class.fa-camera]="!uploadingWallpaper"></i>
+            <input type="file" accept="image/*" hidden (change)="onWallpaperChange($event)">
+          </label>
         </div>
-        <label class="edit-avatar-btn" *ngIf="!isEditMode" title="Change photo">
-          <i class="fas" [class.fa-spinner]="uploadingPicture" [class.fa-spin]="uploadingPicture" [class.fa-camera]="!uploadingPicture"></i>
-          <input type="file" accept="image/*" hidden (change)="onProfilePictureChange($event)">
-        </label>
-      </div>
-      
-      <div class="profile-info">
-        <div class="profile-name-section">
-          <h1 class="profile-name" *ngIf="!isEditMode">{{ user.name }}</h1>
-          <div class="name-inputs" *ngIf="isEditMode">
-            <input type="text" class="edit-input" [(ngModel)]="editedUser.firstname" placeholder="First Name" required>
-            <input type="text" class="edit-input" [(ngModel)]="editedUser.lastname" placeholder="Last Name" required>
+        <div class="header-content">
+          <div class="profile-avatar">
+            <div class="avatar-circle">
+              @if (profilePictureUrl) {
+                <img [src]="profilePictureUrl" class="avatar-img" alt="Profile picture">
+              }
+              @if (!profilePictureUrl) {
+                <span class="avatar-initials">{{ getInitials(user.name) }}</span>
+              }
+            </div>
+            @if (!isEditMode) {
+              <label class="edit-avatar-btn" title="Change photo">
+                <i class="fas" [class.fa-spinner]="uploadingPicture" [class.fa-spin]="uploadingPicture" [class.fa-camera]="!uploadingPicture"></i>
+                <input type="file" accept="image/*" hidden (change)="onProfilePictureChange($event)">
+              </label>
+            }
           </div>
-          <span class="profile-location">
-            <i class="fas fa-map-marker-alt"></i>
-            <span *ngIf="!isEditMode">{{ user.location || 'Not specified' }}</span>
-            <input type="text" class="edit-input-small" [(ngModel)]="editedUser.location" *ngIf="isEditMode" placeholder="Location">
-          </span>
-        </div>
-        
-        <div class="profile-meta">
-          <span class="meta-item">
-            <i class="fas fa-envelope"></i>
-            {{ user.email }}
-          </span>
-          <span class="meta-item">
-            <i class="fas fa-calendar"></i>
-            Member for {{ getMemberDuration() }}
-          </span>
-        </div>
-
-        <div class="profile-bio" *ngIf="!isEditMode">
-          <p>{{ user.bio || 'No bio provided yet.' }}</p>
-        </div>
-        <div class="profile-bio" *ngIf="isEditMode">
-          <textarea [(ngModel)]="editedUser.bio" rows="3" placeholder="Tell us about yourself..." maxlength="500"></textarea>
-          <small class="char-counter" *ngIf="isEditMode">{{ editedUser.bio.length || 0 }}/500</small>
-        </div>
-
-        <div class="profile-actions">
-          <button class="btn-primary" *ngIf="!isEditMode" (click)="toggleEditMode()">
-            <i class="fas fa-edit"></i>
-            Edit Profile
-          </button>
-          <div class="edit-actions" *ngIf="isEditMode">
-            <button class="btn-save" (click)="saveProfile()">
-              <i class="fas fa-check"></i>
-              Save Changes
-            </button>
-            <button class="btn-cancel" (click)="cancelEdit()">
-              <i class="fas fa-times"></i>
-              Cancel
-            </button>
+          <div class="profile-info">
+            <div class="profile-name-section">
+              @if (!isEditMode) {
+                <h1 class="profile-name">{{ user.name }}</h1>
+              }
+              @if (isEditMode) {
+                <div class="name-inputs">
+                  <input type="text" class="edit-input" [(ngModel)]="editedUser.firstname" placeholder="First Name" required>
+                  <input type="text" class="edit-input" [(ngModel)]="editedUser.lastname" placeholder="Last Name" required>
+                </div>
+              }
+              <span class="profile-location">
+                <i class="fas fa-map-marker-alt"></i>
+                @if (!isEditMode) {
+                  <span>{{ user.location || 'Not specified' }}</span>
+                }
+                @if (isEditMode) {
+                  <input type="text" class="edit-input-small" [(ngModel)]="editedUser.location" placeholder="Location">
+                }
+              </span>
+            </div>
+            <div class="profile-meta">
+              <span class="meta-item">
+                <i class="fas fa-envelope"></i>
+                {{ user.email }}
+              </span>
+              <span class="meta-item">
+                <i class="fas fa-calendar"></i>
+                Member for {{ getMemberDuration() }}
+              </span>
+            </div>
+            @if (!isEditMode) {
+              <div class="profile-bio">
+                <p>{{ user.bio || 'No bio provided yet.' }}</p>
+              </div>
+            }
+            @if (isEditMode) {
+              <div class="profile-bio">
+                <textarea [(ngModel)]="editedUser.bio" rows="3" placeholder="Tell us about yourself..." maxlength="500"></textarea>
+                @if (isEditMode) {
+                  <small class="char-counter">{{ editedUser.bio.length || 0 }}/500</small>
+                }
+              </div>
+            }
+            <div class="profile-actions">
+              @if (!isEditMode) {
+                <button class="btn-primary" (click)="toggleEditMode()">
+                  <i class="fas fa-edit"></i>
+                  Edit Profile
+                </button>
+              }
+              @if (isEditMode) {
+                <div class="edit-actions">
+                  <button class="btn-save" (click)="saveProfile()">
+                    <i class="fas fa-check"></i>
+                    Save Changes
+                  </button>
+                  <button class="btn-cancel" (click)="cancelEdit()">
+                    <i class="fas fa-times"></i>
+                    Cancel
+                  </button>
+                </div>
+              }
+            </div>
           </div>
         </div>
       </div>
-    </div>
-  </div>
-
-  <!-- Stats Cards -->
-  <div class="stats-section">
-    <div class="stat-card" *ngFor="let stat of stats" [style.border-left-color]="stat.color">
-      <div class="stat-icon" [style.color]="stat.color">{{ stat.icon }}</div>
-      <div class="stat-content">
-        <div class="stat-value">{{ stat.value }}{{ stat.suffix || '' }}</div>
-        <div class="stat-label">{{ stat.label }}</div>
+      <!-- Stats Cards -->
+      <div class="stats-section">
+        @for (stat of stats; track stat) {
+          <div class="stat-card" [style.border-left-color]="stat.color">
+            <div class="stat-icon" [style.color]="stat.color">{{ stat.icon }}</div>
+            <div class="stat-content">
+              <div class="stat-value">{{ stat.value }}{{ stat.suffix || '' }}</div>
+              <div class="stat-label">{{ stat.label }}</div>
+            </div>
+          </div>
+        }
       </div>
-    </div>
-  </div>
-
-  <!-- Main Content Grid -->
-  <div class="content-grid">
-    <!-- Reading Activity Chart -->
-    <div class="card chart-card">
-      <div class="card-header">
-        <h2>
-          <i class="fas fa-chart-line"></i>
-          Reading Activity
-        </h2>
-        <span class="card-subtitle">Books read per month in 2024</span>
-      </div>
-      <div class="card-body">
-        <div class="bar-chart">
-          <div class="chart-bars">
-            <div class="bar-wrapper" *ngFor="let activity of readingActivity">
-              <div class="bar-container">
-                <div class="bar-value">{{ activity.booksRead }}</div>
-                <div 
-                  class="bar" 
-                  [style.height.%]="getBarHeight(activity.booksRead)"
-                  [class.active]="activity.booksRead > 0">
+      <!-- Main Content Grid -->
+      <div class="content-grid">
+        <!-- Reading Activity Chart -->
+        <div class="card chart-card">
+          <div class="card-header">
+            <h2>
+              <i class="fas fa-chart-line"></i>
+              Reading Activity
+            </h2>
+            <span class="card-subtitle">Books read per month in 2024</span>
+          </div>
+          <div class="card-body">
+            <div class="bar-chart">
+              <div class="chart-bars">
+                @for (activity of readingActivity; track activity) {
+                  <div class="bar-wrapper">
+                    <div class="bar-container">
+                      <div class="bar-value">{{ activity.booksRead }}</div>
+                      <div
+                        class="bar"
+                        [style.height.%]="getBarHeight(activity.booksRead)"
+                        [class.active]="activity.booksRead > 0">
+                      </div>
+                    </div>
+                    <div class="bar-label">{{ activity.month }}</div>
+                  </div>
+                }
+              </div>
+            </div>
+          </div>
+        </div>
+        <!-- Genre Distribution -->
+        <div class="card chart-card">
+          <div class="card-header">
+            <h2>
+              <i class="fas fa-chart-pie"></i>
+              Genre Distribution
+            </h2>
+            <span class="card-subtitle">Your reading preferences</span>
+          </div>
+          <div class="card-body">
+            <div class="genre-chart">
+              <div class="donut-chart">
+                <svg viewBox="0 0 100 100" class="donut">
+                  <circle cx="50" cy="50" r="40" fill="none" stroke="#f0f0f0" stroke-width="20"></circle>
+                  @for (genre of genreDistribution; track genre; let i = $index) {
+                    <circle
+                      cx="50"
+                      cy="50"
+                      r="40"
+                      fill="none"
+                      [attr.stroke]="genre.color"
+                      stroke-width="20"
+                      [attr.stroke-dasharray]="(genre.percentage * 2.51) + ' ' + (251 - genre.percentage * 2.51)"
+                      [attr.stroke-dashoffset]="getStrokeDashOffset(i)"
+                      class="donut-segment">
+                    </circle>
+                  }
+                </svg>
+                <div class="donut-center">
+                  <div class="center-value">{{ booksRead }}</div>
+                  <div class="center-label">Books Read</div>
                 </div>
               </div>
-              <div class="bar-label">{{ activity.month }}</div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Genre Distribution -->
-    <div class="card chart-card">
-      <div class="card-header">
-        <h2>
-          <i class="fas fa-chart-pie"></i>
-          Genre Distribution
-        </h2>
-        <span class="card-subtitle">Your reading preferences</span>
-      </div>
-      <div class="card-body">
-        <div class="genre-chart">
-          <div class="donut-chart">
-            <svg viewBox="0 0 100 100" class="donut">
-              <circle cx="50" cy="50" r="40" fill="none" stroke="#f0f0f0" stroke-width="20"></circle>
-              <circle 
-                *ngFor="let genre of genreDistribution; let i = index"
-                cx="50" 
-                cy="50" 
-                r="40" 
-                fill="none" 
-                [attr.stroke]="genre.color"
-                stroke-width="20"
-                [attr.stroke-dasharray]="(genre.percentage * 2.51) + ' ' + (251 - genre.percentage * 2.51)"
-                [attr.stroke-dashoffset]="getStrokeDashOffset(i)"
-                class="donut-segment">
-              </circle>
-            </svg>
-            <div class="donut-center">
-              <div class="center-value">{{ booksRead }}</div>
-              <div class="center-label">Books Read</div>
-            </div>
-          </div>
-          
-          <div class="genre-legend">
-            <div class="legend-item" *ngFor="let genre of genreDistribution">
-              <div class="legend-color" [style.background-color]="genre.color"></div>
-              <div class="legend-content">
-                <span class="legend-label">{{ genre.genre }}</span>
-                <span class="legend-value">{{ genre.count }} ({{ genre.percentage }}%)</span>
+              <div class="genre-legend">
+                @for (genre of genreDistribution; track genre) {
+                  <div class="legend-item">
+                    <div class="legend-color" [style.background-color]="genre.color"></div>
+                    <div class="legend-content">
+                      <span class="legend-label">{{ genre.genre }}</span>
+                      <span class="legend-value">{{ genre.count }} ({{ genre.percentage }}%)</span>
+                    </div>
+                  </div>
+                }
               </div>
             </div>
           </div>
         </div>
-      </div>
-    </div>
-
-    <!-- Reading Goals -->
-    <div class="card goals-card">
-      <div class="card-header">
-        <h2>
-          <i class="fas fa-bullseye"></i>
-          Reading Goals
-        </h2>
-        <span class="card-subtitle">Track your progress</span>
-      </div>
-      <div class="card-body">
-        <div class="goal-item" *ngFor="let goal of readingGoals">
-          <div class="goal-header">
-            <span class="goal-title">{{ goal.title }}</span>
-            <span class="goal-stats">{{ goal.current }}/{{ goal.target }} {{ goal.unit }}</span>
+        <!-- Reading Goals -->
+        <div class="card goals-card">
+          <div class="card-header">
+            <h2>
+              <i class="fas fa-bullseye"></i>
+              Reading Goals
+            </h2>
+            <span class="card-subtitle">Track your progress</span>
           </div>
-          <div class="progress-bar-container">
-            <div 
-              class="progress-bar" 
-              [style.width.%]="getProgressPercentage(goal.current, goal.target)">
+          <div class="card-body">
+            @for (goal of readingGoals; track goal) {
+              <div class="goal-item">
+                <div class="goal-header">
+                  <span class="goal-title">{{ goal.title }}</span>
+                  <span class="goal-stats">{{ goal.current }}/{{ goal.target }} {{ goal.unit }}</span>
+                </div>
+                <div class="progress-bar-container">
+                  <div
+                    class="progress-bar"
+                    [style.width.%]="getProgressPercentage(goal.current, goal.target)">
+                  </div>
+                </div>
+                <div class="goal-percentage">{{ getProgressPercentage(goal.current, goal.target).toFixed(0) }}% Complete</div>
+              </div>
+            }
+          </div>
+        </div>
+        <!-- Achievements -->
+        <div class="card achievements-card">
+          <div class="card-header">
+            <h2>
+              <i class="fas fa-trophy"></i>
+              Recent Achievements
+            </h2>
+            <span class="card-subtitle">Your reading milestones</span>
+          </div>
+          <div class="card-body">
+            @for (achievement of recentAchievements; track achievement) {
+              <div class="achievement-item">
+                <div class="achievement-icon">{{ achievement.icon }}</div>
+                <div class="achievement-content">
+                  <div class="achievement-title">{{ achievement.title }}</div>
+                  <div class="achievement-description">{{ achievement.description }}</div>
+                  <div class="achievement-date">{{ formatDate(achievement.date) }}</div>
+                </div>
+              </div>
+            }
+          </div>
+        </div>
+        <!-- Favorite Genres Tags -->
+        <div class="card genres-card">
+          <div class="card-header">
+            <h2>
+              <i class="fas fa-heart"></i>
+              Favorite Genres
+            </h2>
+          </div>
+          <div class="card-body">
+            <div class="genre-tags">
+              @for (genre of user.favoriteGenres; track genre) {
+                <span class="genre-tag">
+                  {{ genre }}
+                </span>
+              }
             </div>
           </div>
-          <div class="goal-percentage">{{ getProgressPercentage(goal.current, goal.target).toFixed(0) }}% Complete</div>
         </div>
-      </div>
-    </div>
-
-    <!-- Achievements -->
-    <div class="card achievements-card">
-      <div class="card-header">
-        <h2>
-          <i class="fas fa-trophy"></i>
-          Recent Achievements
-        </h2>
-        <span class="card-subtitle">Your reading milestones</span>
-      </div>
-      <div class="card-body">
-        <div class="achievement-item" *ngFor="let achievement of recentAchievements">
-          <div class="achievement-icon">{{ achievement.icon }}</div>
-          <div class="achievement-content">
-            <div class="achievement-title">{{ achievement.title }}</div>
-            <div class="achievement-description">{{ achievement.description }}</div>
-            <div class="achievement-date">{{ formatDate(achievement.date) }}</div>
+        <!-- Quick Actions -->
+        <div class="card actions-card">
+          <div class="card-header">
+            <h2>
+              <i class="fas fa-bolt"></i>
+              Quick Actions
+            </h2>
+          </div>
+          <div class="card-body">
+            <button class="action-btn" routerLink="/mybooks">
+              <i class="fas fa-book"></i>
+              <span>View My Books</span>
+            </button>
+            <button class="action-btn" routerLink="/mybooks">
+              <i class="fas fa-plus"></i>
+              <span>Add New Book</span>
+            </button>
+            <button class="action-btn" routerLink="/feedback">
+              <i class="fas fa-comment"></i>
+              <span>Share Feedback</span>
+            </button>
+            <button class="action-btn">
+              <i class="fas fa-cog"></i>
+              <span>Settings</span>
+            </button>
           </div>
         </div>
       </div>
     </div>
-
-    <!-- Favorite Genres Tags -->
-    <div class="card genres-card">
-      <div class="card-header">
-        <h2>
-          <i class="fas fa-heart"></i>
-          Favorite Genres
-        </h2>
-      </div>
-      <div class="card-body">
-        <div class="genre-tags">
-          <span class="genre-tag" *ngFor="let genre of user.favoriteGenres">
-            {{ genre }}
-          </span>
-        </div>
-      </div>
-    </div>
-
-    <!-- Quick Actions -->
-    <div class="card actions-card">
-      <div class="card-header">
-        <h2>
-          <i class="fas fa-bolt"></i>
-          Quick Actions
-        </h2>
-      </div>
-      <div class="card-body">
-        <button class="action-btn" routerLink="/mybooks">
-          <i class="fas fa-book"></i>
-          <span>View My Books</span>
-        </button>
-        <button class="action-btn" routerLink="/mybooks">
-          <i class="fas fa-plus"></i>
-          <span>Add New Book</span>
-        </button>
-        <button class="action-btn" routerLink="/feedback">
-          <i class="fas fa-comment"></i>
-          <span>Share Feedback</span>
-        </button>
-        <button class="action-btn">
-          <i class="fas fa-cog"></i>
-          <span>Settings</span>
-        </button>
-      </div>
-    </div>
-  </div>
-  </div>
+  }
 
 </div>
