@@ -14,8 +14,9 @@ interface AuthRequest {
 interface AuthResponse {
   token: string;
   email?: string;
-  userId?: string;
+  userId?: string | number;
   user?: {
+    id?: string | number;
     email: string;
     givenName?: string;
     familyName?: string;
@@ -45,11 +46,18 @@ export class LoginService {
               private router: Router
   ) {}
 
+  private toNumberId(value: unknown): number | undefined {
+    const parsed = Number(value);
+    return Number.isFinite(parsed) && parsed > 0 ? parsed : undefined;
+  }
+
   authenticate(authRequest: AuthRequest): Observable<AuthResponse> {
     return this.http.post<AuthResponse>(this.loginUrl, authRequest).pipe(
       tap((response: AuthResponse) => {
+        const resolvedId = this.toNumberId(response.userId) ?? this.toNumberId(response.user?.id);
         // Store user auth data
         this.authState.setUser({
+          id: resolvedId,
           email: authRequest.email,
           token: response.token
         });
@@ -97,7 +105,9 @@ export class LoginService {
             return;
           }
 
+          const resolvedId = this.toNumberId(res.userId) ?? this.toNumberId(res.user?.id);
           this.authState.setUser({
+            id: resolvedId,
             email: res.user?.email || '',
             token: res.token
           });

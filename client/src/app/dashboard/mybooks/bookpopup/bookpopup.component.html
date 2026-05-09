@@ -1,185 +1,201 @@
-<div class="popup-overlay" *ngIf="isOpen" (click)="close()">
-  <div class="popup-panel" (click)="$event.stopPropagation()">
-
-    <div class="popup-header">
-      <h2>{{ popupTitle }}</h2>
-      <button class="close-btn" (click)="close()" [disabled]="isSubmitting">
-        <i class="fas fa-times"></i>
-      </button>
-    </div>
-
-    <!-- Book Search Section -->
-    <div class="search-section">
-      <button type="button" class="search-toggle-btn" (click)="toggleSearch()">
-        <i class="fas fa-search"></i>
-        <span>{{ showSearch ? 'Hide Search' : 'Search External Sources' }}</span>
-      </button>
-
-      <div class="search-panel" *ngIf="showSearch">
-        <div class="search-controls">
-          <div class="search-input-group">
-            <input 
-              type="text" 
-              [(ngModel)]="searchQuery" 
-              placeholder="Search by title, author, or ISBN..."
-              (keyup.enter)="performSearch()"
-              class="search-input">
-            <select [(ngModel)]="searchSource" class="search-source-select">
-              <option [value]="BookSearchSource.GOOGLE_BOOKS">Google Books</option>
-              <option [value]="BookSearchSource.OPEN_LIBRARY">Open Library</option>
-            </select>
-            <button 
-              type="button" 
-              class="search-btn" 
-              (click)="performSearch()" 
-              [disabled]="isSearching">
-              <i class="fas" [class.fa-search]="!isSearching" [class.fa-spinner]="isSearching" [class.fa-spin]="isSearching"></i>
-              Search
-            </button>
-          </div>
-        </div>
-
-        <div class="search-error" *ngIf="searchError">
-          {{ searchError }}
-        </div>
-
-        <div class="search-results" *ngIf="searchResults.length > 0">
-          <div class="search-result-item" *ngFor="let result of searchResults" (click)="selectSearchResult(result)">
-            <img *ngIf="result.coverUrl" [src]="result.coverUrl" alt="Cover" class="result-thumbnail">
-            <div class="result-placeholder" *ngIf="!result.coverUrl">📚</div>
-            <div class="result-info">
-              <h4 class="result-title">{{ result.title }}</h4>
-              <p class="result-authors" *ngIf="result.authors.length">{{ result.authors.join(', ') }}</p>
-              <div class="result-meta">
-                <span *ngIf="result.publishedDate" class="result-date">{{ result.publishedDate }}</span>
-                <span *ngIf="result.isbn" class="result-isbn">ISBN: {{ result.isbn }}</span>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <form [formGroup]="form" (ngSubmit)="submit()" class="popup-form">
-
-      <div class="form-row">
-        <div class="form-group">
-          <label>Title <span class="required">*</span></label>
-          <input type="text" formControlName="title" placeholder="Book title">
-          <span class="field-error" *ngIf="form.get('title')?.invalid && form.get('title')?.touched">
-            Title is required.
-          </span>
-        </div>
-
-        <div class="form-group">
-          <label>Author <span class="required">*</span></label>
-          <input type="text" formControlName="authorName" placeholder="Author name">
-          <span class="field-error" *ngIf="form.get('authorName')?.invalid && form.get('authorName')?.touched">
-            Author is required.
-          </span>
-        </div>
-      </div>
-
-      <div class="form-row">
-        <div class="form-group">
-          <label>ISBN</label>
-          <input type="text" formControlName="isbn" placeholder="e.g. 978-3-16-148410-0">
-        </div>
-
-        <div class="form-group">
-          <label>Genre</label>
-          <input type="text" formControlName="genre" placeholder="e.g. Fiction, Sci-Fi">
-        </div>
-      </div>
-
-      <div class="form-group full-width">
-        <label>Synopsis</label>
-        <textarea formControlName="synopsis" rows="4" placeholder="Short description of the book..."></textarea>
-      </div>
-
-      <div class="form-group full-width">
-        <label>
-          <i class="fas fa-image"></i> Cover Image
-        </label>
-        
-        <!-- File Upload Section -->
-        <div class="cover-upload-section">
-          <div class="upload-options">
-            <div class="file-upload-container">
-              <input 
-                type="file" 
-                id="coverFileInput"
-                accept="image/*"
-                (change)="onFileSelected($event)"
-                class="file-input">
-              <label for="coverFileInput" class="file-upload-btn">
-                <i class="fas fa-upload"></i>
-                {{ selectedCoverFile ? 'Change Image' : 'Upload Cover Image' }}
-              </label>
-              <small class="field-hint">Upload an image file (max 5MB)</small>
-            </div>
-            
-            <div class="url-input-container">
-              <input 
-                type="url" 
-                formControlName="coverUrl" 
-                placeholder="https://example.com/book-cover.jpg"
-                class="url-input">
-              <small class="field-hint">Or enter a direct URL to the book cover image</small>
-            </div>
-          </div>
-          
-          <!-- Cover Preview -->
-          <div class="cover-preview" *ngIf="coverPreviewUrl || form.get('coverUrl')?.value">
-            <div class="preview-container">
-              <img 
-                [src]="coverPreviewUrl || form.get('coverUrl')?.value" 
-                alt="Cover preview"
-                class="preview-image"
-                (error)="onImageError($event)">
-              <button 
-                type="button" 
-                class="remove-image-btn" 
-                (click)="removeCoverImage()"
-                *ngIf="selectedCoverFile"
-                title="Remove image">
-                <i class="fas fa-times"></i>
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div class="form-checkboxes">
-        <label class="checkbox-label">
-          <input type="checkbox" formControlName="shareable">
-          <span>🔗 Shareable</span>
-        </label>
-        <label class="checkbox-label">
-          <input type="checkbox" formControlName="favourite">
-          <span>❤️ Favourite</span>
-        </label>
-        <label class="checkbox-label">
-          <input type="checkbox" formControlName="read">
-          <span>📖 Read</span>
-        </label>
-        <label class="checkbox-label">
-          <input type="checkbox" formControlName="archived">
-          <span>📦 Archived</span>
-        </label>
-      </div>
-
-      <div class="error-msg" *ngIf="error">{{ error }}</div>
-
-      <div class="popup-actions">
-        <button type="button" class="btn-cancel" (click)="close()" [disabled]="isSubmitting">Cancel</button>
-        <button type="submit" class="btn-save" [disabled]="isSubmitting">
-          <span *ngIf="!isSubmitting">{{ mode === 'edit' ? 'Save Changes' : 'Add Book' }}</span>
-          <span *ngIf="isSubmitting && !isUploadingCover">Saving...</span>
-          <span *ngIf="isUploadingCover">Uploading cover...</span>
+@if (isOpen) {
+  <div class="popup-overlay" (click)="close()">
+    <div class="popup-panel" (click)="$event.stopPropagation()">
+      <div class="popup-header">
+        <h2>{{ popupTitle }}</h2>
+        <button class="close-btn" (click)="close()" [disabled]="isSubmitting">
+          <i class="fas fa-times"></i>
         </button>
       </div>
-
-    </form>
-  </div>
-</div>
+      <!-- Book Search Section -->
+      <div class="search-section">
+        <button type="button" class="search-toggle-btn" (click)="toggleSearch()">
+          <i class="fas fa-search"></i>
+          <span>{{ showSearch ? 'Hide Search' : 'Search External Sources' }}</span>
+        </button>
+        @if (showSearch) {
+          <div class="search-panel">
+            <div class="search-controls">
+              <div class="search-input-group">
+                <input
+                  type="text"
+                  [(ngModel)]="searchQuery"
+                  placeholder="Search by title, author, or ISBN..."
+                  (keyup.enter)="performSearch()"
+                  class="search-input">
+                  <select [(ngModel)]="searchSource" class="search-source-select">
+                    <option [value]="BookSearchSource.GOOGLE_BOOKS">Google Books</option>
+                    <option [value]="BookSearchSource.OPEN_LIBRARY">Open Library</option>
+                  </select>
+                  <button
+                    type="button"
+                    class="search-btn"
+                    (click)="performSearch()"
+                    [disabled]="isSearching">
+                    <i class="fas" [class.fa-search]="!isSearching" [class.fa-spinner]="isSearching" [class.fa-spin]="isSearching"></i>
+                    Search
+                  </button>
+                </div>
+              </div>
+              @if (searchError) {
+                <div class="search-error">
+                  {{ searchError }}
+                </div>
+              }
+              @if (searchResults.length > 0) {
+                <div class="search-results">
+                  @for (result of searchResults; track result) {
+                    <div class="search-result-item" (click)="selectSearchResult(result)">
+                      @if (result.coverUrl) {
+                        <img [src]="result.coverUrl" alt="Cover" class="result-thumbnail">
+                      }
+                      @if (!result.coverUrl) {
+                        <div class="result-placeholder">📚</div>
+                      }
+                      <div class="result-info">
+                        <h4 class="result-title">{{ result.title }}</h4>
+                        @if (result.authors.length) {
+                          <p class="result-authors">{{ result.authors.join(', ') }}</p>
+                        }
+                        <div class="result-meta">
+                          @if (result.publishedDate) {
+                            <span class="result-date">{{ result.publishedDate }}</span>
+                          }
+                          @if (result.isbn) {
+                            <span class="result-isbn">ISBN: {{ result.isbn }}</span>
+                          }
+                        </div>
+                      </div>
+                    </div>
+                  }
+                </div>
+              }
+            </div>
+          }
+        </div>
+        <form [formGroup]="form" (ngSubmit)="submit()" class="popup-form">
+          <div class="form-row">
+            <div class="form-group">
+              <label>Title <span class="required">*</span></label>
+              <input type="text" formControlName="title" placeholder="Book title">
+              @if (form.get('title')?.invalid && form.get('title')?.touched) {
+                <span class="field-error">
+                  Title is required.
+                </span>
+              }
+            </div>
+            <div class="form-group">
+              <label>Author <span class="required">*</span></label>
+              <input type="text" formControlName="authorName" placeholder="Author name">
+              @if (form.get('authorName')?.invalid && form.get('authorName')?.touched) {
+                <span class="field-error">
+                  Author is required.
+                </span>
+              }
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>ISBN</label>
+              <input type="text" formControlName="isbn" placeholder="e.g. 978-3-16-148410-0">
+            </div>
+            <div class="form-group">
+              <label>Genre</label>
+              <input type="text" formControlName="genre" placeholder="e.g. Fiction, Sci-Fi">
+            </div>
+          </div>
+          <div class="form-group full-width">
+            <label>Synopsis</label>
+            <textarea formControlName="synopsis" rows="4" placeholder="Short description of the book..."></textarea>
+          </div>
+          <div class="form-group full-width">
+            <label>
+              <i class="fas fa-image"></i> Cover Image
+            </label>
+            <!-- File Upload Section -->
+            <div class="cover-upload-section">
+              <div class="upload-options">
+                <div class="file-upload-container">
+                  <input
+                    type="file"
+                    id="coverFileInput"
+                    accept="image/*"
+                    (change)="onFileSelected($event)"
+                    class="file-input">
+                    <label for="coverFileInput" class="file-upload-btn">
+                      <i class="fas fa-upload"></i>
+                      {{ selectedCoverFile ? 'Change Image' : 'Upload Cover Image' }}
+                    </label>
+                    <small class="field-hint">Upload an image file (max 5MB)</small>
+                  </div>
+                  <div class="url-input-container">
+                    <input
+                      type="url"
+                      formControlName="coverUrl"
+                      placeholder="https://example.com/book-cover.jpg"
+                      class="url-input">
+                      <small class="field-hint">Or enter a direct URL to the book cover image</small>
+                    </div>
+                  </div>
+                  <!-- Cover Preview -->
+                  @if (coverPreviewUrl || form.get('coverUrl')?.value) {
+                    <div class="cover-preview">
+                      <div class="preview-container">
+                        <img
+                          [src]="coverPreviewUrl || form.get('coverUrl')?.value"
+                          alt="Cover preview"
+                          class="preview-image"
+                          (error)="onImageError($event)">
+                          @if (selectedCoverFile) {
+                            <button
+                              type="button"
+                              class="remove-image-btn"
+                              (click)="removeCoverImage()"
+                              title="Remove image">
+                              <i class="fas fa-times"></i>
+                            </button>
+                          }
+                        </div>
+                      </div>
+                    }
+                  </div>
+                </div>
+                <div class="form-checkboxes">
+                  <label class="checkbox-label">
+                    <input type="checkbox" formControlName="shareable">
+                    <span>🔗 Shareable</span>
+                  </label>
+                  <label class="checkbox-label">
+                    <input type="checkbox" formControlName="favourite">
+                    <span>❤️ Favourite</span>
+                  </label>
+                  <label class="checkbox-label">
+                    <input type="checkbox" formControlName="read">
+                    <span>📖 Read</span>
+                  </label>
+                  <label class="checkbox-label">
+                    <input type="checkbox" formControlName="archived">
+                    <span>📦 Archived</span>
+                  </label>
+                </div>
+                @if (error) {
+                  <div class="error-msg">{{ error }}</div>
+                }
+                <div class="popup-actions">
+                  <button type="button" class="btn-cancel" (click)="close()" [disabled]="isSubmitting">Cancel</button>
+                  <button type="submit" class="btn-save" [disabled]="isSubmitting">
+                    @if (!isSubmitting) {
+                      <span>{{ mode === 'edit' ? 'Save Changes' : 'Add Book' }}</span>
+                    }
+                    @if (isSubmitting && !isUploadingCover) {
+                      <span>Saving...</span>
+                    }
+                    @if (isUploadingCover) {
+                      <span>Uploading cover...</span>
+                    }
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        }

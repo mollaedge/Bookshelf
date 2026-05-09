@@ -13,68 +13,92 @@
             formControlName="firstname"
             placeholder="First name"
             class="form-control">
-          <div *ngIf="registerForm.get('firstname')?.invalid && registerForm.get('firstname')?.touched" class="error-message">
-            <span *ngIf="registerForm.get('firstname')?.errors?.['required']">Required</span>
+            @if (registerForm.get('firstname')?.invalid && registerForm.get('firstname')?.touched) {
+              <div class="error-message">
+                @if (registerForm.get('firstname')?.errors?.['required']) {
+                  <span>Required</span>
+                }
+              </div>
+            }
+          </div>
+
+          <div class="form-group">
+            <label for="lastname">Last Name</label>
+            <input
+              type="text"
+              id="lastname"
+              formControlName="lastname"
+              placeholder="Last name"
+              class="form-control">
+              @if (registerForm.get('lastname')?.invalid && registerForm.get('lastname')?.touched) {
+                <div class="error-message">
+                  @if (registerForm.get('lastname')?.errors?.['required']) {
+                    <span>Required</span>
+                  }
+                </div>
+              }
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="email">Email</label>
+            <input
+              type="email"
+              id="email"
+              formControlName="email"
+              placeholder="you@example.com"
+              class="form-control">
+              @if (registerForm.get('email')?.invalid && registerForm.get('email')?.touched) {
+                <div class="error-message">
+                  @if (registerForm.get('email')?.errors?.['required']) {
+                    <span>Email is required</span>
+                  }
+                  @if (registerForm.get('email')?.errors?.['email']) {
+                    <span>Enter a valid email</span>
+                  }
+                </div>
+              }
+            </div>
+
+            <div class="form-group">
+              <label for="password">Password</label>
+              <input
+                type="password"
+                id="password"
+                formControlName="password"
+                placeholder="Min. 8 characters"
+                class="form-control">
+                @if (registerForm.get('password')?.invalid && registerForm.get('password')?.touched) {
+                  <div class="error-message">
+                    @if (registerForm.get('password')?.errors?.['required']) {
+                      <span>Password is required</span>
+                    }
+                    @if (registerForm.get('password')?.errors?.['minlength']) {
+                      <span>Must be at least 8 characters</span>
+                    }
+                  </div>
+                }
+              </div>
+
+              <div class="form-actions">
+                <button type="submit" class="btn-register" [disabled]="registerForm.invalid || isLoading">
+                  @if (isLoading) {
+                    <span>Creating account...</span>
+                  }
+                  @if (!isLoading) {
+                    <span>Sign Up</span>
+                  }
+                </button>
+              </div>
+            </form>
+
+            <div class="google-signin">
+              <div class="divider"><span>OR</span></div>
+              <div id="google-button-container" class="full-width-button"></div>
+            </div>
+
+            <div class="form-footer">
+              <p>Already have an account? <a routerLink="/auth/login">Log In</a></p>
+            </div>
           </div>
         </div>
-
-        <div class="form-group">
-          <label for="lastname">Last Name</label>
-          <input
-            type="text"
-            id="lastname"
-            formControlName="lastname"
-            placeholder="Last name"
-            class="form-control">
-          <div *ngIf="registerForm.get('lastname')?.invalid && registerForm.get('lastname')?.touched" class="error-message">
-            <span *ngIf="registerForm.get('lastname')?.errors?.['required']">Required</span>
-          </div>
-        </div>
-      </div>
-
-      <div class="form-group">
-        <label for="email">Email</label>
-        <input
-          type="email"
-          id="email"
-          formControlName="email"
-          placeholder="you@example.com"
-          class="form-control">
-        <div *ngIf="registerForm.get('email')?.invalid && registerForm.get('email')?.touched" class="error-message">
-          <span *ngIf="registerForm.get('email')?.errors?.['required']">Email is required</span>
-          <span *ngIf="registerForm.get('email')?.errors?.['email']">Enter a valid email</span>
-        </div>
-      </div>
-
-      <div class="form-group">
-        <label for="password">Password</label>
-        <input
-          type="password"
-          id="password"
-          formControlName="password"
-          placeholder="Min. 8 characters"
-          class="form-control">
-        <div *ngIf="registerForm.get('password')?.invalid && registerForm.get('password')?.touched" class="error-message">
-          <span *ngIf="registerForm.get('password')?.errors?.['required']">Password is required</span>
-          <span *ngIf="registerForm.get('password')?.errors?.['minlength']">Must be at least 8 characters</span>
-        </div>
-      </div>
-
-      <div class="form-actions">
-        <button type="submit" class="btn-register" [disabled]="registerForm.invalid || isLoading">
-          <span *ngIf="isLoading">Creating account...</span>
-          <span *ngIf="!isLoading">Sign Up</span>
-        </button>
-      </div>
-    </form>
-
-    <div class="google-signin">
-      <div class="divider"><span>OR</span></div>
-      <div id="google-button-container" class="full-width-button"></div>
-    </div>
-
-    <div class="form-footer">
-      <p>Already have an account? <a routerLink="/auth/login">Log In</a></p>
-    </div>
-  </div>
-</div>

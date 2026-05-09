@@ -6,7 +6,7 @@
 .library-page {
   display: flex;
   justify-content: center;
-  padding: 2rem 1.5rem;
+  padding: 24px 16px;
   min-height: calc(100vh - 80px);
 }
 
@@ -16,7 +16,7 @@
   align-items: flex-start;
   gap: 1.5rem;
   width: 100%;
-  max-width: 1100px;
+  max-width: 1200px;
 }
 
 // ── Vertical Sidebar ──────────────────────────────────────────────────────────
@@ -375,7 +375,7 @@
 
 // ── Responsive ────────────────────────────────────────────────────────────────
 @media (max-width: 768px) {
-  .library-page { padding: 1rem 0.75rem; }
+  .library-page { padding: 16px 12px; }
 
   .library-wrapper { flex-direction: column; gap: 1rem; }
 
@@ -410,7 +410,7 @@
 }
 
 @media (max-width: 480px) {
-  .library-page { padding: 0.75rem 0.5rem; }
+  .library-page { padding: 12px 10px; }
 
   .books-grid { grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 0.75rem; }
 

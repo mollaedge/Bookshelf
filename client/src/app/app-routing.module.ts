@@ -13,6 +13,8 @@ import { NoAuthGuard } from './service/auth/no-auth-guard';
 import { ProfileComponent } from './dashboard/profile/profile.component';
 import { HomeComponent } from './dashboard/home/home.component';
 import { LandingPageComponent } from './dashboard/landing-page/landing-page.component';
+import { FriendsComponent } from './dashboard/friends/friends.component';
+import { MessagesComponent } from './dashboard/messages/messages.component';
 
 const routes: Routes = [
   {
@@ -23,6 +25,8 @@ const routes: Routes = [
       { path: 'home', component: HomeComponent, canActivate: [AuthGuard] },
       { path: 'profile', component: ProfileComponent , canActivate: [AuthGuard]},
       { path: 'mybooks', component: MybooksComponent, canActivate: [AuthGuard]},
+      { path: 'friends', component: FriendsComponent, canActivate: [AuthGuard] },
+      { path: 'messages', component: MessagesComponent, canActivate: [AuthGuard] },
       { path: 'dashboard', component: DashComponent },
       { path: 'about', component: AboutComponent },
       { path: 'feedback', component: FeedbackComponent },

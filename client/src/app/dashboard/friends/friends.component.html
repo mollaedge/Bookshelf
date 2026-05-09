@@ -1,0 +1,127 @@
+<div class="friends-page">
+  <div class="friends-wrapper">
+    <!-- Main Content -->
+    <section class="friends-card">
+    <div class="friends-header">
+      <h2>Friends</h2>
+    </div>
+
+  @if (!isLoggedIn) {
+    <p class="friends-empty">Sign in to manage friends and followers.</p>
+  } @else {
+    @if (actionMessage) {
+      <div class="friends-message" [class.success]="actionMessageType === 'success'" [class.error]="actionMessageType === 'error'">
+        {{ actionMessage }}
+      </div>
+    }
+
+    <div class="friends-block">
+      <h3>Find People</h3>
+      <div class="search-row">
+        <input
+          type="text"
+          [(ngModel)]="searchQuery"
+          placeholder="Search by name or email"
+          (keyup.enter)="searchUsers()">
+        <button (click)="searchUsers()" [disabled]="searchLoading">
+          @if (!searchLoading) {
+            Search
+          } @else {
+            Searching...
+          }
+        </button>
+      </div>
+
+      @if (searchError) {
+        <p class="error-inline">{{ searchError }}</p>
+      }
+
+      @if (searchResults.length > 0) {
+        <ul class="friends-list">
+          @for (user of searchResults; track user.id) {
+            <li>
+              <div>
+                <p class="name">{{ user.fullName || user.email }}</p>
+                <p class="meta">{{ user.email }}</p>
+              </div>
+
+              <div class="actions">
+                @if (user.isFriend) {
+                  <span class="tag">Friends</span>
+                } @else if (hasPendingRequest(user.friendRequestStatus)) {
+                  <span class="tag pending">Request Pending</span>
+                } @else {
+                  <button class="btn-primary" (click)="sendFriendRequest(user)">Add Friend</button>
+                }
+
+                <button class="btn-secondary" (click)="toggleFollow(user)">
+                  @if (!user.isFollowing) {
+                    Follow
+                  } @else {
+                    Unfollow
+                  }
+                </button>
+              </div>
+            </li>
+          }
+        </ul>
+      }
+    </div>
+
+    <div class="friends-block">
+      <h3>Incoming Requests</h3>
+      @if (incomingLoading) {
+        <p class="friends-empty">Loading requests...</p>
+      } @else if (incomingRequests.length === 0) {
+        <p class="friends-empty">No incoming requests.</p>
+      } @else {
+        <ul class="friends-list">
+          @for (request of incomingRequests; track request.id) {
+            <li>
+              <div>
+                <p class="name">{{ request.requesterFullName }}</p>
+              </div>
+              <div class="actions">
+                <button class="btn-primary" (click)="acceptRequest(request)">Accept</button>
+                <button class="btn-secondary" (click)="rejectRequest(request)">Reject</button>
+              </div>
+            </li>
+          }
+        </ul>
+      }
+    </div>
+  }
+  </section>
+    <!-- /Main Content -->
+
+    <!-- Sidebar: Friends List -->
+    <aside class="friends-sidebar">
+      <div class="sidebar-card">
+        <h3>My Friends</h3>
+        @if (friendsLoading) {
+          <p class="sidebar-empty">Loading...</p>
+        } @else if (friends.length === 0) {
+          <p class="sidebar-empty">No friends yet</p>
+        } @else {
+          <ul class="sidebar-friends-list">
+            @for (friend of friends; track friend.id) {
+              <li class="sidebar-friend-item">
+                <div class="friend-info">
+                  <p class="friend-name">{{ getOtherUserName(friend) }}</p>
+                </div>
+                <div class="friend-actions">
+                  <button class="btn-message" [routerLink]="['/messages']" [queryParams]="{ friendId: getChatFriendId(friend) }" [disabled]="!getChatFriendId(friend)" title="Send Message">
+                    <i class="fas fa-comment"></i>
+                  </button>
+                  <button class="btn-remove" (click)="removeFriend(friend)" title="Remove Friend">
+                    <i class="fas fa-times"></i>
+                  </button>
+                </div>
+              </li>
+            }
+          </ul>
+        }
+      </div>
+    </aside>
+    <!-- /Sidebar -->
+  </div>

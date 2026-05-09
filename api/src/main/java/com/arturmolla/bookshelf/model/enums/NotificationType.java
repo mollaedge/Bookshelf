@@ -20,6 +20,11 @@ public enum NotificationType {
     BOOK_BORROW_APPROVED,
     BOOK_BORROW_REJECTED,
     BOOK_RETURNED,
-    BOOK_RETURN_APPROVED
-}
+    BOOK_RETURN_APPROVED,
 
+    // ── Relation (friend / follow) events ─────────────────────────
+    FRIEND_REQUEST_RECEIVED,
+    FRIEND_REQUEST_ACCEPTED,
+    FRIEND_REQUEST_REJECTED,
+    FOLLOWED
+}

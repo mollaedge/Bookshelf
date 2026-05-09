@@ -19,8 +19,47 @@ export class AuthStateService {
   constructor() {
     // Cache the user on initialization for fast access
     this.cachedUser = this.getUserFromStorage();
+    this.hydrateUserIdFromToken();
     this.userSubject = new BehaviorSubject<AuthUser | null>(this.cachedUser);
     this.user$ = this.userSubject.asObservable();
+  }
+
+  private toNumberId(value: unknown): number | undefined {
+    const parsed = Number(value);
+    return Number.isFinite(parsed) && parsed > 0 ? parsed : undefined;
+  }
+
+  private hydrateUserIdFromToken(): void {
+    if (!this.cachedUser || this.cachedUser.id) {
+      return;
+    }
+
+    const token = this.cachedUser.token;
+    if (!token || token.split('.').length < 2) {
+      return;
+    }
+
+    try {
+      const payloadBase64 = token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/');
+      const json = atob(payloadBase64);
+      const payload = JSON.parse(json) as Record<string, unknown>;
+
+      const idFromToken =
+        this.toNumberId(payload['userId']) ??
+        this.toNumberId(payload['id']) ??
+        this.toNumberId(payload['sub']);
+
+      if (!idFromToken) {
+        return;
+      }
+
+      this.cachedUser = { ...this.cachedUser, id: idFromToken };
+      if (typeof window !== 'undefined' && window.localStorage) {
+        localStorage.setItem('authUser', JSON.stringify(this.cachedUser));
+      }
+    } catch {
+      // Ignore malformed token payloads and continue without id.
+    }
   }
 
   setUser(user: AuthUser) {
