@@ -27,6 +27,11 @@ export interface DtoIceServer {
   credential?: string;
 }
 
+export interface DtoWatcherInfo {
+  watcherId: number;
+  watcherName?: string;
+}
+
 export interface StreamEvent {
   type: 'STREAM_STARTED' | 'WATCHER_JOINED' | 'WATCHER_LEFT' | 'STREAM_STOPPED' | 'SIGNAL';
   streamId: number;

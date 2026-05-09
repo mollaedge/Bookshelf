@@ -1,4 +1,5 @@
-import { Component, HostListener, OnInit, OnDestroy } from '@angular/core';
+import { Component, HostListener, Inject, OnInit, OnDestroy, PLATFORM_ID } from '@angular/core';
+import { isPlatformBrowser } from '@angular/common';
 import { Observable, Subscription, interval } from 'rxjs';
 import { Router } from '@angular/router';
 import { AuthStateService, AuthUser } from '../../service/auth/auth-state.service';
@@ -16,6 +17,7 @@ import { DtoConversationResponse } from '../../interfaces/message.interface';
 })
 export class NavComponent implements OnInit, OnDestroy {
   user$: Observable<any>;
+  isBrowser: boolean;
   currentUser: AuthUser | null = null;
   showAddBookPopup = false;
   showNotifications = false;
@@ -185,12 +187,14 @@ export class NavComponent implements OnInit, OnDestroy {
   }
 
   constructor(
+    @Inject(PLATFORM_ID) private platformId: object,
     private authService: AuthStateService,
     private router: Router,
     private profileService: ProfileService,
     private notificationService: NotificationService,
     private messageService: MessageService
   ) {
+    this.isBrowser = isPlatformBrowser(this.platformId);
     this.user$ = this.authService.user$;
   }
 

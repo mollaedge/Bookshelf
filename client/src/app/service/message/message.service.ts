@@ -1,4 +1,4 @@
-import { Injectable } from '@angular/core';
+import { Injectable, NgZone } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { environment } from '../../../environments/environment';
 import { EventSourcePolyfill } from 'event-source-polyfill';
@@ -20,26 +20,40 @@ export class MessageService {
   private messageSubject = new Subject<DtoMessageResponse>();
   private messageReadSubject = new Subject<DtoMessageResponse>();
 
+  /** Emits every incoming message received via SSE. */
   public message$ = this.messageSubject.asObservable();
+  /** Emits whenever a message is marked read via SSE. */
   public messageRead$ = this.messageReadSubject.asObservable();
+
+  private reconnectTimer: ReturnType<typeof setTimeout> | null = null;
+  private reconnectDelay = 2000;   // start at 2 s
+  private readonly maxDelay = 60000; // cap at 60 s
+  private intentionalDisconnect = false;
 
   constructor(
     private http: HttpClient,
-    private authState: AuthStateService
+    private authState: AuthStateService,
+    private ngZone: NgZone
   ) {}
 
   /**
    * Establish SSE connection for real-time messaging.
-   * Call this once on login.
+   * Automatically reconnects with exponential back-off on failure.
+   * Call this once on login; call disconnectSSE() on logout.
    */
   connectSSE(): void {
     if (this.sseEmitter) {
       return; // Already connected
     }
 
-    const token = this.authState.getCurrentUser()?.token;
+    this.intentionalDisconnect = false;
+    this._openSSE();
+  }
 
-    // Use header-auth SSE for JWT-based auth setups. Fallback to native EventSource if token is unavailable.
+  private _openSSE(): void {
+    const token = this.authState.getCurrentUser()?.token;
+    if (!token) return; // Not logged in — do not attempt
+
     if (token) {
       this.sseEmitter = new EventSourcePolyfill(`${this.apiUrl}/connect`, {
         headers: {
@@ -55,11 +69,16 @@ export class MessageService {
       });
     }
 
+    // Reset back-off on a successful open
+    this.sseEmitter.addEventListener('open', () => {
+      this.reconnectDelay = 2000;
+    });
+
     // Listen for incoming messages
     this.sseEmitter.addEventListener('NEW_MESSAGE', (event: MessageEvent<string>) => {
       try {
         const message = JSON.parse(event.data) as DtoMessageResponse;
-        this.messageSubject.next(message);
+        this.ngZone.run(() => this.messageSubject.next(message));
       } catch (error) {
         console.error('Failed to parse NEW_MESSAGE event:', error);
       }
@@ -69,37 +88,53 @@ export class MessageService {
     this.sseEmitter.addEventListener('MESSAGE_READ', (event: MessageEvent<string>) => {
       try {
         const message = JSON.parse(event.data) as DtoMessageResponse;
-        this.messageReadSubject.next(message);
+        this.ngZone.run(() => this.messageReadSubject.next(message));
       } catch (error) {
         console.error('Failed to parse MESSAGE_READ event:', error);
       }
     });
 
     // Ignore heartbeat
-    this.sseEmitter.addEventListener('heartbeat', () => {
-      // Keep-alive – ignore
-    });
+    this.sseEmitter.addEventListener('heartbeat', () => { /* keep-alive */ });
 
-    // Handle connection errors
-    this.sseEmitter.onerror = (error: Event) => {
-      const readyState = this.sseEmitter?.readyState;
-      console.error('SSE connection error:', { error, readyState, url: `${this.apiUrl}/connect` });
+    // Handle connection errors — reconnect unless intentionally disconnected
+    this.sseEmitter.onerror = () => {
+      this.sseEmitter?.close();
+      this.sseEmitter = null;
 
-      // CLOSED (2) means terminal failure; clean up so next action can reconnect.
-      if (readyState === 2) {
-        this.disconnectSSE();
+      if (!this.intentionalDisconnect) {
+        this._scheduleReconnect();
       }
     };
   }
 
+  private _scheduleReconnect(): void {
+    if (this.reconnectTimer) return;
+
+    this.reconnectTimer = setTimeout(() => {
+      this.reconnectTimer = null;
+      if (!this.intentionalDisconnect) {
+        this._openSSE();
+        // Double the delay for next failure, capped at maxDelay
+        this.reconnectDelay = Math.min(this.reconnectDelay * 2, this.maxDelay);
+      }
+    }, this.reconnectDelay);
+  }
+
   /**
-   * Close SSE connection (call on logout).
+   * Close SSE connection permanently (call on logout).
    */
   disconnectSSE(): void {
+    this.intentionalDisconnect = true;
+    if (this.reconnectTimer) {
+      clearTimeout(this.reconnectTimer);
+      this.reconnectTimer = null;
+    }
     if (this.sseEmitter) {
       this.sseEmitter.close();
       this.sseEmitter = null;
     }
+    this.reconnectDelay = 2000;
   }
 
   /**

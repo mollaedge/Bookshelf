@@ -6,6 +6,7 @@ import com.arturmolla.bookshelf.model.dto.DtoIceServer;
 import com.arturmolla.bookshelf.model.dto.DtoSignalRequest;
 import com.arturmolla.bookshelf.model.dto.DtoStreamEvent;
 import com.arturmolla.bookshelf.model.dto.DtoStreamInfo;
+import com.arturmolla.bookshelf.model.dto.DtoWatcherInfo;
 import com.arturmolla.bookshelf.model.enums.StreamEventType;
 import com.arturmolla.bookshelf.model.user.User;
 import com.arturmolla.bookshelf.service.stream.LiveStream;
@@ -124,6 +125,24 @@ public class ServiceStream {
 
             // Re-send STREAM_STARTED so the host UI restores its state
             sendToOne(emitter, buildEvent(StreamEventType.STREAM_STARTED, stream, watcher, null));
+
+            // Re-send WATCHER_JOINED for every currently connected watcher so the host
+            // can re-initiate WebRTC offers to them. Without this the host loses track of
+            // existing watchers after a page refresh and they all get a blank screen.
+            stream.getParticipantIds().stream()
+                    .filter(id -> !id.equals(hostId))
+                    .forEach(watcherId -> {
+                        String watcherName = stream.getParticipantNames().getOrDefault(watcherId, "unknown");
+                        DtoStreamEvent rejoined = DtoStreamEvent.builder()
+                                .type(StreamEventType.WATCHER_JOINED)
+                                .streamId(stream.getHostId())
+                                .streamTitle(stream.getTitle())
+                                .actorId(watcherId)
+                                .actorName(watcherName)
+                                .watcherCount(stream.getWatcherCount())
+                                .build();
+                        sendToOne(emitter, rejoined);
+                    });
             return emitter;
         }
 
@@ -260,6 +279,21 @@ public class ServiceStream {
     /** Returns metadata for a single stream. */
     public DtoStreamInfo getStreamInfo(Long hostId) {
         return toInfo(findOrThrow(hostId));
+    }
+
+    /**
+     * Returns a list of all watchers currently connected to the stream.
+     * This is used by the host after a reconnect to discover existing watchers and
+     * re-initiate WebRTC offers to them (so they don't get stuck on a blank screen).
+     */
+    public List<DtoWatcherInfo> getWatchers(Long hostId) {
+        LiveStream stream = findOrThrow(hostId);
+        return stream.getWatcherIds().stream()
+                .map(id -> DtoWatcherInfo.builder()
+                        .watcherId(id)
+                        .watcherName(stream.getParticipantNames().getOrDefault(id, "unknown"))
+                        .build())
+                .toList();
     }
 
     // =========================================================================
@@ -399,6 +433,7 @@ public class ServiceStream {
                 .startedAt(stream.getStartedAt())
                 .watcherCount(stream.getWatcherCount())
                 .watcherNames(stream.getWatcherNames())
+                .watcherIds(stream.getWatcherIds())
                 .build();
     }
 }

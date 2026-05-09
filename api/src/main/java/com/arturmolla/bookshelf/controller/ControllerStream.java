@@ -3,6 +3,7 @@ package com.arturmolla.bookshelf.controller;
 import com.arturmolla.bookshelf.model.dto.DtoIceServer;
 import com.arturmolla.bookshelf.model.dto.DtoSignalRequest;
 import com.arturmolla.bookshelf.model.dto.DtoStreamInfo;
+import com.arturmolla.bookshelf.model.dto.DtoWatcherInfo;
 import com.arturmolla.bookshelf.service.ServiceStream;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -252,6 +253,32 @@ public class ControllerStream {
             @PathVariable("host-id") Long hostId
     ) {
         return ResponseEntity.ok(serviceStream.getStreamInfo(hostId));
+    }
+
+    /**
+     * Get the list of watchers currently connected to a stream.
+     * <p>
+     * The host <strong>must</strong> call this after reconnecting to their stream
+     * so they can re-initiate WebRTC offers to every already-connected watcher.
+     * Without this step, existing watchers will see a blank screen after the host
+     * refreshes their page.
+     * <p>
+     * Example front-end usage (host reconnect):
+     * <pre>
+     * const { data: watchers } = await axios.get(`/streams/${hostId}/watchers`);
+     * for (const w of watchers) {
+     *   await initiateWebRTCOffer(w.watcherId);  // send offer targeted at each watcher
+     * }
+     * </pre>
+     *
+     * @param hostId the stream identifier (host's userId)
+     */
+    @GetMapping("/{host-id}/watchers")
+    @Operation(summary = "List watchers currently connected to a stream")
+    public ResponseEntity<List<DtoWatcherInfo>> getWatchers(
+            @PathVariable("host-id") Long hostId
+    ) {
+        return ResponseEntity.ok(serviceStream.getWatchers(hostId));
     }
 }
 
