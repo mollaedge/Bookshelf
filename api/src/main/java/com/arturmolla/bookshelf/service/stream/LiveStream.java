@@ -82,6 +82,16 @@ public class LiveStream {
     }
 
     /**
+     * UserIds of every connected watcher (excludes the host).
+     * Used by the host when reconnecting to know who to re-offer WebRTC to.
+     */
+    public java.util.List<Long> getWatcherIds() {
+        return emitters.keySet().stream()
+                .filter(id -> !id.equals(hostId))
+                .toList();
+    }
+
+    /**
      * Retrieves the emitter for a specific participant, or null if not connected.
      */
     public SseEmitter getEmitter(Long userId) {

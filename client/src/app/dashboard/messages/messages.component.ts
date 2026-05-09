@@ -17,6 +17,7 @@ import { Subscription } from 'rxjs';
 })
 export class MessagesComponent implements OnInit, OnDestroy {
   friendId: number | null = null;
+  activeConversationId: number | null = null;
   friendName = '';
 
   conversations: DtoConversationResponse[] = [];
@@ -39,6 +40,10 @@ export class MessagesComponent implements OnInit, OnDestroy {
   ) {}
 
   ngOnInit(): void {
+    // Ensure SSE is connected even if NavComponent hasn't done it yet
+    // (idempotent – does nothing if already connected)
+    this.messageService.connectSSE();
+
     this.loadConversations();
 
     // Get friendId from query params
@@ -58,14 +63,21 @@ export class MessagesComponent implements OnInit, OnDestroy {
 
     // Listen to incoming messages
     const msgSub = this.messageService.message$.subscribe((msg) => {
-      if (msg.senderId === this.friendId) {
-        this.messages.push(msg);
-        // Auto-mark as read
-        this.messageService.markAsRead(msg.id).subscribe();
-        this.scrollToBottom();
-      }
+      // Update the conversation sidebar locally (no HTTP round-trip)
+      this._applyIncomingToSidebar(msg);
 
-      this.loadConversations();
+      // Append to open chat if it belongs to the active conversation
+      if (this.activeConversationId !== null && msg.conversationId === this.activeConversationId) {
+        // Avoid duplicates (e.g. own message already pushed in sendMessage)
+        if (!this.messages.some((m) => m.id === msg.id)) {
+          this.messages.push(msg);
+          this.scrollToBottom();
+        }
+        // Auto-mark as read since the user is looking at this conversation
+        if (msg.senderId === this.friendId) {
+          this.messageService.markAsRead(msg.id).subscribe();
+        }
+      }
     });
     this.subs.push(msgSub);
 
@@ -73,10 +85,8 @@ export class MessagesComponent implements OnInit, OnDestroy {
     const readSub = this.messageService.messageRead$.subscribe((msg) => {
       const idx = this.messages.findIndex((m) => m.id === msg.id);
       if (idx >= 0) {
-        this.messages[idx].read = true;
+        this.messages[idx] = { ...this.messages[idx], read: true };
       }
-
-      this.loadConversations();
     });
     this.subs.push(readSub);
   }
@@ -91,6 +101,10 @@ export class MessagesComponent implements OnInit, OnDestroy {
       next: (response: PageResponse<DtoConversationResponse>) => {
         this.conversations = response.content;
         this.conversationsLoading = false;
+
+        // Cache the active conversation ID for SSE matching
+        const active = this.conversations.find((c) => c.friendId === this.friendId);
+        this.activeConversationId = active?.conversationId ?? null;
 
         // If no conversation selected, default to first one.
         if (!this.friendId && this.conversations.length > 0) {
@@ -137,9 +151,14 @@ export class MessagesComponent implements OnInit, OnDestroy {
     this.messageService.sendMessage(this.friendId, request).subscribe({
       next: (msg) => {
         this.messages.push(msg);
+        // Keep activeConversationId in sync for first message in a new convo
+        if (!this.activeConversationId) {
+          this.activeConversationId = msg.conversationId;
+        }
         this.messageText = '';
         this.sendingMessage = false;
         this.scrollToBottom();
+        // Refresh sidebar so preview + timestamp update
         this.loadConversations();
       },
       error: () => {
@@ -188,6 +207,31 @@ export class MessagesComponent implements OnInit, OnDestroy {
 
     const activeConversation = this.conversations.find((c) => c.friendId === this.friendId);
     this.friendName = activeConversation?.friendName ?? 'Chat';
+  }
+
+  /** Update conversation sidebar in-place from an incoming SSE message (no HTTP call). */
+  private _applyIncomingToSidebar(msg: DtoMessageResponse): void {
+    const idx = this.conversations.findIndex((c) => c.conversationId === msg.conversationId);
+    if (idx < 0) {
+      // New conversation not yet in list — reload to get it
+      this.loadConversations();
+      return;
+    }
+
+    const conv = this.conversations[idx];
+    const isActive = conv.conversationId === this.activeConversationId;
+
+    this.conversations[idx] = {
+      ...conv,
+      lastMessagePreview: msg.content,
+      lastMessageAt: msg.createdAt,
+      // If user is viewing this conversation the message is immediately read
+      unreadCount: isActive ? 0 : conv.unreadCount + 1,
+    };
+
+    // Bubble updated conversation to the top
+    const updated = this.conversations.splice(idx, 1)[0];
+    this.conversations.unshift(updated);
   }
 
   private scrollToBottom(): void {

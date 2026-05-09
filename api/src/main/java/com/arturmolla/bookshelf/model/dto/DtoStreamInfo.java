@@ -15,6 +15,8 @@ import java.util.List;
  * @param startedAt    when the stream began
  * @param watcherCount current live watcher count
  * @param watcherNames display names of current watchers
+ * @param watcherIds   userIds of current watchers — needed by the host to target
+ *                     WebRTC signal messages after a reconnect
  */
 @Builder
 public record DtoStreamInfo(
@@ -24,7 +26,8 @@ public record DtoStreamInfo(
         String title,
         LocalDateTime startedAt,
         int watcherCount,
-        List<String> watcherNames
+        List<String> watcherNames,
+        List<Long> watcherIds
 ) {
 }
 

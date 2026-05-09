@@ -44,32 +44,34 @@
 
     <!-- Centre links -->
     <div class="nav-links">
-      @if (user$ | async) {
-        <a routerLink="/home" routerLinkActive="active">
-          <i class="fas fa-home"></i>
-          <span>Home</span>
-        </a>
-        <a routerLink="/dashboard" routerLinkActive="active">
-          <i class="fas fa-tachometer-alt"></i>
-          <span>Dashboard</span>
-        </a>
-        <a routerLink="/mybooks" routerLinkActive="active">
-          <i class="fas fa-book-open"></i>
-          <span>My Library</span>
-        </a>
-        <a routerLink="/friends" routerLinkActive="active">
-          <i class="fas fa-user-friends"></i>
-          <span>Friends</span>
-        </a>
-      } @else {
-        <a routerLink="/about" routerLinkActive="active">
-          <i class="fas fa-info-circle"></i>
-          <span>About</span>
-        </a>
-        <a routerLink="/feedback" routerLinkActive="active">
-          <i class="fas fa-comment"></i>
-          <span>Feedback</span>
-        </a>
+      @if (isBrowser) {
+        @if (user$ | async) {
+          <a routerLink="/home" routerLinkActive="active">
+            <i class="fas fa-home"></i>
+            <span>Home</span>
+          </a>
+          <a routerLink="/dashboard" routerLinkActive="active">
+            <i class="fas fa-tachometer-alt"></i>
+            <span>Dashboard</span>
+          </a>
+          <a routerLink="/mybooks" routerLinkActive="active">
+            <i class="fas fa-book-open"></i>
+            <span>My Library</span>
+          </a>
+          <a routerLink="/friends" routerLinkActive="active">
+            <i class="fas fa-user-friends"></i>
+            <span>Friends</span>
+          </a>
+        } @else {
+          <a routerLink="/about" routerLinkActive="active">
+            <i class="fas fa-info-circle"></i>
+            <span>About</span>
+          </a>
+          <a routerLink="/feedback" routerLinkActive="active">
+            <i class="fas fa-comment"></i>
+            <span>Feedback</span>
+          </a>
+        }
       }
     </div>
 
@@ -192,7 +194,8 @@
       }
 
       <!-- Profile / Login -->
-      @if (user$ | async; as user) {
+      @if (isBrowser) {
+        @if (user$ | async; as user) {
         <div class="profile-wrapper">
           <button class="profile-avatar-link" (click)="toggleProfileMenu()" [title]="user.fullName || user.email">
             @if (profilePictureUrl) {
@@ -239,12 +242,13 @@
           }
         </div>
       } @else {
-        <div class="auth-links">
-          <a routerLink="/auth/login" class="btn-login">
-            <i class="fas fa-sign-in-alt"></i>
-            Login
-          </a>
-        </div>
+          <div class="auth-links">
+            <a routerLink="/auth/login" class="btn-login">
+              <i class="fas fa-sign-in-alt"></i>
+              Login
+            </a>
+          </div>
+        }
       }
     </div>
   </nav>

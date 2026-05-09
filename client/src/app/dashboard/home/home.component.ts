@@ -12,7 +12,7 @@ import { StreamService } from '../../service/stream/stream.service';
 import { WebRTCService } from '../../service/webrtc/webrtc.service';
 import { Observable, Subscription } from 'rxjs';
 import { HttpErrorResponse } from '@angular/common/http';
-import { DtoStreamInfo, DtoStreamStartRequest } from '../../interfaces/stream.interface';
+import { DtoStreamInfo, DtoStreamStartRequest, DtoWatcherInfo } from '../../interfaces/stream.interface';
 
 type LiveReading = DtoStreamInfo;
 
@@ -247,6 +247,9 @@ export class HomeComponent implements OnInit, OnDestroy, AfterViewChecked {
             this.currentHostId = event.actorId; // Store host user ID
             this.streamWatcherCount = event.watcherCount || 0;
             this.closeStartStreamModal();
+
+            // On host reconnect, existing watchers are already connected and need fresh offers.
+            this.syncExistingWatchers(this.currentHostId);
             
             console.log('Stream started - streamId:', this.currentStreamId, 'hostId:', this.currentHostId);
             
@@ -349,6 +352,11 @@ export class HomeComponent implements OnInit, OnDestroy, AfterViewChecked {
       return;
     }
 
+    if (this.webrtcService.hasPeerConnection(watcherId)) {
+      console.log('Peer connection already exists for watcher:', watcherId);
+      return;
+    }
+
     console.log('New watcher joined:', watcherId, '- Creating peer connection');
 
     // Create peer connection for the new watcher
@@ -367,6 +375,22 @@ export class HomeComponent implements OnInit, OnDestroy, AfterViewChecked {
     // Create and send offer to watcher using HOST ID not stream ID
     console.log('Creating offer for watcher:', watcherId);
     this.webrtcService.createOffer(watcherId, this.currentHostId);
+  }
+
+  private syncExistingWatchers(hostId: number): void {
+    const sub = this.streamService.getWatchers(hostId).subscribe({
+      next: (watchers: DtoWatcherInfo[]) => {
+        this.streamWatcherCount = watchers.length;
+        watchers.forEach((watcher) => {
+          void this.handleWatcherJoined(watcher.watcherId);
+        });
+      },
+      error: (error: HttpErrorResponse) => {
+        console.error('Failed to sync existing watchers:', error);
+      }
+    });
+
+    this.subscriptions.add(sub);
   }
 
   private handleSignalAsHost(event: any): void {
