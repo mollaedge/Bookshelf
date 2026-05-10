@@ -7,45 +7,18 @@ import { AuthStateService } from './auth-state.service';
 import { environment } from '../../../environments/environment';
 
 const PROTECTED_PATHS = ['/mybooks', '/profile', '/about', '/feedback'];
-const AUTH_ERROR_MARKERS = [
-  'jwt token is expired',
-  'token expired',
-  'invalid token',
-  'unauthorized',
-  'authentication'
-];
-
-function getBackendErrorText(error: HttpErrorResponse): string {
-  if (typeof error.error === 'string') {
-    return error.error.toLowerCase();
-  }
-
-  if (error.error && typeof error.error === 'object') {
-    const candidate = (error.error as { error?: unknown; message?: unknown }).error
-      ?? (error.error as { error?: unknown; message?: unknown }).message;
-    if (typeof candidate === 'string') {
-      return candidate.toLowerCase();
-    }
-  }
-
-  return '';
-}
 
 function isAuthFailure(error: HttpErrorResponse): boolean {
   if (error.status === 401) {
     return true;
   }
 
-  if (error.status !== 403) {
-    return false;
+  // Treat 403 as auth failure (expired/invalid session)
+  if (error.status === 403) {
+    return true;
   }
 
-  const errorText = getBackendErrorText(error);
-  if (!errorText) {
-    return false;
-  }
-
-  return AUTH_ERROR_MARKERS.some(marker => errorText.includes(marker));
+  return false;
 }
 
 function clearAuthStorage(): void {
@@ -109,12 +82,8 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
         return throwError(() => error);
       }
 
-      // Redirect only for real auth failures, not business-rule 403 responses.
-      const isJwtExpired = error.error &&
-                          typeof error.error === 'object' &&
-                          error.error.error === 'JWT token is expired';
-
-      if (isAuthFailure(error) || isJwtExpired) {
+      // Redirect to login for auth failures (401 or 403)
+      if (isAuthFailure(error)) {
         // Clear session cache
         authState.clearUser();
         clearAuthStorage();

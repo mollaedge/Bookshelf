@@ -216,7 +216,7 @@
                   <div class="nav-avatar nav-avatar--lg">{{ getInitials(user.fullName, user.email) }}</div>
                 }
                 <div class="profile-dropdown-info">
-                  <span class="profile-name">{{ user.fullName || 'User' }}</span>
+                  <span class="profile-name">{{ getDisplayName(user) }}</span>
                   <span class="profile-email">{{ user.email }}</span>
                 </div>
               </div>

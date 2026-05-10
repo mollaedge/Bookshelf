@@ -202,6 +202,7 @@ export class NavComponent implements OnInit, OnDestroy {
     this.userSub = this.authService.user$.subscribe(user => {
       this.currentUser = user;
       if (user) {
+        this.ensureUserFullName(user);
         this.loadProfilePicture();
         this.fetchUnreadCount();
         // Connect to SSE for real-time messaging
@@ -302,9 +303,41 @@ export class NavComponent implements OnInit, OnDestroy {
   openAddBook(): void { this.showAddBookPopup = true; }
   closeAddBook(): void { this.showAddBookPopup = false; }
 
+  getDisplayName(user: AuthUser): string {
+    if (user.fullName?.trim()) {
+      return user.fullName;
+    }
+
+    if (user.email?.includes('@')) {
+      return user.email.split('@')[0];
+    }
+
+    return user.email || 'User';
+  }
+
   getInitials(fullName: string | undefined, email: string): string {
     if (fullName?.trim()) return fullName.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
     return email ? email[0].toUpperCase() : '?';
+  }
+
+  private ensureUserFullName(user: AuthUser): void {
+    if (user.fullName?.trim()) {
+      return;
+    }
+
+    this.profileService.getProfile().subscribe({
+      next: (profile) => {
+        const fullName = profile.fullName?.trim() || `${profile.firstname ?? ''} ${profile.lastname ?? ''}`.trim();
+        if (!fullName) {
+          return;
+        }
+
+        this.authService.setUser({
+          ...user,
+          fullName
+        });
+      }
+    });
   }
 }
 
