@@ -14,10 +14,17 @@ interface AuthRequest {
 interface AuthResponse {
   token: string;
   email?: string;
+  fullName?: string;
+  firstname?: string;
+  lastname?: string;
   userId?: string | number;
   user?: {
     id?: string | number;
     email: string;
+    fullName?: string;
+    name?: string;
+    firstname?: string;
+    lastname?: string;
     givenName?: string;
     familyName?: string;
     [key: string]: any;  // For any other fields that might be in the user object
@@ -51,14 +58,47 @@ export class LoginService {
     return Number.isFinite(parsed) && parsed > 0 ? parsed : undefined;
   }
 
+  private resolveFullName(response: AuthResponse): string | undefined {
+    const candidates: Array<unknown> = [
+      response.user?.fullName,
+      response.user?.name,
+      response.fullName
+    ];
+
+    for (const candidate of candidates) {
+      if (typeof candidate === 'string' && candidate.trim()) {
+        return candidate.trim();
+      }
+    }
+
+    const firstName =
+      response.user?.firstname ??
+      response.user?.givenName ??
+      response.firstname;
+    const lastName =
+      response.user?.lastname ??
+      response.user?.familyName ??
+      response.lastname;
+
+    const composed = `${firstName ?? ''} ${lastName ?? ''}`.trim();
+    return composed || undefined;
+  }
+
+  private resolveEmail(response: AuthResponse, fallbackEmail: string): string {
+    return response.user?.email || response.email || fallbackEmail;
+  }
+
   authenticate(authRequest: AuthRequest): Observable<AuthResponse> {
     return this.http.post<AuthResponse>(this.loginUrl, authRequest).pipe(
       tap((response: AuthResponse) => {
         const resolvedId = this.toNumberId(response.userId) ?? this.toNumberId(response.user?.id);
+        const resolvedFullName = this.resolveFullName(response);
+        const resolvedEmail = this.resolveEmail(response, authRequest.email);
         // Store user auth data
         this.authState.setUser({
           id: resolvedId,
-          email: authRequest.email,
+          email: resolvedEmail,
+          fullName: resolvedFullName,
           token: response.token
         });
       })
@@ -106,9 +146,11 @@ export class LoginService {
           }
 
           const resolvedId = this.toNumberId(res.userId) ?? this.toNumberId(res.user?.id);
+          const resolvedFullName = this.resolveFullName(res);
           this.authState.setUser({
             id: resolvedId,
-            email: res.user?.email || '',
+            email: this.resolveEmail(res, ''),
+            fullName: resolvedFullName,
             token: res.token
           });
           console.log('Google authentication successful');
