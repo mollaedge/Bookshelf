@@ -356,8 +356,10 @@ public class ServiceRelation {
     public PageResponse<DtoUserSearchResult> searchUsers(String query, int page, int size,
                                                          Authentication connectedUser) {
         var currentUser = (User) connectedUser.getPrincipal();
+        // Normalise: treat blank/null as empty so the repository treats it as "return all"
+        String normalizedQuery = (query == null || query.isBlank()) ? "" : query.trim();
         Page<User> result = userRepository.searchUsers(
-                query, currentUser.getId(), PageRequest.of(page, size));
+                normalizedQuery, currentUser.getId(), PageRequest.of(page, size));
 
         List<DtoUserSearchResult> content = result.getContent()
                 .stream()

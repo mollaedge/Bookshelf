@@ -61,7 +61,7 @@ export class BooksService {
 
   // Reject a book request
   rejectRequest(bookId: number): Observable<any> {
-    return this.http.post(`${this.baseUrl}/reject-request/${bookId}`, {});
+    return this.http.patch(`${this.baseUrl}/borrow/reject/${bookId}`, {});
   }
 
   // Get a single book by ID
@@ -91,7 +91,7 @@ export class BooksService {
 
   // Return a borrowed book
   returnBook(bookId: number): Observable<any> {
-    return this.http.post(`${this.baseUrl}/return/${bookId}`, {});
+    return this.http.patch(`${this.baseUrl}/borrow/return/${bookId}`, {});
   }
 
   // Get recently added books from user's library

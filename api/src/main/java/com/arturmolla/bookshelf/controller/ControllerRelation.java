@@ -167,7 +167,7 @@ public class ControllerRelation {
     @RateLimit(capacity = 30, refillTokens = 30, refillDurationMinutes = 1)
     public ResponseEntity<PageResponse<DtoUserSearchResult>> searchUsers(
             @Parameter(description = "Partial name or e-mail to search for", required = true)
-            @RequestParam String query,
+            @RequestParam(required = false) String query,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size,
             Authentication connectedUser) {

@@ -37,4 +37,8 @@ export class NotificationService {
   deleteNotification(notificationId: number): Observable<void> {
     return this.http.delete<void>(`${this.baseUrl}/${notificationId}`);
   }
+
+  clearAll(): Observable<void> {
+    return this.http.delete<void>(`${this.baseUrl}`);
+  }
 }

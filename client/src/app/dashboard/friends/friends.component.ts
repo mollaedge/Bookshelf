@@ -15,7 +15,7 @@ import { getApiErrorMessage } from '../../service/error/api-error.util';
   styleUrl: './friends.component.scss'
 })
 export class FriendsComponent implements OnInit {
-  private readonly seedSearchQuery = 'a';
+  private readonly seedSearchQuery = '';
 
   isLoggedIn = false;
   currentUserId: number | null = null;

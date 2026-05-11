@@ -20,5 +20,9 @@ public interface RepositoryNotification extends JpaRepository<EntityNotification
     void markAllReadByRecipientId(Long recipientId);
 
     void deleteByIdAndRecipientId(Long id, Long recipientId);
+
+    @Modifying
+    @Query("DELETE FROM EntityNotification n WHERE n.recipient.id = :recipientId")
+    void deleteAllByRecipientId(Long recipientId);
 }
 
