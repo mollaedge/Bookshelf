@@ -4,6 +4,7 @@ export type NotificationType =
   | 'BOOK_REQUEST'
   | 'REQUEST_APPROVED'
   | 'REQUEST_REJECTED'
+  | 'BOOK_BORROW_REJECTED'
   | 'NEW_FOLLOWER'
   | 'POST_LIKE'
   | 'POST_COMMENT'

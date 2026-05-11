@@ -113,6 +113,15 @@ export class NavComponent implements OnInit, OnDestroy {
     });
   }
 
+  clearAllNotifications(): void {
+    this.notificationService.clearAll().subscribe({
+      next: () => {
+        this.notifications = [];
+        this.unreadCount = 0;
+      }
+    });
+  }
+
   navigateToRef(n: DtoNotificationResponse): void {
     if (!n.referenceId || !n.referenceType) return;
 
@@ -127,7 +136,7 @@ export class NavComponent implements OnInit, OnDestroy {
     } else if (refType === 'FEEDBACK') {
       this.router.navigate(['/feedback'], { queryParams: { feedbackId: id } });
     } else if (refType === 'BOOK') {
-      this.router.navigate(['/profile'], { fragment: 'books' });
+      this.router.navigate(['/mybooks']);
     }
   }
 
@@ -159,8 +168,9 @@ export class NavComponent implements OnInit, OnDestroy {
       BOOK_BORROWED:      { source: 'Library',    summary: `${actor} borrowed your book` },
       BOOK_RETURNED:      { source: 'Library',    summary: `${actor} returned your book` },
       BOOK_REQUEST:       { source: 'Library',    summary: `${actor} requested your book` },
-      REQUEST_APPROVED:   { source: 'Library',    summary: 'Your borrow request was approved' },
-      REQUEST_REJECTED:   { source: 'Library',    summary: 'Your borrow request was declined' },
+      REQUEST_APPROVED:      { source: 'Library',    summary: `${actor} approved your borrow request` },
+      REQUEST_REJECTED:      { source: 'Library',    summary: `${actor} declined your borrow request` },
+      BOOK_BORROW_REJECTED:  { source: 'Library',    summary: `${actor} declined your borrow request` },
       SYSTEM:             { source: 'System',     summary: n.message },
     };
 

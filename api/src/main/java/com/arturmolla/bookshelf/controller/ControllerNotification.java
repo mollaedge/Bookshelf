@@ -98,5 +98,15 @@ public class ControllerNotification {
         serviceNotification.deleteNotification(notificationId, connectedUser);
         return ResponseEntity.noContent().build();
     }
+
+    /**
+     * Deletes ALL notifications of the authenticated user.
+     */
+    @DeleteMapping
+    @Operation(summary = "Clear all notifications")
+    public ResponseEntity<Void> clearAllNotifications(Authentication connectedUser) {
+        serviceNotification.clearAllNotifications(connectedUser);
+        return ResponseEntity.noContent().build();
+    }
 }
 

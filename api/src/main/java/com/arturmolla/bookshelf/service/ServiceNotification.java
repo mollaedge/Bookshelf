@@ -137,6 +137,13 @@ public class ServiceNotification {
         log.debug("Notification id={} deleted by userId={}", notificationId, user.getId());
     }
 
+    /** Deletes ALL notifications of the authenticated user. */
+    public void clearAllNotifications(Authentication connectedUser) {
+        var user = (User) connectedUser.getPrincipal();
+        repositoryNotification.deleteAllByRecipientId(user.getId());
+        log.debug("All notifications cleared for userId={}", user.getId());
+    }
+
     // ─────────────────────────────────────────────────────────────
     //  Private mapper
     // ─────────────────────────────────────────────────────────────

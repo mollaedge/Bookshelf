@@ -97,9 +97,14 @@
             <div class="notification-dropdown">
               <div class="dropdown-header">
                 <span>Notifications</span>
-                @if (unreadCount > 0) {
-                  <button class="mark-read-btn" (click)="markAllRead()">Mark all read</button>
-                }
+                <div class="header-actions">
+                  @if (unreadCount > 0) {
+                    <button class="mark-read-btn" (click)="markAllRead()">Mark all read</button>
+                  }
+                  @if (notifications.length > 0) {
+                    <button class="clear-all-btn" (click)="clearAllNotifications()">Clear all</button>
+                  }
+                </div>
               </div>
               @if (notificationsLoading) {
                 <div class="dropdown-loading">
