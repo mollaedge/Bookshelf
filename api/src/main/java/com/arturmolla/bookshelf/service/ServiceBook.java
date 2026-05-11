@@ -221,6 +221,31 @@ public class ServiceBook {
         return historyId;
     }
 
+    public Long rejectBorrowRequest(Long bookId, Authentication connectedUser) {
+        var book = repositoryBook.findById(bookId)
+                .orElseThrow(() -> new EntityNotFoundException(BOOK_NOT_FOUND + bookId));
+        var user = (User) connectedUser.getPrincipal();
+        if (!Objects.equals(book.getOwner().getId(), user.getId())) {
+            throw new OperationNotPermittedException("You do not own this book!");
+        }
+        EntityBookTransactionHistory bookTransactionHistory = repositoryBookTransactionHistory
+                .findPendingRequestByBookIdAndOwnerId(bookId, user.getId())
+                .orElseThrow(() -> new OperationNotPermittedException("No pending borrow request found for this book!"));
+        Long historyId = bookTransactionHistory.getId();
+        repositoryBookTransactionHistory.delete(bookTransactionHistory);
+
+        // Notify the requester that their borrow request was rejected
+        serviceNotification.notify(
+                bookTransactionHistory.getUser(), user,
+                NotificationType.BOOK_BORROW_REJECTED,
+                "Your borrow request was rejected",
+                "Your request to borrow \"" + book.getTitle() + "\" was declined by the owner.",
+                bookId, "BOOK"
+        );
+
+        return historyId;
+    }
+
     public Long approveReturnBorrowedBook(Long bookId, Authentication connectedUser) {
         var book = repositoryBook.findById(bookId)
                 .orElseThrow(() -> new EntityNotFoundException(BOOK_NOT_FOUND + bookId));
