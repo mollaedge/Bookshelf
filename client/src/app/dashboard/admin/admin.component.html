@@ -1,0 +1,84 @@
+﻿﻿<div class="admin-page">
+
+  <!-- Page header -->
+  <div class="admin-header">
+    <div class="admin-header-content">
+      <h1><i class="fas fa-shield-alt"></i> Admin Panel</h1>
+      <p>Manage users, books, feedback and platform settings.</p>
+    </div>
+  </div>
+
+  <!-- Tab navigation -->
+  <div class="admin-tabs">
+    @for (s of sections; track s.id) {
+      <button
+        class="admin-tab"
+        [class.active]="activeSection === s.id"
+        (click)="setSection(s.id)">
+        <i class="fas" [ngClass]="s.icon"></i>
+        <span>{{ s.label }}</span>
+      </button>
+    }
+  </div>
+
+  <!-- Section content -->
+  <div class="admin-body">
+
+    <!-- Overview -->
+    @if (activeSection === 'overview') {
+      <div class="admin-section">
+        <div class="stats-grid">
+          <div class="stat-card">
+            <div class="stat-icon stat-icon--blue"><i class="fas fa-users"></i></div>
+            <div class="stat-info">
+              <span class="stat-label">Total Users</span>
+              <span class="stat-value">&mdash;</span>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon stat-icon--green"><i class="fas fa-book"></i></div>
+            <div class="stat-info">
+              <span class="stat-label">Total Books</span>
+              <span class="stat-value">&mdash;</span>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon stat-icon--orange"><i class="fas fa-exchange-alt"></i></div>
+            <div class="stat-info">
+              <span class="stat-label">Active Borrows</span>
+              <span class="stat-value">&mdash;</span>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon stat-icon--purple"><i class="fas fa-comments"></i></div>
+            <div class="stat-info">
+              <span class="stat-label">Feedback Items</span>
+              <span class="stat-value">&mdash;</span>
+            </div>
+          </div>
+        </div>
+        <div class="placeholder-banner">
+          <i class="fas fa-tools"></i>
+          <p>Admin sections are being set up. Use the tabs above to navigate.</p>
+        </div>
+      </div>
+    }
+
+    @if (activeSection === 'users') {
+      <app-admin-users></app-admin-users>
+    }
+
+    @if (activeSection === 'books') {
+      <app-admin-books></app-admin-books>
+    }
+
+    @if (activeSection === 'feedback') {
+      <app-admin-feedback></app-admin-feedback>
+    }
+
+    @if (activeSection === 'reports') {
+      <app-admin-reports></app-admin-reports>
+    }
+
+  </div>
+</div>

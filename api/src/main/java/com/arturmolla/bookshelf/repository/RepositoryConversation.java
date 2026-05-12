@@ -8,6 +8,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.util.List;
 import java.util.Optional;
 
 @Repository
@@ -35,5 +36,9 @@ public interface RepositoryConversation extends JpaRepository<EntityConversation
             ORDER BY c.lastMessageAt DESC NULLS LAST
             """)
     Page<EntityConversation> findByUserId(@Param("userId") Long userId, Pageable pageable);
+
+    /** Returns all conversations involving a user as a flat list (used for bulk deletion). */
+    @Query("SELECT c FROM EntityConversation c WHERE c.user1.id = :userId OR c.user2.id = :userId")
+    List<EntityConversation> findAllByUserId(@Param("userId") Long userId);
 }
 

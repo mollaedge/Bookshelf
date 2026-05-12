@@ -19,6 +19,10 @@ export class NavComponent implements OnInit, OnDestroy {
   user$: Observable<any>;
   isBrowser: boolean;
   currentUser: AuthUser | null = null;
+
+  get isAdmin(): boolean {
+    return this.authService.isAdmin();
+  }
   showAddBookPopup = false;
   showNotifications = false;
   showMessages = false;

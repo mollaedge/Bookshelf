@@ -1,0 +1,235 @@
+<div class="section-title-row">
+  <div>
+    <h2>User Management</h2>
+    <p class="section-desc">View and manage all registered users.</p>
+  </div>
+  <button class="btn-reload" (click)="loadUsers(0)" [disabled]="loading">
+    <i class="fas fa-sync-alt" [class.fa-spin]="loading"></i>
+    Refresh
+  </button>
+</div>
+
+<!-- Error -->
+@if (error) {
+  <div class="alert alert--error">
+    <i class="fas fa-exclamation-circle"></i> {{ error }}
+  </div>
+}
+
+<!-- Loading -->
+@if (loading && !usersPage) {
+  <div class="table-loading">
+    <i class="fas fa-spinner fa-spin"></i>
+    <span>Loading users…</span>
+  </div>
+}
+
+<!-- Table -->
+@if (usersPage) {
+  <div class="table-wrap">
+    <table class="users-table">
+      <thead>
+        <tr>
+          <th>User</th>
+          <th>Roles</th>
+          <th>Provider</th>
+          <th>Status</th>
+          <th>Joined</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        @if (usersPage.content.length === 0) {
+          <tr>
+            <td colspan="6" class="table-empty">No users found.</td>
+          </tr>
+        }
+        @for (user of usersPage.content; track user.id) {
+          <tr [class.row--locked]="user.accountLocked" [class.row--disabled]="!user.enabled">
+
+            <!-- User info -->
+            <td>
+              <div class="user-cell">
+                <div class="user-avatar">{{ (user.fullName || user.email)[0].toUpperCase() }}</div>
+                <div class="user-details">
+                  <span class="user-name">{{ user.fullName || '—' }}</span>
+                  <span class="user-email">{{ user.email }}</span>
+                </div>
+              </div>
+            </td>
+
+            <!-- Roles -->
+            <td>
+              <div class="badges-row">
+                @for (role of user.roles; track role) {
+                  <span class="badge" [ngClass]="getRoleBadgeClass(role)">{{ role }}</span>
+                }
+              </div>
+            </td>
+
+            <!-- Provider -->
+            <td>
+              <span class="provider-label">
+                @if (user.provider === 'GOOGLE') {
+                  <i class="fab fa-google"></i>
+                } @else {
+                  <i class="fas fa-envelope"></i>
+                }
+                {{ user.provider }}
+              </span>
+            </td>
+
+            <!-- Status -->
+            <td>
+              <div class="status-badges">
+                @if (user.enabled) {
+                  <span class="status-badge status-badge--active">Active</span>
+                } @else {
+                  <span class="status-badge status-badge--inactive">Inactive</span>
+                }
+                @if (user.accountLocked) {
+                  <span class="status-badge status-badge--locked">Locked</span>
+                }
+              </div>
+            </td>
+
+            <!-- Joined -->
+            <td class="date-cell">{{ formatDate(user.createdDate) }}</td>
+
+            <!-- Actions -->
+            <td>
+              <div class="actions-row">
+                <button class="action-btn action-btn--edit" title="Edit user" (click)="openEdit(user)">
+                  <i class="fas fa-pen"></i>
+                </button>
+                <button
+                  class="action-btn"
+                  [class.action-btn--lock]="!user.accountLocked"
+                  [class.action-btn--unlock]="user.accountLocked"
+                  [title]="user.accountLocked ? 'Unlock account' : 'Lock account'"
+                  [disabled]="actionUserId === user.id"
+                  (click)="toggleLock(user)">
+                  <i class="fas"
+                     [class.fa-lock]="!user.accountLocked && actionUserId !== user.id"
+                     [class.fa-lock-open]="user.accountLocked && actionUserId !== user.id"
+                     [class.fa-spinner]="actionUserId === user.id"
+                     [class.fa-spin]="actionUserId === user.id"></i>
+                </button>
+                <button
+                  class="action-btn"
+                  [class.action-btn--deactivate]="user.enabled"
+                  [class.action-btn--activate]="!user.enabled"
+                  [title]="user.enabled ? 'Deactivate account' : 'Activate account'"
+                  [disabled]="actionUserId === user.id"
+                  (click)="toggleEnabled(user)">
+                  <i class="fas"
+                     [class.fa-user-slash]="user.enabled && actionUserId !== user.id"
+                     [class.fa-user-check]="!user.enabled && actionUserId !== user.id"
+                     [class.fa-spinner]="actionUserId === user.id"
+                     [class.fa-spin]="actionUserId === user.id"></i>
+                </button>
+                <button class="action-btn action-btn--delete" title="Delete user" (click)="openDelete(user)">
+                  <i class="fas fa-trash"></i>
+                </button>
+              </div>
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Pagination -->
+  @if (usersPage.totalPages > 1) {
+    <div class="pagination">
+      <button class="page-btn" [disabled]="usersPage.first" (click)="goToPage(currentPage - 1)">
+        <i class="fas fa-chevron-left"></i>
+      </button>
+      @for (p of pageNumbers; track p) {
+        <button class="page-btn" [class.active]="p === currentPage" (click)="goToPage(p)">
+          {{ p + 1 }}
+        </button>
+      }
+      <button class="page-btn" [disabled]="usersPage.last" (click)="goToPage(currentPage + 1)">
+        <i class="fas fa-chevron-right"></i>
+      </button>
+      <span class="page-info">
+        Page {{ currentPage + 1 }} of {{ usersPage.totalPages }}
+        &nbsp;·&nbsp; {{ usersPage.totalElement }} users
+      </span>
+    </div>
+  }
+}
+
+<!-- ════ EDIT MODAL ════ -->
+@if (editModalOpen && editTarget) {
+  <div class="modal-overlay" (click)="closeEdit()">
+    <div class="modal" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h3><i class="fas fa-user-edit"></i> Edit User</h3>
+        <button class="modal-close" (click)="closeEdit()"><i class="fas fa-times"></i></button>
+      </div>
+      <div class="modal-body">
+        @if (editError) {
+          <div class="alert alert--error">{{ editError }}</div>
+        }
+        <div class="form-row">
+          <div class="form-group">
+            <label>First Name</label>
+            <input type="text" [(ngModel)]="editForm.firstname" placeholder="First name">
+          </div>
+          <div class="form-group">
+            <label>Last Name</label>
+            <input type="text" [(ngModel)]="editForm.lastname" placeholder="Last name">
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Email</label>
+          <input type="email" [(ngModel)]="editForm.email" placeholder="Email">
+        </div>
+        <div class="form-group">
+          <label>Location</label>
+          <input type="text" [(ngModel)]="editForm.location" placeholder="Location">
+        </div>
+        <div class="form-group">
+          <label>Bio</label>
+          <textarea [(ngModel)]="editForm.bio" rows="3" placeholder="Bio"></textarea>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn--secondary" (click)="closeEdit()">Cancel</button>
+        <button class="btn btn--primary" (click)="saveEdit()" [disabled]="editSaving">
+          @if (editSaving) { <i class="fas fa-spinner fa-spin"></i> }
+          Save Changes
+        </button>
+      </div>
+    </div>
+  </div>
+}
+
+<!-- ════ DELETE CONFIRM ════ -->
+@if (deleteConfirmOpen && deleteTarget) {
+  <div class="modal-overlay" (click)="cancelDelete()">
+    <div class="modal modal--sm" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h3><i class="fas fa-trash"></i> Delete User</h3>
+        <button class="modal-close" (click)="cancelDelete()"><i class="fas fa-times"></i></button>
+      </div>
+      <div class="modal-body">
+        <p>Are you sure you want to permanently delete
+          <strong>{{ deleteTarget.fullName || deleteTarget.email }}</strong>?
+        </p>
+        <p class="modal-warning">
+          <i class="fas fa-exclamation-triangle"></i> This action cannot be undone.
+        </p>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn--secondary" (click)="cancelDelete()">Cancel</button>
+        <button class="btn btn--danger" (click)="confirmDelete()" [disabled]="deleteInProgress">
+          @if (deleteInProgress) { <i class="fas fa-spinner fa-spin"></i> }
+          Delete
+        </button>
+      </div>
+    </div>
+  </div>
+}

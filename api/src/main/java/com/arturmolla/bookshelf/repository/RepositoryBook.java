@@ -46,4 +46,6 @@ public interface RepositoryBook extends JpaRepository<EntityBook, Long>, JpaSpec
     List<Object[]> findGenreDistributionByUser(Long userId);
 
     Page<EntityBook> findByOwnerOrderByCreatedDateDesc(User owner, Pageable pageable);
+
+    List<EntityBook> findByOwner(User owner);
 }

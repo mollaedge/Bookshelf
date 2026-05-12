@@ -230,6 +230,12 @@
                 <i class="fas fa-user"></i>
                 <span>My Profile</span>
               </a>
+              @if (isAdmin) {
+                <a routerLink="/admin" class="profile-dropdown-item profile-dropdown-item--admin" (click)="showProfileMenu = false">
+                  <i class="fas fa-shield-alt"></i>
+                  <span>Admin Panel</span>
+                </a>
+              }
               <a routerLink="/about" class="profile-dropdown-item" (click)="showProfileMenu = false">
                 <i class="fas fa-info-circle"></i>
                 <span>About</span>

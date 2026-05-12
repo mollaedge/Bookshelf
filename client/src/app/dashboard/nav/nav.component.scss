@@ -257,6 +257,12 @@
       color: #333;
     }
 
+    &--admin {
+      color: #4f8ef7;
+      i { color: #4f8ef7; }
+      &:hover { background: rgba(79, 142, 247, 0.08); }
+    }
+
     &--danger {
       color: #dc3545;
       i { color: #dc3545; }
