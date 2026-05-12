@@ -49,6 +49,7 @@ public class MapperAppFeedback {
                 .authorName(comment.getAuthorName())
                 .message(comment.getMessage())
                 .createdAt(comment.getCreatedAt())
+                .system(comment.getAuthorId() == null)
                 .build();
     }
 

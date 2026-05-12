@@ -9,6 +9,8 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.util.List;
+
 @Repository
 public interface RepositoryMessage extends JpaRepository<EntityMessage, Long> {
 
@@ -45,5 +47,9 @@ public interface RepositoryMessage extends JpaRepository<EntityMessage, Long> {
             LIMIT 1
             """)
     java.util.Optional<EntityMessage> findLastMessage(@Param("conversationId") Long conversationId);
+
+    @Modifying
+    @Query("DELETE FROM EntityMessage m WHERE m.conversation.id IN :conversationIds")
+    void deleteAllByConversationIdIn(@Param("conversationIds") List<Long> conversationIds);
 }
 

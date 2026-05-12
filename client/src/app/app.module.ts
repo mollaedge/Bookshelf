@@ -31,6 +31,11 @@ import { ActivateAccountComponent } from './dashboard/auth/activate-account/acti
 import { LandingPageComponent } from './dashboard/landing-page/landing-page.component';
 import { FriendsComponent } from './dashboard/friends/friends.component';
 import { MessagesComponent } from './dashboard/messages/messages.component';
+import { AdminComponent } from './dashboard/admin/admin.component';
+import { AdminUsersComponent } from './dashboard/admin/admin-users/admin-users.component';
+import { AdminBooksComponent } from './dashboard/admin/admin-books/admin-books.component';
+import { AdminFeedbackComponent } from './dashboard/admin/admin-feedback/admin-feedback.component';
+import { AdminReportsComponent } from './dashboard/admin/admin-reports/admin-reports.component';
 
 @NgModule({
   declarations: [
@@ -51,7 +56,12 @@ import { MessagesComponent } from './dashboard/messages/messages.component';
     ActivateAccountComponent,
     LandingPageComponent,
     FriendsComponent,
-    MessagesComponent
+    MessagesComponent,
+    AdminComponent,
+    AdminUsersComponent,
+    AdminBooksComponent,
+    AdminFeedbackComponent,
+    AdminReportsComponent
   ],
   imports: [
     BrowserModule,

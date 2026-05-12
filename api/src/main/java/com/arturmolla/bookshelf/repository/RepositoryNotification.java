@@ -6,6 +6,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 @Repository
@@ -24,5 +25,8 @@ public interface RepositoryNotification extends JpaRepository<EntityNotification
     @Modifying
     @Query("DELETE FROM EntityNotification n WHERE n.recipient.id = :recipientId")
     void deleteAllByRecipientId(Long recipientId);
-}
 
+    @Modifying
+    @Query("DELETE FROM EntityNotification n WHERE n.actor.id = :actorId")
+    void deleteAllByActorId(@Param("actorId") Long actorId);
+}

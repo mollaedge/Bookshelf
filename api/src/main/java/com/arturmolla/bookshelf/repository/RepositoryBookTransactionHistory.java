@@ -4,7 +4,9 @@ import com.arturmolla.bookshelf.model.entity.EntityBookTransactionHistory;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.time.LocalDateTime;
@@ -125,6 +127,14 @@ public interface RepositoryBookTransactionHistory extends JpaRepository<EntityBo
             ORDER BY month ASC""",
             nativeQuery = true)
     List<Object[]> findMonthlyReadingActivity(Long userId, LocalDateTime from);
+
+    @Modifying
+    @Query("DELETE FROM EntityBookTransactionHistory h WHERE h.user.id = :userId")
+    void deleteAllByUserId(@Param("userId") Long userId);
+
+    @Modifying
+    @Query("DELETE FROM EntityBookTransactionHistory h WHERE h.book.id IN :bookIds")
+    void deleteAllByBookIdIn(@Param("bookIds") List<Long> bookIds);
 }
 
 

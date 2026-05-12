@@ -17,5 +17,7 @@ public class DtoComment {
     private String authorName;
     private String message;
     private LocalDateTime createdAt;
+    /** True when this comment was posted by the system (e.g. an admin status-change note). */
+    private boolean system;
 }
 

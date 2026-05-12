@@ -15,6 +15,8 @@ import { HomeComponent } from './dashboard/home/home.component';
 import { LandingPageComponent } from './dashboard/landing-page/landing-page.component';
 import { FriendsComponent } from './dashboard/friends/friends.component';
 import { MessagesComponent } from './dashboard/messages/messages.component';
+import { AdminComponent } from './dashboard/admin/admin.component';
+import { AdminGuard } from './service/auth/admin-guard';
 
 const routes: Routes = [
   {
@@ -27,6 +29,7 @@ const routes: Routes = [
       { path: 'mybooks', component: MybooksComponent, canActivate: [AuthGuard]},
       { path: 'friends', component: FriendsComponent, canActivate: [AuthGuard] },
       { path: 'messages', component: MessagesComponent, canActivate: [AuthGuard] },
+      { path: 'admin', component: AdminComponent, canActivate: [AuthGuard, AdminGuard] },
       { path: 'dashboard', component: DashComponent },
       { path: 'about', component: AboutComponent },
       { path: 'feedback', component: FeedbackComponent },

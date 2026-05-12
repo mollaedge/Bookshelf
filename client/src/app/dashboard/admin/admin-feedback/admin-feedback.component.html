@@ -1,0 +1,276 @@
+<div class="fb-header">
+  <div>
+    <h2>Feedback</h2>
+    <p class="section-desc">Review, respond to, and manage user-submitted feedback.</p>
+  </div>
+  <div class="fb-header-actions">
+    <button class="btn btn--primary btn--sm" (click)="openCreate()">
+      <i class="fas fa-plus"></i> New Feedback
+    </button>
+    <button class="btn-reload" (click)="loadFeedbacks(0)" [disabled]="loading">
+      <i class="fas fa-sync-alt" [class.fa-spin]="loading"></i> Refresh
+    </button>
+  </div>
+</div>
+
+<!-- Status filter tabs -->
+<div class="status-tabs">
+  @for (f of statusFilters; track f.id) {
+    <button
+      class="status-tab"
+      [class.active]="activeFilter === f.id"
+      (click)="setFilter(f.id)">
+      {{ f.label }}
+    </button>
+  }
+</div>
+
+@if (error) {
+  <div class="alert alert--error"><i class="fas fa-exclamation-circle"></i> {{ error }}</div>
+}
+
+@if (loading && !page) {
+  <div class="table-loading">
+    <i class="fas fa-spinner fa-spin"></i>
+    <span>Loading feedback&hellip;</span>
+  </div>
+}
+
+@if (page) {
+  <!-- Split layout: list + detail panel -->
+  <div class="fb-layout" [class.fb-layout--split]="selected">
+
+    <!-- ── List ─────────────────────────────────────────────────────────── -->
+    <div class="fb-list">
+      @if (page.content.length === 0) {
+        <div class="fb-empty">
+          <i class="fas fa-comment-slash"></i>
+          <p>No feedback found for this filter.</p>
+        </div>
+      }
+      @for (fb of page.content; track fb.id) {
+        <div
+          class="fb-card"
+          [class.fb-card--active]="selected?.id === fb.id"
+          (click)="selectFeedback(fb)">
+
+          <div class="fb-card-top">
+            <span class="fb-status-badge" [ngClass]="statusClass(fb.status)">
+              {{ statusLabel(fb.status) }}
+            </span>
+            <span class="fb-meta">
+              <i class="fas fa-thumbs-up"></i> {{ fb.upvoteCount }}
+              &nbsp;&bull;&nbsp; {{ fb.age }}
+            </span>
+          </div>
+
+          <h4 class="fb-card-title">{{ fb.title }}</h4>
+          <p class="fb-card-desc">{{ fb.description }}</p>
+
+          <div class="fb-card-footer">
+            <span class="fb-author">
+              <i class="fas fa-user"></i>
+              {{ fb.authorName || ('User #' + fb.createdBy) }}
+            </span>
+            <div class="fb-card-actions" (click)="$event.stopPropagation()">
+              <button class="action-btn action-btn--edit" title="Edit" (click)="selectFeedback(fb); openEdit(fb)">
+                <i class="fas fa-pen"></i>
+              </button>
+              <button class="action-btn action-btn--delete" title="Delete" (click)="openDelete(fb)">
+                <i class="fas fa-trash"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+      }
+
+      <!-- Pagination -->
+      @if (page.totalPages > 1) {
+        <div class="pagination">
+          <button class="page-btn" [disabled]="page.first" (click)="goToPage(currentPage - 1)">
+            <i class="fas fa-chevron-left"></i>
+          </button>
+          @for (p of pageNumbers; track p) {
+            <button class="page-btn" [class.active]="p === currentPage" (click)="goToPage(p)">{{ p + 1 }}</button>
+          }
+          <button class="page-btn" [disabled]="page.last" (click)="goToPage(currentPage + 1)">
+            <i class="fas fa-chevron-right"></i>
+          </button>
+          <span class="page-info">{{ currentPage + 1 }} / {{ page.totalPages }} &bull; {{ page.totalElement }} items</span>
+        </div>
+      }
+    </div>
+
+    <!-- ── Detail panel ──────────────────────────────────────────────────── -->
+    @if (selected) {
+      <div class="fb-detail">
+        <div class="detail-header">
+          <span class="fb-status-badge" [ngClass]="statusClass(selected.status)">
+            {{ statusLabel(selected.status) }}
+          </span>
+          <button class="detail-close" (click)="closeDetail()"><i class="fas fa-times"></i></button>
+        </div>
+
+        <h3 class="detail-title">{{ selected.title }}</h3>
+
+        <p class="detail-meta">
+          <i class="fas fa-user"></i>
+          {{ selected.authorName || ('User #' + selected.createdBy) }}
+          &nbsp;&bull;&nbsp;
+          <i class="fas fa-calendar"></i> {{ formatDate(selected.createdDate) }}
+          &nbsp;&bull;&nbsp;
+          <i class="fas fa-thumbs-up"></i> {{ selected.upvoteCount }}
+        </p>
+
+        <p class="detail-body">{{ selected.description }}</p>
+
+        <!-- Status quick-change -->
+        <div class="detail-section-label">Change Status</div>
+        <div class="status-select-row">
+          @for (s of allStatuses; track s) {
+            <button
+              class="status-pill"
+              [class.active]="selected.status === s"
+              [ngClass]="statusClass(s)"
+              [disabled]="statusChangingId === selected.id"
+              (click)="changeStatus(selected, s)">
+              @if (statusChangingId === selected.id) {
+                <i class="fas fa-spinner fa-spin"></i>
+              }
+              {{ statusLabel(s) }}
+            </button>
+          }
+        </div>
+
+        <!-- Action row -->
+        <div class="detail-actions">
+          <button class="btn btn--secondary btn--sm" (click)="openEdit(selected)">
+            <i class="fas fa-pen"></i> Edit
+          </button>
+          <button class="btn btn--danger btn--sm" (click)="openDelete(selected)">
+            <i class="fas fa-trash"></i> Delete
+          </button>
+        </div>
+
+        <!-- Comments -->
+        <div class="detail-section-label">
+          Comments <span class="comment-count">{{ selected.comments.length }}</span>
+        </div>
+
+        @if (selected.comments.length === 0) {
+          <p class="no-comments">No comments yet.</p>
+        }
+
+        <ul class="comment-list">
+          @for (c of selected.comments; track $index) {
+            <li class="comment-item">
+              <div class="comment-header">
+                <span class="comment-author">{{ commentAuthor(c) }}</span>
+                <span class="comment-time">{{ c.createdAt | date:'dd MMM yyyy, HH:mm' }}</span>
+                <button
+                  class="comment-delete"
+                  title="Remove comment"
+                  [disabled]="deletingCommentIndex === $index"
+                  (click)="deleteComment($index)">
+                  @if (deletingCommentIndex === $index) {
+                    <i class="fas fa-spinner fa-spin"></i>
+                  } @else {
+                    <i class="fas fa-times"></i>
+                  }
+                </button>
+              </div>
+              <p class="comment-body">{{ c.message }}</p>
+            </li>
+          }
+        </ul>
+
+        <!-- Add system comment -->
+        @if (commentError) {
+          <div class="alert alert--error">{{ commentError }}</div>
+        }
+        <div class="comment-form">
+          <textarea
+            [(ngModel)]="newComment"
+            rows="2"
+            placeholder="Add a system comment&hellip;"
+            class="comment-input">
+          </textarea>
+          <button
+            class="btn btn--primary btn--sm"
+            [disabled]="commentSaving || !newComment.trim()"
+            (click)="submitComment()">
+            @if (commentSaving) { <i class="fas fa-spinner fa-spin"></i> }
+            Post
+          </button>
+        </div>
+      </div>
+    }
+  </div>
+}
+
+<!-- ════ CREATE / EDIT MODAL ════ -->
+@if (editModalOpen) {
+  <div class="modal-overlay" (click)="closeEdit()">
+    <div class="modal" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h3>
+          <i class="fas" [class.fa-plus]="isCreating" [class.fa-pen]="!isCreating"></i>
+          {{ isCreating ? 'New Feedback' : 'Edit Feedback' }}
+        </h3>
+        <button class="modal-close" (click)="closeEdit()"><i class="fas fa-times"></i></button>
+      </div>
+      <div class="modal-body">
+        @if (editError) {
+          <div class="alert alert--error">{{ editError }}</div>
+        }
+        <div class="form-group">
+          <label>Title</label>
+          <input type="text" [(ngModel)]="editForm.title" placeholder="Feedback title">
+        </div>
+        <div class="form-group">
+          <label>Description</label>
+          <textarea [(ngModel)]="editForm.description" rows="4" placeholder="Description"></textarea>
+        </div>
+        <div class="form-group">
+          <label>Status</label>
+          <select [(ngModel)]="editForm.status" class="form-select">
+            @for (s of allStatuses; track s) {
+              <option [value]="s">{{ statusLabel(s) }}</option>
+            }
+          </select>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn--secondary" (click)="closeEdit()">Cancel</button>
+        <button class="btn btn--primary" (click)="saveEdit()" [disabled]="editSaving || !editForm.title.trim()">
+          @if (editSaving) { <i class="fas fa-spinner fa-spin"></i> }
+          {{ isCreating ? 'Create' : 'Save Changes' }}
+        </button>
+      </div>
+    </div>
+  </div>
+}
+
+<!-- ════ DELETE CONFIRM ════ -->
+@if (deleteTarget) {
+  <div class="modal-overlay" (click)="cancelDelete()">
+    <div class="modal modal--sm" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h3><i class="fas fa-trash"></i> Delete Feedback</h3>
+        <button class="modal-close" (click)="cancelDelete()"><i class="fas fa-times"></i></button>
+      </div>
+      <div class="modal-body">
+        <p>Permanently delete <strong>{{ deleteTarget.title }}</strong>?</p>
+        <p class="modal-warning"><i class="fas fa-exclamation-triangle"></i> This action cannot be undone.</p>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn--secondary" (click)="cancelDelete()">Cancel</button>
+        <button class="btn btn--danger" (click)="confirmDelete()" [disabled]="deleteInProgress">
+          @if (deleteInProgress) { <i class="fas fa-spinner fa-spin"></i> }
+          Delete
+        </button>
+      </div>
+    </div>
+  </div>
+}
+

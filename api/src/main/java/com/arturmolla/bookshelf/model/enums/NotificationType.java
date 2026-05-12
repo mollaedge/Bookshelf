@@ -16,6 +16,7 @@ public enum NotificationType {
     // ── App-feedback events ───────────────────────────────────
     FEEDBACK_UPVOTED,
     FEEDBACK_COMMENTED,
+    FEEDBACK_STATUS_CHANGED,
     BOOK_BORROW_REQUESTED,
     BOOK_BORROW_APPROVED,
     BOOK_BORROW_REJECTED,
