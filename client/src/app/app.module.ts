@@ -36,6 +36,7 @@ import { AdminUsersComponent } from './dashboard/admin/admin-users/admin-users.c
 import { AdminBooksComponent } from './dashboard/admin/admin-books/admin-books.component';
 import { AdminFeedbackComponent } from './dashboard/admin/admin-feedback/admin-feedback.component';
 import { AdminReportsComponent } from './dashboard/admin/admin-reports/admin-reports.component';
+import { SideNavComponent } from './dashboard/nav/side-nav/side-nav.component';
 
 @NgModule({
   declarations: [
@@ -61,7 +62,8 @@ import { AdminReportsComponent } from './dashboard/admin/admin-reports/admin-rep
     AdminUsersComponent,
     AdminBooksComponent,
     AdminFeedbackComponent,
-    AdminReportsComponent
+    AdminReportsComponent,
+    SideNavComponent
   ],
   imports: [
     BrowserModule,

@@ -1,0 +1,54 @@
+@if (isBrowser && (user$ | async)) {
+  <nav class="side-nav" [class.collapsed]="collapsed">
+
+    <div class="side-nav-links">
+      <a routerLink="/home" routerLinkActive="active" class="side-nav-item" [title]="collapsed ? 'Home' : ''">
+        <i class="fas fa-home"></i>
+        <span class="side-nav-label">Home</span>
+      </a>
+      <a routerLink="/dashboard" routerLinkActive="active" class="side-nav-item" [title]="collapsed ? 'Dashboard' : ''">
+        <i class="fas fa-tachometer-alt"></i>
+        <span class="side-nav-label">Dashboard</span>
+      </a>
+      <a routerLink="/mybooks" routerLinkActive="active" class="side-nav-item" [title]="collapsed ? 'My Library' : ''">
+        <i class="fas fa-book-open"></i>
+        <span class="side-nav-label">My Library</span>
+      </a>
+      <a routerLink="/friends" routerLinkActive="active" class="side-nav-item" [title]="collapsed ? 'Friends' : ''">
+        <i class="fas fa-user-friends"></i>
+        <span class="side-nav-label">Friends</span>
+      </a>
+      <a routerLink="/messages" routerLinkActive="active" class="side-nav-item" [title]="collapsed ? 'Messages' : ''">
+        <i class="fas fa-envelope"></i>
+        <span class="side-nav-label">Messages</span>
+      </a>
+
+      <div class="side-nav-divider"></div>
+
+      <a routerLink="/about" routerLinkActive="active" class="side-nav-item" [title]="collapsed ? 'About' : ''">
+        <i class="fas fa-info-circle"></i>
+        <span class="side-nav-label">About</span>
+      </a>
+      <a routerLink="/feedback" routerLinkActive="active" class="side-nav-item" [title]="collapsed ? 'Feedback' : ''">
+        <i class="fas fa-comment"></i>
+        <span class="side-nav-label">Feedback</span>
+      </a>
+
+      @if (isAdmin) {
+        <hr class="side-nav-hr">
+        <a routerLink="/admin" routerLinkActive="active" class="side-nav-item" [title]="collapsed ? 'Admin' : ''">
+          <i class="fas fa-shield-alt"></i>
+          <span class="side-nav-label">Admin</span>
+        </a>
+      }
+    </div>
+
+    <div class="side-nav-footer">
+      <button class="side-nav-toggle" (click)="toggle()" [attr.aria-label]="collapsed ? 'Expand sidebar' : 'Collapse sidebar'" [title]="collapsed ? 'Expand' : 'Collapse'">
+        <i class="fas fa-chevron-left"></i>
+        <span class="side-nav-label">Collapse</span>
+      </button>
+    </div>
+
+  </nav>
+}
