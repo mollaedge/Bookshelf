@@ -11,24 +11,7 @@
       </button>
       @if (showNavMenu) {
         <div class="nav-menu-dropdown">
-          @if (user$ | async) {
-            <a routerLink="/home" routerLinkActive="active" class="nav-menu-item" (click)="showNavMenu = false">
-              <i class="fas fa-home"></i>
-              <span>Home</span>
-            </a>
-            <a routerLink="/dashboard" routerLinkActive="active" class="nav-menu-item" (click)="showNavMenu = false">
-              <i class="fas fa-tachometer-alt"></i>
-              <span>Dashboard</span>
-            </a>
-            <a routerLink="/mybooks" routerLinkActive="active" class="nav-menu-item" (click)="showNavMenu = false">
-              <i class="fas fa-book-open"></i>
-              <span>My Library</span>
-            </a>
-            <a routerLink="/friends" routerLinkActive="active" class="nav-menu-item" (click)="showNavMenu = false">
-              <i class="fas fa-user-friends"></i>
-              <span>Friends</span>
-            </a>
-          } @else {
+          @if (!(user$ | async)) {
             <a routerLink="/about" routerLinkActive="active" class="nav-menu-item" (click)="showNavMenu = false">
               <i class="fas fa-info-circle"></i>
               <span>About</span>
@@ -44,34 +27,15 @@
 
     <!-- Centre links -->
     <div class="nav-links">
-      @if (isBrowser) {
-        @if (user$ | async) {
-          <a routerLink="/home" routerLinkActive="active">
-            <i class="fas fa-home"></i>
-            <span>Home</span>
-          </a>
-          <a routerLink="/dashboard" routerLinkActive="active">
-            <i class="fas fa-tachometer-alt"></i>
-            <span>Dashboard</span>
-          </a>
-          <a routerLink="/mybooks" routerLinkActive="active">
-            <i class="fas fa-book-open"></i>
-            <span>My Library</span>
-          </a>
-          <a routerLink="/friends" routerLinkActive="active">
-            <i class="fas fa-user-friends"></i>
-            <span>Friends</span>
-          </a>
-        } @else {
-          <a routerLink="/about" routerLinkActive="active">
-            <i class="fas fa-info-circle"></i>
-            <span>About</span>
-          </a>
-          <a routerLink="/feedback" routerLinkActive="active">
-            <i class="fas fa-comment"></i>
-            <span>Feedback</span>
-          </a>
-        }
+      @if (isBrowser && !(user$ | async)) {
+        <a routerLink="/about" routerLinkActive="active">
+          <i class="fas fa-info-circle"></i>
+          <span>About</span>
+        </a>
+        <a routerLink="/feedback" routerLinkActive="active">
+          <i class="fas fa-comment"></i>
+          <span>Feedback</span>
+        </a>
       }
     </div>
 
@@ -229,20 +193,6 @@
               <a routerLink="/profile" class="profile-dropdown-item" (click)="showProfileMenu = false">
                 <i class="fas fa-user"></i>
                 <span>My Profile</span>
-              </a>
-              @if (isAdmin) {
-                <a routerLink="/admin" class="profile-dropdown-item profile-dropdown-item--admin" (click)="showProfileMenu = false">
-                  <i class="fas fa-shield-alt"></i>
-                  <span>Admin Panel</span>
-                </a>
-              }
-              <a routerLink="/about" class="profile-dropdown-item" (click)="showProfileMenu = false">
-                <i class="fas fa-info-circle"></i>
-                <span>About</span>
-              </a>
-              <a routerLink="/feedback" class="profile-dropdown-item" (click)="showProfileMenu = false">
-                <i class="fas fa-comment"></i>
-                <span>Feedback</span>
               </a>
               <div class="profile-dropdown-divider"></div>
               <button class="profile-dropdown-item profile-dropdown-item--danger" (click)="logout()">

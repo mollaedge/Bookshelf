@@ -1,11 +1,6 @@
 @if (isBrowser && (user$ | async)) {
   <nav class="side-nav" [class.collapsed]="collapsed">
 
-    <!-- Toggle button -->
-    <button class="side-nav-toggle" (click)="toggle()" [attr.aria-label]="collapsed ? 'Expand sidebar' : 'Collapse sidebar'">
-      <i class="fas" [class.fa-chevron-left]="!collapsed" [class.fa-chevron-right]="collapsed"></i>
-    </button>
-
     <div class="side-nav-links">
       <a routerLink="/home" routerLinkActive="active" class="side-nav-item" [title]="collapsed ? 'Home' : ''">
         <i class="fas fa-home"></i>
@@ -27,13 +22,32 @@
         <i class="fas fa-envelope"></i>
         <span class="side-nav-label">Messages</span>
       </a>
+
+      <div class="side-nav-divider"></div>
+
+      <a routerLink="/about" routerLinkActive="active" class="side-nav-item" [title]="collapsed ? 'About' : ''">
+        <i class="fas fa-info-circle"></i>
+        <span class="side-nav-label">About</span>
+      </a>
+      <a routerLink="/feedback" routerLinkActive="active" class="side-nav-item" [title]="collapsed ? 'Feedback' : ''">
+        <i class="fas fa-comment"></i>
+        <span class="side-nav-label">Feedback</span>
+      </a>
+
       @if (isAdmin) {
-        <div class="side-nav-divider"></div>
+        <hr class="side-nav-hr">
         <a routerLink="/admin" routerLinkActive="active" class="side-nav-item" [title]="collapsed ? 'Admin' : ''">
           <i class="fas fa-shield-alt"></i>
           <span class="side-nav-label">Admin</span>
         </a>
       }
+    </div>
+
+    <div class="side-nav-footer">
+      <button class="side-nav-toggle" (click)="toggle()" [attr.aria-label]="collapsed ? 'Expand sidebar' : 'Collapse sidebar'" [title]="collapsed ? 'Expand' : 'Collapse'">
+        <i class="fas fa-chevron-left"></i>
+        <span class="side-nav-label">Collapse</span>
+      </button>
     </div>
 
   </nav>

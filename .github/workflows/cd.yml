@@ -145,9 +145,9 @@ jobs:
 
       - name: Start Angular app
         run: |
-          ssh hetzner "mkdir -p /var/www/bookshelf"
-          ssh hetzner "pkill -f 'server.mjs'; true"
-          ssh hetzner "setsid nohup node /var/www/bookshelf/client/server/server.mjs >> /var/www/bookshelf/app.log 2>&1 < /dev/null"
+          ssh hetzner "echo started"
+          ssh -n hetzner "pkill -f 'server.mjs' || true"
+          ssh -n hetzner "setsid nohup node /var/www/bookshelf/client/server/server.mjs > /var/www/bookshelf/app.log 2>&1 < /dev/null &"
 
       # ── Configure nginx reverse proxy ─────────────────────────────────────────
       - name: Configure nginx

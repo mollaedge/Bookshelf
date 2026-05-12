@@ -1,30 +1,29 @@
 $accent: #1976D2;
-$accent-light: rgba(25, 118, 210, 0.12);
+$accent-light: rgba(25, 118, 210, 0.10);
 $nav-width: 200px;
-$nav-collapsed-width: 60px;
-$transition: 0.28s cubic-bezier(0.4, 0, 0.2, 1);
+$nav-collapsed-width: 54px;
+$transition: 0.25s cubic-bezier(0.4, 0, 0.2, 1);
 
 // ── Side nav ─────────────────────────────────────────────────────────────
 .side-nav {
   position: sticky;
-  top: 80px; // stays visible while scrolling
+  top: 80px;
   align-self: flex-start;
   width: $nav-width;
-  max-height: calc(100vh - 92px); // never taller than the space below the top nav
+  max-height: calc(100vh - 92px);
 
-  // Glassmorphism – matches top-nav
-  background: rgba(255, 255, 255, 0.18);
-  backdrop-filter: blur(18px) saturate(180%);
-  -webkit-backdrop-filter: blur(18px) saturate(180%);
-  border: 1px solid rgba(255, 255, 255, 0.35);
-  border-radius: 18px;
-  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.10), 0 1px 0 rgba(255, 255, 255, 0.6) inset;
+  background: rgba(255, 255, 255, 0.82);
+  backdrop-filter: blur(20px) saturate(160%);
+  -webkit-backdrop-filter: blur(20px) saturate(160%);
+  border: 1px solid rgba(255, 255, 255, 0.55);
+  border-radius: 16px;
+  box-shadow: 0 2px 20px rgba(0, 0, 0, 0.07), 0 1px 0 rgba(255, 255, 255, 0.8) inset;
 
   display: flex;
   flex-direction: column;
-  padding: 14px 10px;
-  gap: 2px;
+  padding: 10px 8px;
   overflow-y: auto;
+  overflow-x: hidden;
   flex-shrink: 0;
   margin: 12px 0 12px 12px;
 
@@ -33,102 +32,64 @@ $transition: 0.28s cubic-bezier(0.4, 0, 0.2, 1);
   &.collapsed {
     width: $nav-collapsed-width;
 
-    .side-nav-brand span,
     .side-nav-label {
       opacity: 0;
       width: 0;
       overflow: hidden;
       pointer-events: none;
     }
+
+    .side-nav-item,
+    .side-nav-toggle {
+      justify-content: center;
+      padding: 9px;
+    }
+
+    .side-nav-toggle i {
+      transform: rotate(180deg);
+    }
   }
-}
-
-// ── Toggle button ────────────────────────────────────────────────────────
-.side-nav-toggle {
-  align-self: flex-end;
-  width: 28px;
-  height: 28px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: rgba(25, 118, 210, 0.08);
-  border: 1px solid rgba(25, 118, 210, 0.2);
-  border-radius: 8px;
-  color: $accent;
-  cursor: pointer;
-  font-size: 0.72rem;
-  transition: background 0.2s, color 0.2s;
-  flex-shrink: 0;
-  margin-bottom: 8px;
-
-  &:hover {
-    background: $accent-light;
-    color: darken($accent, 8%);
-  }
-}
-
-// ── Brand ────────────────────────────────────────────────────────────────
-.side-nav-brand {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  text-decoration: none;
-  color: #1a1a2e;
-  font-weight: 700;
-  font-size: 1rem;
-  letter-spacing: 0.3px;
-  padding: 6px 8px;
-  border-radius: 10px;
-  overflow: hidden;
-  white-space: nowrap;
-  transition: opacity 0.2s;
-
-  i {
-    font-size: 1.1rem;
-    color: $accent;
-    flex-shrink: 0;
-  }
-
-  span {
-    transition: opacity $transition, width $transition;
-    white-space: nowrap;
-  }
-
-  &:hover { opacity: 0.8; }
-}
-
-// ── Divider ──────────────────────────────────────────────────────────────
-.side-nav-divider {
-  height: 1px;
-  background: rgba(0, 0, 0, 0.07);
-  margin: 8px 4px;
 }
 
 // ── Nav links container ──────────────────────────────────────────────────
 .side-nav-links {
   display: flex;
   flex-direction: column;
-  gap: 2px;
-  overflow: hidden;
+  gap: 1px;
+  flex: 1;
 }
 
 // ── Individual nav item ──────────────────────────────────────────────────
 .side-nav-item {
+  position: relative;
   display: flex;
   align-items: center;
   gap: 10px;
   padding: 9px 10px;
   text-decoration: none;
-  color: #444;
+  color: #555;
   border-radius: 10px;
-  font-size: 0.9rem;
+  font-size: 0.875rem;
   font-weight: 500;
   white-space: nowrap;
   overflow: hidden;
-  transition: background 0.2s, color 0.2s;
+  transition: background $transition, color $transition, padding $transition;
+
+  &::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 20%;
+    height: 60%;
+    width: 3px;
+    background: $accent;
+    border-radius: 0 3px 3px 0;
+    opacity: 0;
+    transition: opacity $transition;
+  }
 
   i {
-    font-size: 0.95rem;
+    font-size: 0.88rem;
     flex-shrink: 0;
     width: 18px;
     text-align: center;
@@ -141,7 +102,7 @@ $transition: 0.28s cubic-bezier(0.4, 0, 0.2, 1);
   }
 
   &:hover {
-    background: rgba(25, 118, 210, 0.1);
+    background: rgba(0, 0, 0, 0.04);
     color: $accent;
   }
 
@@ -149,5 +110,69 @@ $transition: 0.28s cubic-bezier(0.4, 0, 0.2, 1);
     background: $accent-light;
     color: $accent;
     font-weight: 600;
+
+    &::before {
+      opacity: 1;
+    }
+  }
+}
+
+// ── Divider ──────────────────────────────────────────────────────────────
+.side-nav-divider {
+  height: 1px;
+  background: rgba(0, 0, 0, 0.06);
+  margin: 6px 4px;
+}
+
+// ── Horizontal rule (above admin) ────────────────────────────────────────
+.side-nav-hr {
+  border: none;
+  height: 1px;
+  background: rgba(0, 0, 0, 0.08);
+  margin: 12px 4px 10px;
+}
+
+// ── Footer ───────────────────────────────────────────────────────────────
+.side-nav-footer {
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid rgba(0, 0, 0, 0.06);
+  flex-shrink: 0;
+}
+
+// ── Toggle button ────────────────────────────────────────────────────────
+.side-nav-toggle {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 10px;
+  width: 100%;
+  background: transparent;
+  border: none;
+  border-radius: 10px;
+  color: #888;
+  cursor: pointer;
+  font-size: 0.875rem;
+  white-space: nowrap;
+  overflow: hidden;
+  transition: background $transition, color $transition, padding $transition;
+
+  i {
+    font-size: 0.78rem;
+    flex-shrink: 0;
+    width: 18px;
+    text-align: center;
+    transition: transform $transition;
+  }
+
+  .side-nav-label {
+    transition: opacity $transition, width $transition;
+    overflow: hidden;
+    white-space: nowrap;
+  }
+
+  &:hover {
+    background: rgba(0, 0, 0, 0.04);
+    color: #444;
   }
 }
