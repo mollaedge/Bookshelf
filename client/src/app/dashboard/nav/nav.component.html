@@ -264,9 +264,12 @@
     </div>
   </nav>
 
-  <main class="main-content">
-    <router-outlet></router-outlet>
-  </main>
+  <div class="body-row">
+    <app-side-nav></app-side-nav>
+    <main class="main-content">
+      <router-outlet></router-outlet>
+    </main>
+  </div>
 </div>
 
 <app-bookpopup

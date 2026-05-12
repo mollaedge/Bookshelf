@@ -1,0 +1,153 @@
+$accent: #1976D2;
+$accent-light: rgba(25, 118, 210, 0.12);
+$nav-width: 200px;
+$nav-collapsed-width: 60px;
+$transition: 0.28s cubic-bezier(0.4, 0, 0.2, 1);
+
+// ── Side nav ─────────────────────────────────────────────────────────────
+.side-nav {
+  position: sticky;
+  top: 80px; // stays visible while scrolling
+  align-self: flex-start;
+  width: $nav-width;
+  max-height: calc(100vh - 92px); // never taller than the space below the top nav
+
+  // Glassmorphism – matches top-nav
+  background: rgba(255, 255, 255, 0.18);
+  backdrop-filter: blur(18px) saturate(180%);
+  -webkit-backdrop-filter: blur(18px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  border-radius: 18px;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.10), 0 1px 0 rgba(255, 255, 255, 0.6) inset;
+
+  display: flex;
+  flex-direction: column;
+  padding: 14px 10px;
+  gap: 2px;
+  overflow-y: auto;
+  flex-shrink: 0;
+  margin: 12px 0 12px 12px;
+
+  transition: width $transition;
+
+  &.collapsed {
+    width: $nav-collapsed-width;
+
+    .side-nav-brand span,
+    .side-nav-label {
+      opacity: 0;
+      width: 0;
+      overflow: hidden;
+      pointer-events: none;
+    }
+  }
+}
+
+// ── Toggle button ────────────────────────────────────────────────────────
+.side-nav-toggle {
+  align-self: flex-end;
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(25, 118, 210, 0.08);
+  border: 1px solid rgba(25, 118, 210, 0.2);
+  border-radius: 8px;
+  color: $accent;
+  cursor: pointer;
+  font-size: 0.72rem;
+  transition: background 0.2s, color 0.2s;
+  flex-shrink: 0;
+  margin-bottom: 8px;
+
+  &:hover {
+    background: $accent-light;
+    color: darken($accent, 8%);
+  }
+}
+
+// ── Brand ────────────────────────────────────────────────────────────────
+.side-nav-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  text-decoration: none;
+  color: #1a1a2e;
+  font-weight: 700;
+  font-size: 1rem;
+  letter-spacing: 0.3px;
+  padding: 6px 8px;
+  border-radius: 10px;
+  overflow: hidden;
+  white-space: nowrap;
+  transition: opacity 0.2s;
+
+  i {
+    font-size: 1.1rem;
+    color: $accent;
+    flex-shrink: 0;
+  }
+
+  span {
+    transition: opacity $transition, width $transition;
+    white-space: nowrap;
+  }
+
+  &:hover { opacity: 0.8; }
+}
+
+// ── Divider ──────────────────────────────────────────────────────────────
+.side-nav-divider {
+  height: 1px;
+  background: rgba(0, 0, 0, 0.07);
+  margin: 8px 4px;
+}
+
+// ── Nav links container ──────────────────────────────────────────────────
+.side-nav-links {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  overflow: hidden;
+}
+
+// ── Individual nav item ──────────────────────────────────────────────────
+.side-nav-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 10px;
+  text-decoration: none;
+  color: #444;
+  border-radius: 10px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  transition: background 0.2s, color 0.2s;
+
+  i {
+    font-size: 0.95rem;
+    flex-shrink: 0;
+    width: 18px;
+    text-align: center;
+  }
+
+  .side-nav-label {
+    transition: opacity $transition, width $transition;
+    overflow: hidden;
+    white-space: nowrap;
+  }
+
+  &:hover {
+    background: rgba(25, 118, 210, 0.1);
+    color: $accent;
+  }
+
+  &.active {
+    background: $accent-light;
+    color: $accent;
+    font-weight: 600;
+  }
+}
