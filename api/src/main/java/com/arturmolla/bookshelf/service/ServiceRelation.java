@@ -218,7 +218,7 @@ public class ServiceRelation {
     // ─────────────────────────────────────────────────────────────────────────
 
     /** Returns all accepted friends of the authenticated user, paged. */
-    @org.springframework.transaction.annotation.Transactional(readOnly = true)
+    @Transactional(readOnly = true)
     public PageResponse<DtoRelationResponse> getMyFriends(int page, int size, Authentication connectedUser) {
         var user = (User) connectedUser.getPrincipal();
         Page<EntityUserRelation> result = relationRepository.findFriends(
@@ -227,7 +227,7 @@ public class ServiceRelation {
     }
 
     /** Returns incoming pending friend requests for the authenticated user. */
-    @org.springframework.transaction.annotation.Transactional(readOnly = true)
+    @Transactional(readOnly = true)
     public PageResponse<DtoRelationResponse> getIncomingFriendRequests(int page, int size, Authentication connectedUser) {
         var user = (User) connectedUser.getPrincipal();
         Page<EntityUserRelation> result = relationRepository
@@ -238,7 +238,7 @@ public class ServiceRelation {
     }
 
     /** Returns outgoing pending friend requests sent by the authenticated user. */
-    @org.springframework.transaction.annotation.Transactional(readOnly = true)
+    @Transactional(readOnly = true)
     public PageResponse<DtoRelationResponse> getOutgoingFriendRequests(int page, int size, Authentication connectedUser) {
         var user = (User) connectedUser.getPrincipal();
         Page<EntityUserRelation> result = relationRepository
@@ -249,7 +249,7 @@ public class ServiceRelation {
     }
 
     /** Returns users that the authenticated user is following. */
-    @org.springframework.transaction.annotation.Transactional(readOnly = true)
+    @Transactional(readOnly = true)
     public PageResponse<DtoRelationResponse> getFollowing(int page, int size, Authentication connectedUser) {
         var user = (User) connectedUser.getPrincipal();
         Page<EntityUserRelation> result = relationRepository
@@ -258,7 +258,7 @@ public class ServiceRelation {
     }
 
     /** Returns users who follow the authenticated user. */
-    @org.springframework.transaction.annotation.Transactional(readOnly = true)
+    @Transactional(readOnly = true)
     public PageResponse<DtoRelationResponse> getFollowers(int page, int size, Authentication connectedUser) {
         var user = (User) connectedUser.getPrincipal();
         Page<EntityUserRelation> result = relationRepository
@@ -274,7 +274,7 @@ public class ServiceRelation {
      * Returns the public profile page of a target user enriched with the
      * authenticated user's relation context (friend status, follow status, counts).
      */
-    @org.springframework.transaction.annotation.Transactional(readOnly = true)
+    @Transactional(readOnly = true)
     public DtoFriendPageResponse viewUserPage(Long targetUserId, Authentication connectedUser) {
         var currentUser = (User) connectedUser.getPrincipal();
         User target = findUser(targetUserId);
@@ -352,7 +352,7 @@ public class ServiceRelation {
      * @param size          page size
      * @param connectedUser currently authenticated user
      */
-    @org.springframework.transaction.annotation.Transactional(readOnly = true)
+    @Transactional(readOnly = true)
     public PageResponse<DtoUserSearchResult> searchUsers(String query, int page, int size,
                                                          Authentication connectedUser) {
         var currentUser = (User) connectedUser.getPrincipal();

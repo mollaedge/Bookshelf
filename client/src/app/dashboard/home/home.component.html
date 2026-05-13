@@ -8,7 +8,13 @@
       @if (user$ | async; as user) {
         <div class="create-post-card">
           <div class="cp-top">
-            <div class="cp-avatar">{{ getInitials(user.fullName, user.email) }}</div>
+            <div class="cp-avatar">
+              @if (profilePictureUrl) {
+                <img [src]="profilePictureUrl" alt="User avatar" class="avatar-img">
+              } @else {
+                {{ getInitials(user.fullName, user.email) }}
+              }
+            </div>
             <button class="cp-prompt" (click)="openCreatePostModal()">
               What are you reading?
             </button>

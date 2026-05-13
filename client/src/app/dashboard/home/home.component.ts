@@ -3,6 +3,7 @@ import { ActivatedRoute } from '@angular/router';
 import { ViewportScroller } from '@angular/common';
 import { AuthStateService } from '../../service/auth/auth-state.service';
 import { HomePostService } from '../../service/home/home-post.service';
+import { ProfileService } from '../../service/profile/profile.service';
 import {
   HomePost,
   DtoPostCommentRequest,
@@ -65,6 +66,7 @@ export class HomeComponent implements OnInit, OnDestroy, AfterViewChecked {
   @ViewChild('remoteVideoEl') remoteVideoEl?: ElementRef<HTMLVideoElement>;
 
   highlightedPostId: number | null = null;
+  profilePictureUrl: string | null = null;
 
   expandedCommentsPostId: number | null = null;
   commentsByPostId: Record<number, DtoPostCommentResponse[]> = {};
@@ -83,7 +85,8 @@ export class HomeComponent implements OnInit, OnDestroy, AfterViewChecked {
     private webrtcService: WebRTCService,
     private ngZone: NgZone,
     private route: ActivatedRoute,
-    private viewportScroller: ViewportScroller
+    private viewportScroller: ViewportScroller,
+    private profileService: ProfileService
   ) {
     this.user$ = this.authState.user$;
   }
@@ -91,6 +94,7 @@ export class HomeComponent implements OnInit, OnDestroy, AfterViewChecked {
   ngOnInit(): void {
     this.loadUserPosts();
     this.loadLiveStreams();
+    this.loadProfilePicture();
 
     // Handle postId from notification navigation
     this.route.queryParams.subscribe(params => {
@@ -112,6 +116,9 @@ export class HomeComponent implements OnInit, OnDestroy, AfterViewChecked {
     }
     if (this.localStream) {
       this.localStream.getTracks().forEach(track => track.stop());
+    }
+    if (this.profilePictureUrl) {
+      URL.revokeObjectURL(this.profilePictureUrl);
     }
     this.subscriptions.unsubscribe();
     this.streamService.closeAllConnections();
@@ -752,5 +759,19 @@ export class HomeComponent implements OnInit, OnDestroy, AfterViewChecked {
     if (typeof response?.totalElement === 'number') return response.totalElement;
     if (typeof response?.totalElements === 'number') return response.totalElements;
     return fallback;
+  }
+
+  loadProfilePicture(): void {
+    this.profileService.getProfilePicture().subscribe({
+      next: (blob) => {
+        if (blob && blob.size > 0 && blob.type.startsWith('image/')) {
+          if (this.profilePictureUrl) URL.revokeObjectURL(this.profilePictureUrl);
+          this.profilePictureUrl = URL.createObjectURL(blob);
+        } else {
+          this.profilePictureUrl = null;
+        }
+      },
+      error: () => { this.profilePictureUrl = null; }
+    });
   }
 }

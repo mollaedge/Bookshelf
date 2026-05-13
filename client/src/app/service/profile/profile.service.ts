@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable } from 'rxjs';
+import { Observable, Subject, tap } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import { UserDashboardResponse, UpdateProfileRequest, UserProfileResponse } from '../../interfaces/user.interface';
 
@@ -9,6 +9,9 @@ import { UserDashboardResponse, UpdateProfileRequest, UserProfileResponse } from
 })
 export class ProfileService {
   private apiUrl = `${environment.apiUrl}/app-profile`;
+  
+  private profilePictureUpdatedSource = new Subject<void>();
+  profilePictureUpdated$ = this.profilePictureUpdatedSource.asObservable();
 
   constructor(private http: HttpClient) { }
 
@@ -31,7 +34,9 @@ export class ProfileService {
   uploadProfilePicture(file: File): Observable<void> {
     const form = new FormData();
     form.append('file', file);
-    return this.http.post<void>(`${this.apiUrl}/profile/picture`, form);
+    return this.http.post<void>(`${this.apiUrl}/profile/picture`, form).pipe(
+      tap(() => this.profilePictureUpdatedSource.next())
+    );
   }
 
   getProfilePicture(): Observable<Blob> {
@@ -48,3 +53,4 @@ export class ProfileService {
     return this.http.get(`${this.apiUrl}/profile/wallpaper`, { responseType: 'blob' });
   }
 }
+

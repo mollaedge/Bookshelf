@@ -139,19 +139,29 @@ public class ControllerMessage {
         return ResponseEntity.ok(serviceMessage.getConversations(page, size, connectedUser));
     }
 
+    /**
+     * Returns the number of conversations with unread messages.
+     */
+    @GetMapping("/conversations/unread-count")
+    @Operation(summary = "Count conversations with unread messages")
+    @RateLimit(capacity = 20, refillTokens = 20, refillDurationMinutes = 1)
+    public ResponseEntity<Long> getUnreadConversationCount(Authentication connectedUser) {
+        return ResponseEntity.ok(serviceMessage.getUnreadConversationCount(connectedUser));
+    }
+
     // =========================================================================
     // Message history
     // =========================================================================
 
     /**
-     * Returns the message history with a specific friend (oldest first).
+     * Returns the message history with a specific friend (newest first).
      * <p>
      * Automatically marks all unread messages from the friend as read.
      *
      * @param friendId ID of the other participant
      */
     @GetMapping("/conversations/{friendId}")
-    @Operation(summary = "Get message history with a friend (oldest first)")
+    @Operation(summary = "Get message history with a friend (latest first)")
     @RateLimit(capacity = 30, refillTokens = 30, refillDurationMinutes = 1)
     public ResponseEntity<PageResponse<DtoMessageResponse>> getMessages(
             @Parameter(description = "ID of the friend whose conversation to open")

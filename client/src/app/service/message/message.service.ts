@@ -25,6 +25,10 @@ export class MessageService {
   /** Emits whenever a message is marked read via SSE. */
   public messageRead$ = this.messageReadSubject.asObservable();
 
+  private refreshUnreadCountSubject = new Subject<void>();
+  /** Emits when components should refresh their unread conversation counts. */
+  public refreshUnreadCount$ = this.refreshUnreadCountSubject.asObservable();
+
   private reconnectTimer: ReturnType<typeof setTimeout> | null = null;
   private reconnectDelay = 2000;   // start at 2 s
   private readonly maxDelay = 60000; // cap at 60 s
@@ -194,6 +198,20 @@ export class MessageService {
       `${this.apiUrl}/${messageId}/read`,
       {}
     );
+  }
+
+  /**
+   * Returns the number of conversations with unread messages.
+   */
+  getUnreadConversationCount(): Observable<number> {
+    return this.http.get<number>(`${this.apiUrl}/conversations/unread-count`);
+  }
+
+  /**
+   * Notifies all subscribers that the unread count has changed.
+   */
+  notifyUnreadCountChanged(): void {
+    this.refreshUnreadCountSubject.next();
   }
 
   /**

@@ -36,7 +36,7 @@ export class NavComponent implements OnInit, OnDestroy {
 
   conversations: DtoConversationResponse[] = [];
   conversationsLoading = false;
-  totalUnreadMessages = 0;
+  unreadConversationsCount = 0;
 
   private userSub!: Subscription;
   private pollSub?: Subscription;
@@ -231,13 +231,25 @@ export class NavComponent implements OnInit, OnDestroy {
         this.messageSubs.push(msgSub, readSub);
         // Poll unread count every 30 seconds
         this.pollSub = interval(30_000).subscribe(() => this.fetchUnreadCount());
+
+        // Refresh count on demand
+        const refreshSub = this.messageService.refreshUnreadCount$.subscribe(() => {
+          this.fetchUnreadCount();
+        });
+        this.messageSubs.push(refreshSub);
+
+        // Listen for profile picture updates
+        const profilePicSub = this.profileService.profilePictureUpdated$.subscribe(() => {
+          this.loadProfilePicture();
+        });
+        this.messageSubs.push(profilePicSub);
       } else {
         if (this.profilePictureUrl) URL.revokeObjectURL(this.profilePictureUrl);
         this.profilePictureUrl = null;
         this.notifications = [];
         this.unreadCount = 0;
         this.conversations = [];
-        this.totalUnreadMessages = 0;
+        this.unreadConversationsCount = 0;
         this.pollSub?.unsubscribe();
         this.messageSubs.forEach(s => s.unsubscribe());
         this.messageSubs = [];
@@ -255,8 +267,13 @@ export class NavComponent implements OnInit, OnDestroy {
   }
 
   private fetchUnreadCount(): void {
+    // Notifications
     this.notificationService.getUnreadCount().subscribe({
       next: (res) => { this.unreadCount = res.unreadCount; }
+    });
+    // Messages (Unread conversation count)
+    this.messageService.getUnreadConversationCount().subscribe({
+      next: (count) => { this.unreadConversationsCount = count; }
     });
   }
 
@@ -277,7 +294,6 @@ export class NavComponent implements OnInit, OnDestroy {
     this.messageService.getConversations(0, 10).subscribe({
       next: (page) => {
         this.conversations = page.content;
-        this.totalUnreadMessages = page.content.reduce((sum, c) => sum + c.unreadCount, 0);
         this.conversationsLoading = false;
       },
       error: () => { this.conversationsLoading = false; }
@@ -285,6 +301,11 @@ export class NavComponent implements OnInit, OnDestroy {
   }
 
   private refreshConversations(): void {
+    // Always refresh the badge count
+    this.messageService.getUnreadConversationCount().subscribe({
+      next: (count) => { this.unreadConversationsCount = count; }
+    });
+
     if (this.showMessages) {
       this.loadConversations();
     }

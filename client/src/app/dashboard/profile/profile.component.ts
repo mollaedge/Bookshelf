@@ -54,6 +54,7 @@ export class ProfileComponent implements OnInit, AfterViewInit, OnDestroy {
   isLoading = true;
   profileError: string = '';
   saveError: string = '';
+  uploadError: string = '';
   dashboard: UserDashboardResponse | null = null;
 
   profilePictureUrl: string | null = null;
@@ -150,9 +151,16 @@ export class ProfileComponent implements OnInit, AfterViewInit, OnDestroy {
     const file = (event.target as HTMLInputElement).files?.[0];
     if (!file) return;
     this.uploadingPicture = true;
+    this.uploadError = '';
     this.profileService.uploadProfilePicture(file).subscribe({
-      next: () => { this.uploadingPicture = false; this.refreshImageUrls(); },
-      error: () => { this.uploadingPicture = false; }
+      next: () => { 
+        this.uploadingPicture = false; 
+        this.refreshImageUrls(); 
+      },
+      error: () => { 
+        this.uploadingPicture = false;
+        this.uploadError = 'Failed to upload profile picture. Please ensure the file is an image and try again.';
+      }
     });
   }
 
@@ -160,9 +168,16 @@ export class ProfileComponent implements OnInit, AfterViewInit, OnDestroy {
     const file = (event.target as HTMLInputElement).files?.[0];
     if (!file) return;
     this.uploadingWallpaper = true;
+    this.uploadError = '';
     this.profileService.uploadWallpaper(file).subscribe({
-      next: () => { this.uploadingWallpaper = false; this.refreshImageUrls(); },
-      error: () => { this.uploadingWallpaper = false; }
+      next: () => { 
+        this.uploadingWallpaper = false; 
+        this.refreshImageUrls(); 
+      },
+      error: () => { 
+        this.uploadingWallpaper = false;
+        this.uploadError = 'Failed to upload cover photo. Please try again.';
+      }
     });
   }
 

@@ -33,6 +33,9 @@ export class MessagesComponent implements OnInit, OnDestroy {
   pageSize = 50;
   totalPages = 0;
   selectedFile: File | null = null;
+  selectedFilePreview: string | null = null;
+  zoomedImage: string | null = null;
+  isSidebarCollapsed = false;
 
   private subs: Subscription[] = [];
 
@@ -138,6 +141,14 @@ export class MessagesComponent implements OnInit, OnDestroy {
         this.currentPage = response.number;
         this.messagesLoading = false;
         this.scrollToBottom();
+
+        // After loading messages (which marks them as read), zero out unreadCount locally
+        const idx = this.conversations.findIndex(c => c.friendId === this.friendId);
+        if (idx >= 0) {
+          this.conversations[idx] = { ...this.conversations[idx], unreadCount: 0 };
+        }
+        // Notify other components (like Navbar) to refresh their badges
+        this.messageService.notifyUnreadCountChanged();
       },
       error: () => {
         this.messagesLoading = false;
@@ -162,15 +173,30 @@ export class MessagesComponent implements OnInit, OnDestroy {
     const input = event.target as HTMLInputElement;
     if (input.files && input.files.length > 0) {
       this.selectedFile = input.files[0];
+
+      // Create preview if it's an image
+      if (this.selectedFile.type.startsWith('image/')) {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          this.selectedFilePreview = e.target?.result as string;
+        };
+        reader.readAsDataURL(this.selectedFile);
+      } else {
+        this.selectedFilePreview = null;
+      }
     }
   }
 
   removeSelectedFile(): void {
     this.selectedFile = null;
+    this.selectedFilePreview = null;
   }
 
   sendMessage(): void {
-    if (!this.friendId || !this.messageText.trim()) return;
+    const hasText = this.messageText.trim().length > 0;
+    const hasFile = !!this.selectedFile;
+
+    if (!this.friendId || (!hasText && !hasFile)) return;
 
     this.sendingMessage = true;
     const request: DtoMessageRequest & { media?: File | null } = {
@@ -188,7 +214,7 @@ export class MessagesComponent implements OnInit, OnDestroy {
         }
         this.messageText = '';
         this.replyingTo = null;
-        this.selectedFile = null;
+        this.removeSelectedFile();
         this.sendingMessage = false;
         this.scrollToBottom();
         // Refresh sidebar so preview + timestamp update
@@ -262,6 +288,10 @@ export class MessagesComponent implements OnInit, OnDestroy {
       unreadCount: isActive ? 0 : conv.unreadCount + 1,
     };
 
+    if (isActive) {
+      this.messageService.notifyUnreadCountChanged();
+    }
+
     // Bubble updated conversation to the top
     const updated = this.conversations.splice(idx, 1)[0];
     this.conversations.unshift(updated);
@@ -287,5 +317,17 @@ export class MessagesComponent implements OnInit, OnDestroy {
     const d = Math.floor(h / 24);
     const remH = h % 24;
     return remH > 0 ? `${d}d ${remH}h ago` : `${d}d ago`;
+  }
+
+  zoomImage(data: string): void {
+    this.zoomedImage = data;
+  }
+
+  closeZoom(): void {
+    this.zoomedImage = null;
+  }
+
+  toggleSidebar(): void {
+    this.isSidebarCollapsed = !this.isSidebarCollapsed;
   }
 }

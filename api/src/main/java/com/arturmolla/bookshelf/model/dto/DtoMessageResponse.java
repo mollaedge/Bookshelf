@@ -1,5 +1,6 @@
 package com.arturmolla.bookshelf.model.dto;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -16,6 +17,7 @@ import java.time.Instant;
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
+@JsonInclude(JsonInclude.Include.NON_NULL)
 public class DtoMessageResponse {
 
     private Long id;
@@ -39,4 +41,5 @@ public class DtoMessageResponse {
     private String mediaName;
     private Long mediaSize;
     private boolean hasMedia;
+    private byte[] mediaData;
 }
