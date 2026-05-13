@@ -17,7 +17,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 
 /**
  * A single message sent within a {@link EntityConversation}.
@@ -52,6 +52,38 @@ public class EntityMessage {
     @Column(columnDefinition = "TEXT", nullable = false)
     private String content;
 
+    /**
+     * The message this message is replying to, or {@code null} for a top-level message.
+     * The FK is SET NULL on delete so that if the original is removed the reply still exists.
+     */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "reply_to_id")
+    private EntityMessage replyTo;
+
+    /**
+     * Optional: Media data (image/file) attached to this message. Null if no media.
+     */
+    @Column(name = "media_data", columnDefinition = "BYTEA")
+    private byte[] mediaData;
+
+    /**
+     * MIME type of the media (e.g., image/jpeg, application/pdf). Null if no media.
+     */
+    @Column(name = "media_type")
+    private String mediaType;
+
+    /**
+     * Original filename of the media. Null if no media.
+     */
+    @Column(name = "media_name")
+    private String mediaName;
+
+    /**
+     * Size of the media in bytes. Null if no media.
+     */
+    @Column(name = "media_size")
+    private Long mediaSize;
+
     /** True once the recipient has acknowledged the message. */
     @Column(name = "is_read", nullable = false)
     @Builder.Default
@@ -59,6 +91,6 @@ public class EntityMessage {
 
     @Column(name = "created_at", nullable = false)
     @Builder.Default
-    private LocalDateTime createdAt = LocalDateTime.now();
+    private Instant createdAt = Instant.now();
 }
 

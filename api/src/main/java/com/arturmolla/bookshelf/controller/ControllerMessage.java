@@ -10,17 +10,16 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletResponse;
-import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -108,13 +107,13 @@ public class ControllerMessage {
      *
      * @param friendId ID of the recipient
      */
-    @PostMapping("/{friendId}")
-    @Operation(summary = "Send a message to a friend")
+    @PostMapping(path = "/{friendId}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @Operation(summary = "Send a message to a friend (with optional media)")
     @RateLimit(capacity = 60, refillTokens = 60, refillDurationMinutes = 1)
     public ResponseEntity<DtoMessageResponse> sendMessage(
             @Parameter(description = "ID of the friend to message")
             @PathVariable Long friendId,
-            @Valid @RequestBody DtoMessageRequest request,
+            @ModelAttribute DtoMessageRequest request,
             Authentication connectedUser
     ) {
         return ResponseEntity.ok(serviceMessage.sendMessage(friendId, request, connectedUser));
@@ -211,4 +210,3 @@ public class ControllerMessage {
         return ResponseEntity.noContent().build();
     }
 }
-

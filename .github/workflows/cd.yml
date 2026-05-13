@@ -143,13 +143,24 @@ jobs:
           } | ssh hetzner "cat > /opt/bookshelf/.env"
           ssh hetzner "cd /opt/bookshelf && docker compose up -d api mail-dev"
 
+      - name: Deploy start-client script to server
+        run: |
+          ssh hetzner "mkdir -p /opt/bookshelf"
+          ssh hetzner bash -s << 'EOF'
+          cat > /opt/bookshelf/start-client.sh << 'SCRIPT'
+          #!/bin/bash
+          pkill -f "server/server.mjs" 2>/dev/null || true
+          sleep 1
+          nohup node /var/www/bookshelf/client/server/server.mjs >> /var/www/bookshelf/app.log 2>&1 &
+          disown $!
+          echo "Angular SSR started with PID $!"
+          SCRIPT
+          chmod +x /opt/bookshelf/start-client.sh
+          EOF
+
       - name: Start Angular app
         run: |
-          ssh -n hetzner "ps aux | grep '[s]erver.mjs' | awk '{print \$2}' | xargs -r kill -9 || true"
-          sleep 5
-          ssh -n hetzner "setsid nohup node /var/www/bookshelf/client/server/server.mjs > /var/www/bookshelf/app.log 2>&1 < /dev/null &"
-          sleep 3
-          ssh -n hetzner "echo started"
+          ssh hetzner "bash /opt/bookshelf/start-client.sh"
 
       # ── Configure nginx reverse proxy ─────────────────────────────────────────
       - name: Configure nginx

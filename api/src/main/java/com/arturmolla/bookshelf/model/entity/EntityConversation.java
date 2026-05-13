@@ -18,7 +18,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 
 /**
  * Represents a direct-message conversation between exactly two users.
@@ -62,10 +62,10 @@ public class EntityConversation {
 
     @Column(name = "created_at", nullable = false)
     @Builder.Default
-    private LocalDateTime createdAt = LocalDateTime.now();
+    private Instant createdAt = Instant.now();
 
     /** Updated every time a new message is persisted in this conversation. */
     @Column(name = "last_message_at")
-    private LocalDateTime lastMessageAt;
+    private Instant lastMessageAt;
 }
 
