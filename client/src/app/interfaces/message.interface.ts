@@ -1,5 +1,13 @@
+export interface DtoReplySnippet {
+  id: number;
+  senderId: number;
+  senderName: string;
+  contentSnippet: string;
+}
+
 export interface DtoMessageRequest {
   content: string;
+  replyToId?: number | null;
 }
 
 export interface DtoMessageResponse {
@@ -10,6 +18,7 @@ export interface DtoMessageResponse {
   content: string;
   read: boolean;
   createdAt: Date;
+  replyTo?: DtoReplySnippet | null;
 }
 
 export interface DtoConversationResponse {

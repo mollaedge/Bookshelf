@@ -6,7 +6,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 
 /**
  * Summary of a conversation shown in the inbox list.
@@ -26,7 +26,7 @@ public class DtoConversationResponse {
 
     /** Preview text of the most-recent message, or {@code null} if no messages yet. */
     private String lastMessagePreview;
-    private LocalDateTime lastMessageAt;
+    private Instant lastMessageAt;
 
     /** Count of unread messages sent by the friend to the caller. */
     private long unreadCount;

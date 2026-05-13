@@ -35,7 +35,7 @@ public class ServiceFileStorage {
     /**
      * Files larger than this threshold will be compressed before storage.
      */
-    private static final long COMPRESS_THRESHOLD_BYTES = 2 * 1024 * 1024; // 2 MB
+    static final long COMPRESS_THRESHOLD_BYTES = 2 * 1024 * 1024; // 2 MB
 
     /**
      * Maximum dimension (width or height) after downscaling.

@@ -77,6 +77,12 @@
             @for (msg of messages; track msg.id) {
               <div class="message-item" [class.own]="msg.senderId !== friendId">
                 <div class="message-bubble">
+                  @if (msg.replyTo) {
+                    <div class="reply-preview">
+                      <span class="reply-sender">{{ msg.replyTo.senderName }}</span>
+                      <span class="reply-snippet">{{ msg.replyTo.contentSnippet }}</span>
+                    </div>
+                  }
                   <p class="message-content">{{ msg.content }}</p>
                   <div class="message-meta">
                     <span class="message-time">{{ timeAgo(msg.createdAt.toString()) }}</span>
@@ -85,16 +91,33 @@
                     }
                   </div>
                 </div>
-                @if (msg.senderId !== friendId) {
-                  <button class="message-delete-btn" (click)="deleteMessage(msg.id)" title="Delete">
-                    <i class="fas fa-trash-alt"></i>
+                <div class="message-actions">
+                  <button class="message-action-btn" (click)="setReply(msg)" title="Reply">
+                    <i class="fas fa-reply"></i>
                   </button>
-                }
+                  @if (msg.senderId !== friendId) {
+                    <button class="message-action-btn message-delete-btn" (click)="deleteMessage(msg.id)" title="Delete">
+                      <i class="fas fa-trash-alt"></i>
+                    </button>
+                  }
+                </div>
               </div>
             }
           </div>
 
           <div class="message-input-area">
+            @if (replyingTo) {
+              <div class="reply-bar">
+                <div class="reply-bar-body">
+                  <span class="reply-bar-sender">{{ replyingTo.senderName }}</span>
+                  <span class="reply-bar-snippet">{{ replyingTo.contentSnippet }}</span>
+                </div>
+                <button class="reply-bar-cancel" (click)="cancelReply()" title="Cancel reply">
+                  <i class="fas fa-times"></i>
+                </button>
+              </div>
+            }
+            <div class="input-row">
             <input
               type="text"
               class="message-input"
@@ -103,6 +126,29 @@
               (keyup.enter)="sendMessage()"
               [disabled]="sendingMessage"
             />
+            <input
+              type="file"
+              #mediaInput
+              style="display: none;"
+              (change)="onFileSelected($event)"
+            />
+            <button
+              class="attach-btn"
+              type="button"
+              (click)="mediaInput.click()"
+              [disabled]="sendingMessage"
+              title="Attach file"
+            >
+              <i class="fas fa-paperclip"></i>
+            </button>
+            @if (selectedFile) {
+              <span class="selected-file">
+                <i class="fas fa-file"></i> {{ selectedFile.name }}
+                <button type="button" class="remove-file-btn" (click)="removeSelectedFile()" title="Remove file">
+                  <i class="fas fa-times"></i>
+                </button>
+              </span>
+            }
             <button
               class="send-btn"
               (click)="sendMessage()"
@@ -116,6 +162,7 @@
                 <i class="fas fa-paper-plane"></i>
               }
             </button>
+            </div>
           </div>
         </div>
       }

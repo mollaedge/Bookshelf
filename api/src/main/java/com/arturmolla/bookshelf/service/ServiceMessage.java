@@ -3,6 +3,7 @@ package com.arturmolla.bookshelf.service;
 import com.arturmolla.bookshelf.config.exceptions.OperationNotPermittedException;
 import com.arturmolla.bookshelf.model.common.PageResponse;
 import com.arturmolla.bookshelf.model.dto.DtoConversationResponse;
+import com.arturmolla.bookshelf.model.dto.DtoMessageReplySnippet;
 import com.arturmolla.bookshelf.model.dto.DtoMessageRequest;
 import com.arturmolla.bookshelf.model.dto.DtoMessageResponse;
 import com.arturmolla.bookshelf.model.entity.EntityConversation;
@@ -15,6 +16,7 @@ import com.arturmolla.bookshelf.repository.RepositoryMessage;
 import com.arturmolla.bookshelf.repository.RepositoryUser;
 import com.arturmolla.bookshelf.repository.RepositoryUserRelation;
 import com.arturmolla.bookshelf.service.messaging.MessageEmitterRegistry;
+import com.arturmolla.bookshelf.service.ServiceFileStorage;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.persistence.EntityNotFoundException;
@@ -26,9 +28,10 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.Executors;
@@ -62,6 +65,7 @@ public class ServiceMessage {
     private final RepositoryUserRelation repositoryUserRelation;
     private final MessageEmitterRegistry emitterRegistry;
     private final ObjectMapper           objectMapper;
+    private final ServiceFileStorage     serviceFileStorage;
 
     // =========================================================================
     // SSE – connect / disconnect
@@ -141,31 +145,57 @@ public class ServiceMessage {
     public DtoMessageResponse sendMessage(Long friendId, DtoMessageRequest request, Authentication auth) {
         User sender = principal(auth);
         User recipient = findUserOrThrow(friendId);
-
         ensureFriendship(sender.getId(), recipient.getId());
-
-        // Find or create the conversation.
         EntityConversation conversation = repositoryConversation
                 .findByUsers(sender.getId(), recipient.getId())
                 .orElseGet(() -> createConversation(sender, recipient));
-
-        // Persist the message.
+        EntityMessage replyTo = null;
+        if (request.getReplyToId() != null) {
+            replyTo = repositoryMessage.findById(request.getReplyToId())
+                    .orElseThrow(() -> new EntityNotFoundException(
+                            "Message not found: " + request.getReplyToId()));
+            if (!replyTo.getConversation().getId().equals(conversation.getId())) {
+                throw new OperationNotPermittedException(
+                        "You can only reply to messages within the same conversation.");
+            }
+        }
+        // Handle media
+        byte[] mediaData = null;
+        String mediaType = null;
+        String mediaName = null;
+        Long mediaSize = null;
+        MultipartFile media = request.getMedia();
+        if (media != null && !media.isEmpty()) {
+            try {
+                mediaData = media.getBytes();
+                mediaType = media.getContentType();
+                mediaName = media.getOriginalFilename();
+                mediaSize = (long) mediaData.length;
+                // If image and too large, compress
+                if (mediaType != null && mediaType.startsWith("image") && mediaData.length > ServiceFileStorage.COMPRESS_THRESHOLD_BYTES) {
+                    mediaData = serviceFileStorage.compressImageBytes(mediaData);
+                    mediaType = "image/jpeg";
+                    mediaSize = (long) mediaData.length;
+                }
+            } catch (Exception e) {
+                throw new IllegalArgumentException("Could not process uploaded media", e);
+            }
+        }
         EntityMessage message = EntityMessage.builder()
                 .conversation(conversation)
                 .sender(sender)
-                .content(request.content())
+                .content(request.getContent())
+                .replyTo(replyTo)
+                .mediaData(mediaData)
+                .mediaType(mediaType)
+                .mediaName(mediaName)
+                .mediaSize(mediaSize)
                 .build();
         message = repositoryMessage.save(message);
-
-        // Update the conversation timestamp.
-        conversation.setLastMessageAt(LocalDateTime.now());
+        conversation.setLastMessageAt(Instant.now());
         repositoryConversation.save(conversation);
-
         DtoMessageResponse response = toMessageDto(message);
-
-        // Push to the recipient in real time (fire-and-forget).
         pushToUser(recipient.getId(), EVENT_NEW_MESSAGE, response);
-
         log.debug("Message sent: senderId={} recipientId={} conversationId={}",
                 sender.getId(), recipient.getId(), conversation.getId());
         return response;
@@ -380,8 +410,30 @@ public class ServiceMessage {
                 .senderId(m.getSender().getId())
                 .senderName(m.getSender().getFullName())
                 .content(m.getContent())
+                .replyTo(toReplySnippet(m.getReplyTo()))
                 .read(m.isRead())
                 .createdAt(m.getCreatedAt())
+                .mediaType(m.getMediaType())
+                .mediaName(m.getMediaName())
+                .mediaSize(m.getMediaSize())
+                .hasMedia(m.getMediaData() != null)
+                .build();
+    }
+
+    /**
+     * Builds a compact reply snippet from the referenced message.
+     * Returns {@code null} when the message is not a reply.
+     * If the original message's sender was deleted, senderName falls back to "Deleted user".
+     */
+    private DtoMessageReplySnippet toReplySnippet(EntityMessage ref) {
+        if (ref == null) return null;
+        String senderName = (ref.getSender() != null) ? ref.getSender().getFullName() : "Deleted user";
+        Long senderId     = (ref.getSender() != null) ? ref.getSender().getId()       : null;
+        return DtoMessageReplySnippet.builder()
+                .id(ref.getId())
+                .senderId(senderId)
+                .senderName(senderName)
+                .contentSnippet(truncate(ref.getContent(), 200))
                 .build();
     }
 

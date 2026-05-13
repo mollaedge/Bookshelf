@@ -5,6 +5,7 @@ import {
   DtoMessageResponse,
   DtoMessageRequest,
   DtoConversationResponse,
+  DtoReplySnippet,
 } from '../../interfaces/message.interface';
 import { PageResponse } from '../../interfaces/page.interface';
 import { Subscription } from 'rxjs';
@@ -27,9 +28,11 @@ export class MessagesComponent implements OnInit, OnDestroy {
   messagesLoading = false;
   messageText = '';
   sendingMessage = false;
+  replyingTo: DtoReplySnippet | null = null;
   currentPage = 0;
   pageSize = 50;
   totalPages = 0;
+  selectedFile: File | null = null;
 
   private subs: Subscription[] = [];
 
@@ -142,11 +145,39 @@ export class MessagesComponent implements OnInit, OnDestroy {
     });
   }
 
+  setReply(msg: DtoMessageResponse): void {
+    this.replyingTo = {
+      id: msg.id,
+      senderId: msg.senderId,
+      senderName: msg.senderName,
+      contentSnippet: msg.content.length > 80 ? msg.content.slice(0, 80) + '…' : msg.content,
+    };
+  }
+
+  cancelReply(): void {
+    this.replyingTo = null;
+  }
+
+  onFileSelected(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    if (input.files && input.files.length > 0) {
+      this.selectedFile = input.files[0];
+    }
+  }
+
+  removeSelectedFile(): void {
+    this.selectedFile = null;
+  }
+
   sendMessage(): void {
     if (!this.friendId || !this.messageText.trim()) return;
 
     this.sendingMessage = true;
-    const request: DtoMessageRequest = { content: this.messageText.trim() };
+    const request: DtoMessageRequest & { media?: File | null } = {
+      content: this.messageText.trim(),
+      replyToId: this.replyingTo?.id ?? null,
+      media: this.selectedFile,
+    };
 
     this.messageService.sendMessage(this.friendId, request).subscribe({
       next: (msg) => {
@@ -156,6 +187,8 @@ export class MessagesComponent implements OnInit, OnDestroy {
           this.activeConversationId = msg.conversationId;
         }
         this.messageText = '';
+        this.replyingTo = null;
+        this.selectedFile = null;
         this.sendingMessage = false;
         this.scrollToBottom();
         // Refresh sidebar so preview + timestamp update
@@ -249,7 +282,10 @@ export class MessagesComponent implements OnInit, OnDestroy {
     if (m < 1) return 'Just now';
     if (m < 60) return `${m}m ago`;
     const h = Math.floor(m / 60);
-    if (h < 24) return `${h}h ago`;
-    return `${Math.floor(h / 24)}d ago`;
+    const rem = m % 60;
+    if (h < 24) return rem > 0 ? `${h}h ${rem}m ago` : `${h}h ago`;
+    const d = Math.floor(h / 24);
+    const remH = h % 24;
+    return remH > 0 ? `${d}d ${remH}h ago` : `${d}d ago`;
   }
 }

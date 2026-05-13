@@ -142,11 +142,15 @@ export class MessageService {
    */
   sendMessage(
     friendId: number,
-    request: DtoMessageRequest
+    request: DtoMessageRequest & { media?: File | null }
   ): Observable<DtoMessageResponse> {
+    const formData = new FormData();
+    formData.append('content', request.content);
+    if (request.replyToId) formData.append('replyToId', request.replyToId.toString());
+    if (request.media) formData.append('media', request.media);
     return this.http.post<DtoMessageResponse>(
       `${this.apiUrl}/${friendId}`,
-      request
+      formData
     );
   }
 

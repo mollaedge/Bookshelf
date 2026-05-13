@@ -6,7 +6,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 
 /**
  * Returned for every message — both in paginated history and in real-time SSE events.
@@ -26,7 +26,17 @@ public class DtoMessageResponse {
     private String senderName;
 
     private String content;
-    private boolean read;
-    private LocalDateTime createdAt;
-}
 
+    /**
+     * Snippet of the message being replied to, or {@code null} if this is a top-level message.
+     */
+    private DtoMessageReplySnippet replyTo;
+
+    private boolean read;
+    private Instant createdAt;
+
+    private String mediaType;
+    private String mediaName;
+    private Long mediaSize;
+    private boolean hasMedia;
+}
