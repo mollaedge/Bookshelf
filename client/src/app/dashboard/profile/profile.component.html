@@ -16,9 +16,9 @@
   }
 
   <!-- Save Error -->
-  @if (saveError && !isLoading) {
+  @if ((saveError || uploadError) && !isLoading) {
     <div class="error-banner">
-      <p>{{ saveError }}</p>
+      <p>{{ saveError || uploadError }}</p>
     </div>
   }
 
@@ -28,10 +28,13 @@
       <!-- Profile Header -->
       <div class="profile-header">
         <div class="header-background" [style.background-image]="wallpaperUrl ? 'url(' + wallpaperUrl + ')' : null">
-          <label class="edit-wallpaper-btn" title="Change cover photo">
+          <label for="wallpaper-input" class="edit-wallpaper-btn" title="Change cover photo">
             <i class="fas" [class.fa-spinner]="uploadingWallpaper" [class.fa-spin]="uploadingWallpaper" [class.fa-camera]="!uploadingWallpaper"></i>
-            <input type="file" accept="image/*" hidden (change)="onWallpaperChange($event)">
+            @if (!uploadingWallpaper) {
+              <span>Change Cover</span>
+            }
           </label>
+          <input id="wallpaper-input" type="file" accept="image/*" style="display: none;" (change)="onWallpaperChange($event)">
         </div>
         <div class="header-content">
           <div class="profile-avatar">
@@ -44,10 +47,10 @@
               }
             </div>
             @if (!isEditMode) {
-              <label class="edit-avatar-btn" title="Change photo">
+              <label for="avatar-input" class="edit-avatar-btn" title="Change photo">
                 <i class="fas" [class.fa-spinner]="uploadingPicture" [class.fa-spin]="uploadingPicture" [class.fa-camera]="!uploadingPicture"></i>
-                <input type="file" accept="image/*" hidden (change)="onProfilePictureChange($event)">
               </label>
+              <input id="avatar-input" type="file" accept="image/*" style="display: none;" (change)="onProfilePictureChange($event)">
             }
           </div>
           <div class="profile-info">

@@ -15,7 +15,7 @@ import java.util.List;
 public interface RepositoryMessage extends JpaRepository<EntityMessage, Long> {
 
     /** Returns messages for a conversation, oldest first (chat order). */
-    Page<EntityMessage> findByConversationIdOrderByCreatedAtAsc(Long conversationId, Pageable pageable);
+    Page<EntityMessage> findByConversationIdOrderByCreatedAtDesc(Long conversationId, Pageable pageable);
 
     /** Count of unread messages sent TO the given user in a specific conversation. */
     @Query("""
@@ -26,6 +26,21 @@ public interface RepositoryMessage extends JpaRepository<EntityMessage, Long> {
             """)
     long countUnreadForUser(@Param("conversationId") Long conversationId,
                             @Param("userId") Long userId);
+
+    /** Count of conversations with unread messages for a specific user. */
+    @Query("""
+        SELECT COUNT(DISTINCT m.conversation.id)
+        FROM EntityMessage m
+        WHERE m.read = false
+        AND m.sender.id <> :userId
+        AND m.conversation.id IN (
+            SELECT c.id
+            FROM EntityConversation c
+            WHERE c.user1.id = :userId OR c.user2.id = :userId
+        )
+    """)
+    long countUnreadConversationsForUser(@Param("userId") Long userId);
+
 
     /** Marks every unread message sent by the OTHER user in a conversation as read. */
     @Modifying
@@ -52,4 +67,3 @@ public interface RepositoryMessage extends JpaRepository<EntityMessage, Long> {
     @Query("DELETE FROM EntityMessage m WHERE m.conversation.id IN :conversationIds")
     void deleteAllByConversationIdIn(@Param("conversationIds") List<Long> conversationIds);
 }
-

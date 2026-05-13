@@ -1,20 +1,27 @@
 <div class="messages-page">
-  <div class="messages-layout">
-    <aside class="conversations-panel">
+  <div class="messages-layout" [class.sidebar-collapsed]="isSidebarCollapsed">
+    <aside class="conversations-panel" [class.collapsed]="isSidebarCollapsed">
       <div class="panel-header">
         <h3>Chats</h3>
+        <button class="sidebar-toggle-btn" (click)="toggleSidebar()" [title]="isSidebarCollapsed ? 'Expand' : 'Collapse'">
+          <i class="fas" [class.fa-chevron-left]="!isSidebarCollapsed" [class.fa-chevron-right]="isSidebarCollapsed"></i>
+        </button>
       </div>
 
       @if (conversationsLoading) {
         <div class="panel-state">
           <i class="fas fa-spinner fa-spin"></i>
-          <p>Loading conversations...</p>
+          @if (!isSidebarCollapsed) {
+            <p>Loading conversations...</p>
+          }
         </div>
       } @else if (conversations.length === 0) {
         <div class="panel-state panel-state--empty">
           <i class="fas fa-comment-slash"></i>
-          <p>No chats yet</p>
-          <a routerLink="/friends">Find friends</a>
+          @if (!isSidebarCollapsed) {
+            <p>No chats yet</p>
+            <a routerLink="/friends">Find friends</a>
+          }
         </div>
       } @else {
         <ul class="conversation-list">
@@ -22,16 +29,21 @@
             <li
               class="conversation-item"
               [class.active]="isActiveConversation(conv.friendId)"
-              (click)="openConversation(conv)">
+              (click)="openConversation(conv)"
+              [title]="isSidebarCollapsed ? conv.friendName : ''">
               <div class="conversation-avatar">
                 <i class="fas fa-user-circle"></i>
               </div>
-              <div class="conversation-body">
-                <p class="conversation-name">{{ conv.friendName }}</p>
-                <p class="conversation-preview">{{ conv.lastMessagePreview || 'No messages yet' }}</p>
-              </div>
+              @if (!isSidebarCollapsed) {
+                <div class="conversation-body">
+                  <p class="conversation-name">{{ conv.friendName }}</p>
+                  <p class="conversation-preview">{{ conv.lastMessagePreview || 'No messages yet' }}</p>
+                </div>
+              }
               @if (conv.unreadCount > 0) {
-                <span class="conversation-unread">{{ conv.unreadCount > 99 ? '99+' : conv.unreadCount }}</span>
+                <span class="conversation-unread" [class.collapsed]="isSidebarCollapsed">
+                  {{ conv.unreadCount > 99 ? '99+' : conv.unreadCount }}
+                </span>
               }
             </li>
           }
@@ -83,7 +95,18 @@
                       <span class="reply-snippet">{{ msg.replyTo.contentSnippet }}</span>
                     </div>
                   }
-                  <p class="message-content">{{ msg.content }}</p>
+                  @if (msg.hasMedia && msg.mediaType && msg.mediaType.includes('image')) {
+                    <div class="message-media">
+                      <img
+                        [src]="'data:' + msg.mediaType + ';base64,' + msg.mediaData"
+                        [alt]="msg.mediaName || 'Attached image'"
+                        class="media-image"
+                        (click)="zoomImage('data:' + msg.mediaType + ';base64,' + msg.mediaData)" />
+                    </div>
+                  }
+                  @if (msg.content) {
+                    <p class="message-content">{{ msg.content }}</p>
+                  }
                   <div class="message-meta">
                     <span class="message-time">{{ timeAgo(msg.createdAt.toString()) }}</span>
                     @if (msg.read) {
@@ -92,7 +115,7 @@
                   </div>
                 </div>
                 <div class="message-actions">
-                  <button class="message-action-btn" (click)="setReply(msg)" title="Reply">
+                <button class="message-action-btn" (click)="setReply(msg); messageInput.focus()" title="Reply">
                     <i class="fas fa-reply"></i>
                   </button>
                   @if (msg.senderId !== friendId) {
@@ -117,8 +140,21 @@
                 </button>
               </div>
             }
+
+            @if (selectedFilePreview) {
+              <div class="upload-preview">
+                <div class="preview-container">
+                  <img [src]="selectedFilePreview" alt="Upload preview" />
+                  <button class="remove-preview-btn" (click)="removeSelectedFile()">
+                    <i class="fas fa-times"></i>
+                  </button>
+                </div>
+              </div>
+            }
+
             <div class="input-row">
             <input
+              #messageInput
               type="text"
               class="message-input"
               placeholder="Type a message..."
@@ -130,6 +166,7 @@
               type="file"
               #mediaInput
               style="display: none;"
+              accept="image/*"
               (change)="onFileSelected($event)"
             />
             <button
@@ -137,11 +174,11 @@
               type="button"
               (click)="mediaInput.click()"
               [disabled]="sendingMessage"
-              title="Attach file"
+              title="Attach image"
             >
-              <i class="fas fa-paperclip"></i>
+              <i class="fas fa-image"></i>
             </button>
-            @if (selectedFile) {
+            @if (selectedFile && !selectedFilePreview) {
               <span class="selected-file">
                 <i class="fas fa-file"></i> {{ selectedFile.name }}
                 <button type="button" class="remove-file-btn" (click)="removeSelectedFile()" title="Remove file">
@@ -152,7 +189,7 @@
             <button
               class="send-btn"
               (click)="sendMessage()"
-              [disabled]="!messageText.trim() || sendingMessage"
+              [disabled]="(!messageText.trim() && !selectedFile) || sendingMessage"
               title="Send message"
             >
               @if (sendingMessage) {
@@ -169,3 +206,14 @@
     </section>
   </div>
 </div>
+
+@if (zoomedImage) {
+  <div class="image-zoom-overlay" (click)="closeZoom()">
+    <div class="zoom-content">
+      <img [src]="zoomedImage" alt="Zoomed image" />
+      <button class="close-zoom-btn" (click)="closeZoom()">
+        <i class="fas fa-times"></i>
+      </button>
+    </div>
+  </div>
+}

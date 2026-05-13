@@ -89,6 +89,12 @@ export class AuthStateService {
   setUser(user: AuthUser) {
     const roles = this.extractRolesFromToken(user.token);
     this.cachedUser = roles.length > 0 ? { ...user, roles } : user;
+    
+    // Always attempt to hydrate ID from token if it was missing from the response body
+    if (!this.cachedUser.id) {
+      this.hydrateUserIdFromToken();
+    }
+
     if (typeof window !== 'undefined' && window.localStorage) {
       localStorage.setItem('authToken', user.token);
       localStorage.setItem('authUser', JSON.stringify(this.cachedUser));

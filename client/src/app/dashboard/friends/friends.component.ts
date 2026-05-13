@@ -201,23 +201,42 @@ export class FriendsComponent implements OnInit {
   }
 
   getOtherUserName(relation: DtoRelationResponse): string {
-    if (!this.currentUserId) {
-      return relation.requesterFullName;
+    const currentUser = this.authState.getCurrentUser();
+    const myId = this.currentUserId;
+    const myName = currentUser?.fullName;
+
+    if (myId) {
+      return myId === relation.addresseeId
+        ? relation.requesterFullName
+        : relation.addresseeFullName;
     }
 
-    return relation.requesterId === this.currentUserId
-      ? relation.addresseeFullName
-      : relation.requesterFullName;
+    if (myName) {
+      return myName === relation.addresseeFullName
+        ? relation.requesterFullName
+        : relation.addresseeFullName;
+    }
+
+    return relation.addresseeFullName || relation.requesterFullName || 'Friend';
   }
 
   getOtherUserId(relation: DtoRelationResponse): number | null {
-    if (this.currentUserId) {
-      return relation.requesterId === this.currentUserId
-        ? relation.addresseeId
-        : relation.requesterId;
+    const currentUser = this.authState.getCurrentUser();
+    const myId = this.currentUserId;
+    const myName = currentUser?.fullName;
+
+    if (myId) {
+      return myId === relation.addresseeId
+        ? relation.requesterId
+        : relation.addresseeId;
     }
 
-    // Fallback when current user id is unavailable from auth payload.
+    if (myName) {
+      return myName === relation.addresseeFullName
+        ? relation.requesterId
+        : relation.addresseeId;
+    }
+
     return relation.addresseeId || relation.requesterId || null;
   }
 

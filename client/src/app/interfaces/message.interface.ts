@@ -19,6 +19,11 @@ export interface DtoMessageResponse {
   read: boolean;
   createdAt: Date;
   replyTo?: DtoReplySnippet | null;
+  mediaType?: string | null;
+  mediaName?: string | null;
+  mediaSize?: number | null;
+  hasMedia?: boolean;
+  mediaData?: string | null;
 }
 
 export interface DtoConversationResponse {

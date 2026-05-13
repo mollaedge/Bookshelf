@@ -16,7 +16,6 @@ import com.arturmolla.bookshelf.repository.RepositoryMessage;
 import com.arturmolla.bookshelf.repository.RepositoryUser;
 import com.arturmolla.bookshelf.repository.RepositoryUserRelation;
 import com.arturmolla.bookshelf.service.messaging.MessageEmitterRegistry;
-import com.arturmolla.bookshelf.service.ServiceFileStorage;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.persistence.EntityNotFoundException;
@@ -27,8 +26,8 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
-import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import java.io.IOException;
 import java.time.Instant;
@@ -78,7 +77,7 @@ public class ServiceMessage {
      * in real time.  A heartbeat comment is sent every 25 s to prevent
      * Cloudflare / Nginx from closing the idle connection.
      *
-     * <h3>Front-end example</h3>
+     * <h4>Front-end example</h4>
      * <pre>
      * const es = new EventSource('/messages/connect', { withCredentials: true });
      * es.addEventListener('NEW_MESSAGE',  e => appendMessage(JSON.parse(e.data)));
@@ -230,13 +229,18 @@ public class ServiceMessage {
                 .build();
     }
 
+    public long getUnreadConversationCount(Authentication auth) {
+        User user = principal(auth);
+        return repositoryMessage.countUnreadConversationsForUser(user.getId());
+    }
+
     // =========================================================================
     // Message history
     // =========================================================================
 
     /**
      * Returns the full message history between the authenticated user and a friend,
-     * oldest first (natural chat order), and marks all messages from the friend as read.
+     * latest first, and marks all messages from the friend as read.
      *
      * @param friendId ID of the other participant
      */
@@ -253,12 +257,12 @@ public class ServiceMessage {
         repositoryMessage.markAllReadInConversation(conversation.getId(), user.getId());
 
         Page<EntityMessage> result = repositoryMessage
-                .findByConversationIdOrderByCreatedAtAsc(conversation.getId(), PageRequest.of(page, size));
+                .findByConversationIdOrderByCreatedAtDesc(conversation.getId(), PageRequest.of(page, size));
 
         List<DtoMessageResponse> content = result.getContent()
                 .stream()
                 .map(this::toMessageDto)
-                .toList();
+                .toList().reversed();
 
         return PageResponse.<DtoMessageResponse>builder()
                 .content(content)
@@ -404,7 +408,7 @@ public class ServiceMessage {
     }
 
     private DtoMessageResponse toMessageDto(EntityMessage m) {
-        return DtoMessageResponse.builder()
+        DtoMessageResponse.DtoMessageResponseBuilder builder = DtoMessageResponse.builder()
                 .id(m.getId())
                 .conversationId(m.getConversation().getId())
                 .senderId(m.getSender().getId())
@@ -416,8 +420,13 @@ public class ServiceMessage {
                 .mediaType(m.getMediaType())
                 .mediaName(m.getMediaName())
                 .mediaSize(m.getMediaSize())
-                .hasMedia(m.getMediaData() != null)
-                .build();
+                .hasMedia(m.getMediaData() != null);
+
+        if (m.getMediaType() != null && m.getMediaType().startsWith("image")) {
+            builder.mediaData(m.getMediaData());
+        }
+
+        return builder.build();
     }
 
     /**
@@ -464,4 +473,3 @@ public class ServiceMessage {
         return text.length() <= maxLen ? text : text.substring(0, maxLen) + "…";
     }
 }
-

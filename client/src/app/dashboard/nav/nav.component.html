@@ -110,8 +110,8 @@
         <div class="message-wrapper">
           <button class="message-btn" (click)="toggleMessages()" title="Messages">
             <i class="fas fa-comment-dots"></i>
-            @if (totalUnreadMessages > 0) {
-              <span class="badge">{{ totalUnreadMessages > 99 ? '99+' : totalUnreadMessages }}</span>
+            @if (unreadConversationsCount > 0) {
+              <span class="badge">{{ unreadConversationsCount > 99 ? '99+' : unreadConversationsCount }}</span>
             }
           </button>
 
@@ -155,7 +155,10 @@
               }
 
               <div class="message-actions">
-                <a routerLink="/friends" (click)="showMessages = false">Find Friends</a>
+                <a routerLink="/friends" (click)="showMessages = false" class="btn-new-message">
+                  <i class="fas fa-plus"></i> Send a new message
+                </a>
+                <a class="view-all-link" routerLink="/messages" (click)="showMessages = false">View all</a>
               </div>
             </div>
           }
